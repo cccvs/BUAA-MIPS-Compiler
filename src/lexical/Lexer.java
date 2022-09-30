@@ -1,10 +1,9 @@
-import java.io.PrintStream;
+package lexical;
+
 import java.util.ArrayList;
-import java.util.Scanner;
+import util.TkType;
 
 public class Lexer {
-    private final PrintStream out;
-
     private final String inputStr;
     private final int length;
 
@@ -12,25 +11,13 @@ public class Lexer {
     private String curToken;
     private final ArrayList<Token> tokens;
 
-    public Lexer(Scanner in, PrintStream out) {
-        this.out = out;
-
-        this.inputStr = readAll(in);
+    public Lexer(String inputStr) {
+        this.inputStr = inputStr;
         this.length = inputStr.length();
 
         this.pos = 0;
         this.curToken = "";
         this.tokens = new ArrayList<>();
-    }
-
-    public String readAll(Scanner in) {
-        StringBuilder sb = new StringBuilder();
-        // nextLine() doesn't include last '\n'
-        while (in.hasNextLine()) {
-            sb.append(in.nextLine());
-            sb.append('\n');
-        }
-        return sb.toString();
     }
 
     public void lex() {
@@ -59,7 +46,7 @@ public class Lexer {
                 error();
             }
         }
-        outputAll();
+        return;
     }
 
     private void skipSpace() {
@@ -81,7 +68,7 @@ public class Lexer {
             ++pos;
         }
         curToken = inputStr.substring(beginIndex, pos);
-        tokens.add(new Token(Token.KEYWORDS.getOrDefault(curToken, Token.Type.IDENFR), curToken));
+        tokens.add(new Token(Token.KEYWORDS.getOrDefault(curToken, TkType.IDENFR), curToken));
     }
 
     private void lexInt() {
@@ -90,7 +77,7 @@ public class Lexer {
             ++pos;
         }
         curToken = inputStr.substring(beginIndex, pos);
-        tokens.add(new Token(Token.KEYWORDS.getOrDefault(curToken, Token.Type.INTCON), curToken));
+        tokens.add(new Token(Token.KEYWORDS.getOrDefault(curToken, TkType.INTCON), curToken));
     }
 
     private void lexStr() {
@@ -100,54 +87,54 @@ public class Lexer {
         }
         ++pos;
         curToken = inputStr.substring(beginIndex, pos);
-        tokens.add(new Token(Token.KEYWORDS.getOrDefault(curToken, Token.Type.STRCON), curToken));
+        tokens.add(new Token(Token.KEYWORDS.getOrDefault(curToken, TkType.STRCON), curToken));
     }
 
     private void lexSingle() {
         char c = inputStr.charAt(pos);
-        Token.Type type = null;
+        TkType tkType = null;
         switch (c) {
             case '+':
-                type = Token.Type.PLUS;
+                tkType = TkType.PLUS;
                 break;
             case '-':
-                type = Token.Type.MINU;
+                tkType = TkType.MINU;
                 break;
             case '*':
-                type = Token.Type.MULT;
+                tkType = TkType.MULT;
                 break;
             case '%':
-                type = Token.Type.MOD;
+                tkType = TkType.MOD;
                 break;
             case ';':
-                type = Token.Type.SEMICN;
+                tkType = TkType.SEMICN;
                 break;
             case ',':
-                type = Token.Type.COMMA;
+                tkType = TkType.COMMA;
                 break;
             case '(':
-                type = Token.Type.LPARENT;
+                tkType = TkType.LPARENT;
                 break;
             case ')':
-                type = Token.Type.RPARENT;
+                tkType = TkType.RPARENT;
                 break;
             case '[':
-                type = Token.Type.LBRACK;
+                tkType = TkType.LBRACK;
                 break;
             case ']':
-                type = Token.Type.RBRACK;
+                tkType = TkType.RBRACK;
                 break;
             case '{':
-                type = Token.Type.LBRACE;
+                tkType = TkType.LBRACE;
                 break;
             case '}':
-                type = Token.Type.RBRACE;
+                tkType = TkType.RBRACE;
                 break;
             default:
                 error();
         }
         curToken = String.valueOf(c);
-        tokens.add(new Token(type, curToken));
+        tokens.add(new Token(tkType, curToken));
         pos++;
     }
 
@@ -156,13 +143,13 @@ public class Lexer {
         String str = inputStr.substring(pos, pos + 2);
         if (c == '&') {
             if (str.equals("&&")) {
-                tokens.add(new Token(Token.Type.AND, str));
+                tokens.add(new Token(TkType.AND, str));
             } else {
                 error();
             }
         } else if (c == '|') {
             if (str.equals("||")) {
-                tokens.add(new Token(Token.Type.OR, str));
+                tokens.add(new Token(TkType.OR, str));
             } else {
                 error();
             }
@@ -176,37 +163,37 @@ public class Lexer {
         switch (c) {
             case '<':
                 if (str.equals("<=")) {
-                    tokens.add(new Token(Token.Type.LEQ, str));
+                    tokens.add(new Token(TkType.LEQ, str));
                     pos += 2;
                 } else {
-                    tokens.add(new Token(Token.Type.LSS, String.valueOf(c)));
+                    tokens.add(new Token(TkType.LSS, String.valueOf(c)));
                     pos += 1;
                 }
                 break;
             case '>':
                 if (str.equals(">=")) {
-                    tokens.add(new Token(Token.Type.GEQ, str));
+                    tokens.add(new Token(TkType.GEQ, str));
                     pos += 2;
                 } else {
-                    tokens.add(new Token(Token.Type.GRE, String.valueOf(c)));
+                    tokens.add(new Token(TkType.GRE, String.valueOf(c)));
                     pos += 1;
                 }
                 break;
             case '=':
                 if (str.equals("==")) {
-                    tokens.add(new Token(Token.Type.EQL, str));
+                    tokens.add(new Token(TkType.EQL, str));
                     pos += 2;
                 } else {
-                    tokens.add(new Token(Token.Type.ASSIGN, String.valueOf(c)));
+                    tokens.add(new Token(TkType.ASSIGN, String.valueOf(c)));
                     pos += 1;
                 }
                 break;
             case '!':
                 if (str.equals("!=")) {
-                    tokens.add(new Token(Token.Type.NEQ, str));
+                    tokens.add(new Token(TkType.NEQ, str));
                     pos += 2;
                 } else {
-                    tokens.add(new Token(Token.Type.NOT, String.valueOf(c)));
+                    tokens.add(new Token(TkType.NOT, String.valueOf(c)));
                     pos += 1;
                 }
                 break;
@@ -217,7 +204,7 @@ public class Lexer {
 
     private void lexDiv() {
         if (pos >= length - 1 || "/*".indexOf(inputStr.charAt(pos + 1)) == -1) {
-            tokens.add(new Token(Token.Type.DIV, "/"));
+            tokens.add(new Token(TkType.DIV, "/"));
             ++pos;
         } else {
             ++pos;
@@ -239,11 +226,8 @@ public class Lexer {
         }
     }
 
-    private void outputAll() {
-        for (Token token : tokens) {
-            out.println(token);
-        }
-        out.flush();
+    public ArrayList<Token> getTokens() {
+        return tokens;
     }
 
     private void error() {
