@@ -28,7 +28,7 @@ public class Parser {
             out.println(tokens.get(pos).toString());
             ++pos;
         } else {
-            error();
+            error(type);
         }
 
     }
@@ -229,19 +229,9 @@ public class Parser {
     }
 
     private void parseStmt() {
-        // LVal '=' Exp ';'
-        // LVal '=' 'getint''('')'';'
-        if (tokens.get(pos).eqType(TkType.IDENFR)) {
-            parseLVal();
-            next(TkType.ASSIGN);
-            if (tokens.get(pos).eqType(TkType.GETINTTK)) {
-                next(TkType.GETINTTK);
-                next(TkType.LPARENT);
-                next(TkType.RPARENT);
-            } else {
-                parseExp();
-            }
-            next(TkType.SEMICN);
+        // Block
+        if (tokens.get(pos).eqType(TkType.LBRACE)) {
+            parseBlock();
         }
         // 'if' '(' Cond ')' Stmt [ 'else' Stmt ]
         else if (tokens.get(pos).eqType(TkType.IFTK)) {
@@ -291,6 +281,28 @@ public class Parser {
                 parseExp();
             }
             next(TkType.RPARENT);
+            next(TkType.SEMICN);
+        }
+        // LVal '=' Exp ';'
+        // LVal '=' 'getint''('')'';'
+        // Exp -> LVal
+        // Ident '(' [FuncRParams] ')'
+        else if (pos + 1 < tokens.size() &&
+                tokens.get(pos).eqType(TkType.IDENFR) &&
+                !tokens.get(pos + 1).eqType(TkType.LPARENT)) {
+            parseLVal();
+            if (tokens.get(pos).eqType(TkType.ASSIGN)) {
+                next(TkType.ASSIGN);
+                if (tokens.get(pos).eqType(TkType.GETINTTK)) {
+                    next(TkType.GETINTTK);
+                    next(TkType.LPARENT);
+                    next(TkType.RPARENT);
+                } else {
+                    parseExp();
+                }
+            } else {
+                out.println();
+            }
             next(TkType.SEMICN);
         }
         // [Exp] ';'
@@ -374,10 +386,10 @@ public class Parser {
     }
 
     private void parseFuncRParams() {
-        parseFuncFParam();
+        parseExp();
         while (tokens.get(pos).eqType(TkType.COMMA)) {
             next(TkType.COMMA);
-            parseFuncFParam();
+            parseExp();
         }
         out.println("<FuncRParams>");
     }
@@ -511,7 +523,9 @@ public class Parser {
                 tokens.get(pos + 2).eqType(TkType.LPARENT);
     }
 
-    private void error() {
+    private void error(TkType type) {
         System.out.println("error!");
+        System.out.println(pos);
+        System.out.println("expect " + type + " get " + tokens.get(pos).getType());
     }
 }
