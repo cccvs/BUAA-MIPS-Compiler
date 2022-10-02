@@ -287,21 +287,15 @@ public class Parser {
         // LVal '=' 'getint''('')'';'
         // Exp -> LVal
         // Ident '(' [FuncRParams] ')'
-        else if (pos + 1 < tokens.size() &&
-                tokens.get(pos).eqType(TkType.IDENFR) &&
-                !tokens.get(pos + 1).eqType(TkType.LPARENT)) {
+        else if (isAssign()) {
             parseLVal();
-            if (tokens.get(pos).eqType(TkType.ASSIGN)) {
-                next(TkType.ASSIGN);
-                if (tokens.get(pos).eqType(TkType.GETINTTK)) {
-                    next(TkType.GETINTTK);
-                    next(TkType.LPARENT);
-                    next(TkType.RPARENT);
-                } else {
-                    parseExp();
-                }
+            next(TkType.ASSIGN);
+            if (tokens.get(pos).eqType(TkType.GETINTTK)) {
+                next(TkType.GETINTTK);
+                next(TkType.LPARENT);
+                next(TkType.RPARENT);
             } else {
-                out.println();
+                parseExp();
             }
             next(TkType.SEMICN);
         }
@@ -344,7 +338,9 @@ public class Parser {
     private void parseUnaryExp() {
         // {UnaryOp} (PrimaryExp | Ident '(' [FuncRParams] ')')
         // {UnaryOp}
+        int unaryOpCnt = 0;
         while (isUnaryOp()) {
+            ++unaryOpCnt;
             parseUnaryOp();
         }
         // Ident '(' [FuncRParams] ')'
@@ -371,7 +367,10 @@ public class Parser {
             }
             out.println("<PrimaryExp>");
         }
-        out.println("<UnaryExp>");
+        while (unaryOpCnt >= 0) {
+            out.println("<UnaryExp>");
+            --unaryOpCnt;
+        }
     }
 
     private void parseUnaryOp() {
@@ -521,6 +520,24 @@ public class Parser {
                 (tokens.get(pos).eqType(TkType.INTTK) || tokens.get(pos).eqType(TkType.VOIDTK)) &&
                 tokens.get(pos + 1).eqType(TkType.IDENFR) &&
                 tokens.get(pos + 2).eqType(TkType.LPARENT);
+    }
+
+    private boolean isAssign() {
+        int movPos = pos + 1;
+        if (!tokens.get(pos).eqType(TkType.IDENFR)) {
+            return false;
+        }
+        while (!tokens.get(movPos).eqType(TkType.SEMICN) &&
+                !tokens.get(movPos).eqType(TkType.ASSIGN) &&
+                movPos < tokens.size()) {
+            ++movPos;
+        }
+        if (movPos >= tokens.size()) {
+            error(TkType.MAINTK);
+            return false;
+        } else {
+            return tokens.get(movPos).eqType(TkType.ASSIGN);
+        }
     }
 
     private void error(TkType type) {
