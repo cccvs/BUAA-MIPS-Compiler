@@ -24,6 +24,7 @@ public class Compiler {
         lexer.lex();
         // parse part
         Parser parser = new Parser(lexer);
+        parser.parseCompUnit();
     }
 
     public static String readAll(Scanner in) {
