@@ -15,6 +15,7 @@ public class Parser {
     private int pos;
     // private CompUnitNode root;
     private PrintStream out;
+    private ArrayList<String> outStrings = new ArrayList<>();
 
     public Parser(Lexer lexer) throws FileNotFoundException {
         this.tokens = lexer.getTokens();
@@ -23,14 +24,19 @@ public class Parser {
         // this.root = parseCompUnit();
     }
 
+    public void printAll() {
+        for (String outString : outStrings) {
+            out.println(outString);
+        }
+    }
+
     private void next(TkType type) {
         if (tokens.get(pos).eqType(type)) {
-            out.println(tokens.get(pos).toString());
+            outStrings.add(tokens.get(pos).toString());
             ++pos;
         } else {
             error(type);
         }
-
     }
 
     public void parseCompUnit() {
@@ -49,7 +55,7 @@ public class Parser {
             parseFuncDef();
         }
         parseMainFuncDef();
-        out.println("<CompUnit>");
+        outStrings.add("<CompUnit>");
         // return compUnitNode;
     }
 
@@ -65,7 +71,7 @@ public class Parser {
             parseConstDef();
         }
         next(TkType.SEMICN);
-        out.println("<ConstDecl>");
+        outStrings.add("<ConstDecl>");
         // return constDeclNode;
     }
 
@@ -79,7 +85,7 @@ public class Parser {
         }
         next(TkType.ASSIGN);
         parseConstInitVal();
-        out.println("<ConstDef>");
+        outStrings.add("<ConstDef>");
     }
 
     private void parseConstInitVal() {
@@ -97,13 +103,13 @@ public class Parser {
             }
             next(TkType.RBRACE);
         }
-        out.println("<ConstInitVal>");
+        outStrings.add("<ConstInitVal>");
     }
 
     private void parseConstExp() {
         // Ident here need to be constant! need to be refactored next time!
         parseAddExp();
-        out.println("<ConstExp>");
+        outStrings.add("<ConstExp>");
     }
 
     private void parseVarDecl() {
@@ -116,7 +122,7 @@ public class Parser {
             parseVarDef();
         }
         next(TkType.SEMICN);
-        out.println("<VarDecl>");
+        outStrings.add("<VarDecl>");
         // return varDeclNode;
     }
 
@@ -132,7 +138,7 @@ public class Parser {
             next(TkType.ASSIGN);
             parseInitVal();
         }
-        out.println("<VarDef>");
+        outStrings.add("<VarDef>");
     }
 
     private void parseInitVal() {
@@ -150,7 +156,7 @@ public class Parser {
             }
             next(TkType.RBRACE);
         }
-        out.println("<InitVal>");
+        outStrings.add("<InitVal>");
     }
 
     // 2 func part
@@ -164,7 +170,7 @@ public class Parser {
         }
         next(TkType.RPARENT);
         parseBlock();
-        out.println("<FuncDef>");
+        outStrings.add("<FuncDef>");
         // return funcDefNode;
     }
 
@@ -175,7 +181,7 @@ public class Parser {
         next(TkType.LPARENT);
         next(TkType.RPARENT);
         parseBlock();
-        out.println("<MainFuncDef>");
+        outStrings.add("<MainFuncDef>");
         // return funcDefNode;
     }
 
@@ -185,7 +191,7 @@ public class Parser {
         } else {
             next(TkType.INTTK);
         }
-        out.println("<FuncType>");
+        outStrings.add("<FuncType>");
     }
 
     private void parseFuncFParams() {
@@ -194,7 +200,7 @@ public class Parser {
             next(TkType.COMMA);
             parseFuncFParam();
         }
-        out.println("<FuncFParams>");
+        outStrings.add("<FuncFParams>");
     }
 
     private void parseFuncFParam() {
@@ -209,7 +215,7 @@ public class Parser {
                 next(TkType.RBRACK);
             }
         }
-        out.println("<FuncFParam>");
+        outStrings.add("<FuncFParam>");
     }
 
     // 3 blk and stmt
@@ -225,7 +231,7 @@ public class Parser {
             }
         }
         next(TkType.RBRACE);
-        out.println("<Block>");
+        outStrings.add("<Block>");
     }
 
     private void parseStmt() {
@@ -306,18 +312,18 @@ public class Parser {
             }
             next(TkType.SEMICN);
         }
-        out.println("<Stmt>");
+        outStrings.add("<Stmt>");
     }
 
     // 4 exp part
     private void parseExp() {
         parseAddExp();
-        out.println("<Exp>");
+        outStrings.add("<Exp>");
     }
 
     private void parseCond() {
         parseLOrExp();
-        out.println("<Cond>");
+        outStrings.add("<Cond>");
     }
 
     private void parseLVal() {
@@ -327,12 +333,12 @@ public class Parser {
             parseExp();
             next(TkType.RBRACK);
         }
-        out.println("<LVal>");
+        outStrings.add("<LVal>");
     }
 
     private void parseNumber() {
         next(TkType.INTCON);
-        out.println("<Number>");
+        outStrings.add("<Number>");
     }
 
     private void parseUnaryExp() {
@@ -365,10 +371,10 @@ public class Parser {
             } else {
                 parseLVal();
             }
-            out.println("<PrimaryExp>");
+            outStrings.add("<PrimaryExp>");
         }
         while (unaryOpCnt >= 0) {
-            out.println("<UnaryExp>");
+            outStrings.add("<UnaryExp>");
             --unaryOpCnt;
         }
     }
@@ -381,7 +387,7 @@ public class Parser {
         } else {
             next(TkType.NOT);
         }
-        out.println("<UnaryOp>");
+        outStrings.add("<UnaryOp>");
     }
 
     private void parseFuncRParams() {
@@ -390,13 +396,13 @@ public class Parser {
             next(TkType.COMMA);
             parseExp();
         }
-        out.println("<FuncRParams>");
+        outStrings.add("<FuncRParams>");
     }
 
     private void parseMulExp() {
         parseUnaryExp();
         while (isMulLink()) {
-            out.println("<MulExp>");
+            outStrings.add("<MulExp>");
             if (tokens.get(pos).eqType(TkType.MULT)) {
                 next(TkType.MULT);
             } else if (tokens.get(pos).eqType(TkType.DIV)) {
@@ -406,13 +412,13 @@ public class Parser {
             }
             parseUnaryExp();
         }
-        out.println("<MulExp>");
+        outStrings.add("<MulExp>");
     }
 
     private void parseAddExp() {
         parseMulExp();
         while (isAddLink()) {
-            out.println("<AddExp>");
+            outStrings.add("<AddExp>");
             if (tokens.get(pos).eqType(TkType.PLUS)) {
                 next(TkType.PLUS);
             } else {
@@ -420,13 +426,13 @@ public class Parser {
             }
             parseMulExp();
         }
-        out.println("<AddExp>");
+        outStrings.add("<AddExp>");
     }
 
     private void parseRelExp() {
         parseAddExp();
         while (isRelLink()) {
-            out.println("<RelExp>");
+            outStrings.add("<RelExp>");
             if (tokens.get(pos).eqType(TkType.LSS)) {
                 next(TkType.LSS);
             } else if (tokens.get(pos).eqType(TkType.GRE)) {
@@ -438,13 +444,13 @@ public class Parser {
             }
             parseAddExp();
         }
-        out.println("<RelExp>");
+        outStrings.add("<RelExp>");
     }
 
     private void parseEqExp() {
         parseRelExp();
         while (isEqLink()) {
-            out.println("<EqExp>");
+            outStrings.add("<EqExp>");
             if (tokens.get(pos).eqType(TkType.EQL)) {
                 next(TkType.EQL);
             } else {
@@ -452,27 +458,27 @@ public class Parser {
             }
             parseRelExp();
         }
-        out.println("<EqExp>");
+        outStrings.add("<EqExp>");
     }
 
     private void parseLAndExp() {
         parseEqExp();
         while (tokens.get(pos).eqType(TkType.AND)) {
-            out.println("<LAndExp>");
+            outStrings.add("<LAndExp>");
             next(TkType.AND);
             parseEqExp();
         }
-        out.println("<LAndExp>");
+        outStrings.add("<LAndExp>");
     }
 
     private void parseLOrExp() {
         parseLAndExp();
         while (tokens.get(pos).eqType(TkType.OR)) {
-            out.println("<LOrExp>");
+            outStrings.add("<LOrExp>");
             next(TkType.OR);
             parseLAndExp();
         }
-        out.println("<LOrExp>");
+        outStrings.add("<LOrExp>");
     }
 
     private boolean isConstDecl() {
