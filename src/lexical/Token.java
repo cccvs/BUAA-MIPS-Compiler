@@ -36,6 +36,10 @@ public class Token {
         return tkType.equals(this.tkType);
     }
 
+    public String getName() {
+        return str;
+    }
+
     @Override
     public String toString() {
         return tkType.name() + " " + str;

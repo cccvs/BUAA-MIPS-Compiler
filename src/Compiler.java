@@ -4,7 +4,6 @@ import syntax.Parser;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.io.PrintStream;
 import java.util.Scanner;
 
 import static util.Constant.INPUT_FILE;
