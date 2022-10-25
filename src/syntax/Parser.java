@@ -494,7 +494,7 @@ public class Parser {
             } else {
                 next(TkType.GEQ);
             }
-            return new BinaryExpNode(relLink, leftExp, parseAddExp());
+            return new BinaryExpNode(relLink, leftExp, parseRelExp());
         } else {
             return leftExp;
         }
@@ -510,7 +510,7 @@ public class Parser {
             } else {
                 next(TkType.NEQ);
             }
-            return new BinaryExpNode(eqLink, leftExp, parseRelExp());
+            return new BinaryExpNode(eqLink, leftExp, parseEqExp());
         } else {
             return leftExp;
         }
@@ -522,7 +522,7 @@ public class Parser {
         if (tokens.get(pos).eqType(TkType.AND)) {
             TkType andLink = tokens.get(pos).getType();
             next(TkType.AND);
-            return new BinaryExpNode(andLink, leftExp, parseEqExp());
+            return new BinaryExpNode(andLink, leftExp, parseLAndExp());
         }
         return leftExp;
     }
@@ -533,7 +533,7 @@ public class Parser {
         if (tokens.get(pos).eqType(TkType.OR)) {
             TkType orLink = tokens.get(pos).getType();
             next(TkType.OR);
-            return new BinaryExpNode(orLink, leftExp, parseLAndExp());
+            return new BinaryExpNode(orLink, leftExp, parseLOrExp());
         }
         return leftExp;
     }

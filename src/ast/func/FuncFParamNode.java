@@ -10,6 +10,7 @@ public class FuncFParamNode {
 
     public FuncFParamNode(String ident) {
         this.ident = ident;
+        this.dimensions = new ArrayList<>();
     }
 
     public void addDimension(ExpNode dimension) {

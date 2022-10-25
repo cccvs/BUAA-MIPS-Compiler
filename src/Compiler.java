@@ -1,3 +1,4 @@
+import ast.CompUnitNode;
 import lexical.Lexer;
 import syntax.Parser;
 
@@ -23,7 +24,7 @@ public class Compiler {
         lexer.lex();
         // parse part
         Parser parser = new Parser(lexer);
-        parser.parseCompUnit();
+        CompUnitNode compUnit = parser.parseCompUnit();
         parser.printAll();
     }
 
