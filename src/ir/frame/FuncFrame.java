@@ -24,22 +24,20 @@ public class FuncFrame {
 
     public FuncFrame(FuncDefNode funcDef) {
         this.ident = funcDef.getIdent();
-        this.body = new BasicBlock(BasicBlock.Type.FUNC);
+        this.body = new BasicBlock(funcDef, params);
         this.retType = funcDef.getFuncType().equals(TkType.VOIDTK) ? RetType.VOID : RetType.INT;
         this.isMain = "main".equals(this.ident) && RetType.INT.equals(this.retType);
-        for (FuncFParamNode param : funcDef.getParams()) {
-            Symbol symbol = new Symbol(this, param);
-            this.params.add(symbol);
-            this.body.putSym(symbol);
-        }
-        // fill remain information
-        this.body.fillInfo(funcDef.getBlock());
+//        for (FuncFParamNode param : funcDef.getParams()) {
+//            Symbol symbol = new Symbol(this, param);
+//            this.params.add(symbol);
+//            this.body.putSym(symbol);
+//        }
+//        // fill remain information
+//        this.body.fillInfo(funcDef.getBlock());
     }
 
     // ir part
-    public int getStackOffset(int newSize) {
-        return this.body.getStackOffset(newSize);
-    }
+
 
     // basic function
     public String getIdent() {
@@ -56,5 +54,9 @@ public class FuncFrame {
 
     public boolean isMain() {
         return isMain;
+    }
+
+    public List<Symbol> getParams() {
+        return params;
     }
 }

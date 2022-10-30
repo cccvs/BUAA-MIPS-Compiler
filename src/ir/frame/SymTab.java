@@ -9,6 +9,7 @@ public class SymTab {
     // local
     private HashMap<String, Symbol> symTab = new HashMap<>();
     private SymTab prevTab = null;       // 对于函数的第一层，prevTab是空
+    private int stackSize = 0;
 
     public SymTab() {
         this.symTab = new HashMap<>();
@@ -31,6 +32,12 @@ public class SymTab {
         } else {
             return MidCode.getGlobalSym(symIdent);
         }
+    }
+
+    public int getStackOffset(int newSize) {
+        int originalSize = stackSize;
+        stackSize += newSize;
+        return originalSize;
     }
 
     // basic

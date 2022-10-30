@@ -7,6 +7,7 @@ import ir.IrRunner;
 import ir.MidCode;
 import ir.frame.BasicBlock;
 import ir.frame.FuncFrame;
+import ir.frame.SymTab;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -54,7 +55,7 @@ public class Symbol implements Operand{
         output();
     }
 
-    public Symbol(FuncFrame func, FuncFParamNode param) {
+    public Symbol(SymTab symTab, FuncFParamNode param) {
         // basic information
         this.isConst = false;
         this.ident = param.getIdent();
@@ -69,7 +70,7 @@ public class Symbol implements Operand{
         this.isParam = true;
         this.isGlobal = false;
         this.refType = param.isPointer() ? RefType.POINTER : RefType.VALUE;
-        this.offset = func.getStackOffset(getSize());
+        this.offset = symTab.getStackOffset(getSize());
     }
 
     // ir part

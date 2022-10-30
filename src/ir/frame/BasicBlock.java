@@ -1,6 +1,7 @@
 package ir.frame;
 
 import ast.func.FuncDefNode;
+import ast.func.FuncFParamNode;
 import ast.stmt.BlockNode;
 import ir.code.BasicIns;
 import ir.operand.Symbol;
@@ -29,17 +30,24 @@ public class BasicBlock implements BasicIns {
     // mid ins
     private List<BasicIns> insList = new ArrayList<>();
 
-    public BasicBlock(Type type) {
-        this.blockType = type;
+    public BasicBlock(FuncDefNode funcDef, List<Symbol> params) {
+        this.blockType = Type.FUNC;
+        // params part
         this.symTab = new SymTab();
+        for (FuncFParamNode param : funcDef.getParams()) {
+            Symbol symbol = new Symbol(this.symTab, param);
+            params.add(symbol);
+            symTab.putSym(symbol);
+        }
+        // translate stmt
+        // ...
+        // ...
     }
 
 
     // ir part
-    public int getStackOffset(int newSize) {
-        int originalSize = stackSize;
-        stackSize += newSize;
-        return originalSize;
+    public void genIns() {
+
     }
 
     public int getTmpOffset() {
@@ -48,16 +56,9 @@ public class BasicBlock implements BasicIns {
         return originSize;
     }
 
-    public void fillInfo(BlockNode blockNode) {
-
-    }
 
     // basic function
     public void putTmp(TmpVar tmpVar) {
         tmpTab.put(tmpVar.getId(), tmpVar);
-    }
-
-    public void putSym(Symbol symbol) {
-        symTab.putSym(symbol);
     }
 }
