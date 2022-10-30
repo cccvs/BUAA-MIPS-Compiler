@@ -1,7 +1,8 @@
 package ast.decl;
 
 import ast.exp.ExpNode;
-import ast.exp.NumNode;
+import ir.MidCode;
+import ir.operand.Symbol;
 import util.TkType;
 
 import java.util.ArrayList;
@@ -11,8 +12,8 @@ public class DefNode {
     private final TkType varType = TkType.INTTK;
     private final boolean isConst;
     private final String ident;
-    private final ArrayList<ExpNode> dimensions = new ArrayList<>();  // 0 <= dimensions.size() <= 2
-    private final ArrayList<ExpNode> initValues = new ArrayList<>();
+    private final List<ExpNode> dimensions = new ArrayList<>();  // 0 <= dimensions.size() <= 2
+    private final List<ExpNode> initValues = new ArrayList<>();
 
     public DefNode(boolean isConst, String ident) {
         this.isConst = isConst;
@@ -25,27 +26,13 @@ public class DefNode {
     }
 
     public void addInitValues(ExpNode initValue) {
-        dimensions.add(initValue);
+        initValues.add(initValue);
     }
 
     // ir part
-    public void analyzeInitVal() {
-        for (int i = 0; i < dimensions.size(); i++) {
-            dimensions.set(i, new NumNode(dimensions.get(i).getConstVal()));
-        }
-        for (int i = 0; i < initValues.size(); i++) {
-            initValues.set(i, new NumNode(initValues.get(i).getConstVal()));
-        }
-    }
-
-    public int getConstVal(List<Integer> indexes) {
-        assert dimensions.size() == indexes.size();
-        int arrayBias = 0;
-        for (int j = 0; j < dimensions.size(); j++) {
-            arrayBias *= dimensions.get(j).getConstVal();
-            arrayBias += indexes.get(j);
-        }
-        return initValues.get(arrayBias).getConstVal();
+    public void fillGlobalSymTab() {
+        Symbol symbol = new Symbol(this, true);
+        MidCode.putSym(symbol);
     }
 
     // basic func
@@ -55,5 +42,13 @@ public class DefNode {
 
     public boolean isConst() {
         return isConst;
+    }
+
+    public List<ExpNode> getDimensions() {
+        return dimensions;
+    }
+
+    public List<ExpNode> getInitValues() {
+        return initValues;
     }
 }

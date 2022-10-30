@@ -24,8 +24,8 @@ public class UnaryExpNode implements ExpNode {
     }
 
     @Override
-    public Integer getConstVal() {
+    public Integer getConst() {
         UnaryCal unaryCal = opMap.get(unaryOp);
-        return unaryCal.cal(exp.getConstVal());
+        return unaryCal.cal(exp.getConst());
     }
 }

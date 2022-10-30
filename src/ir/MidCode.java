@@ -1,38 +1,48 @@
 package ir;
 
-import ast.CompUnitNode;
-import ast.decl.DefNode;
-import ast.func.FuncDefNode;
+import ir.frame.FuncFrame;
+import ir.operand.Symbol;
 
 import java.util.HashMap;
 
 public class MidCode {
-    private static HashMap<String, FuncDefNode> funcTab;
-    private static HashMap<String, DefNode> globalSymbol;
+    private static HashMap<String, FuncFrame> funcTab;
+    private static HashMap<String, Symbol> globalSym;
     private static HashMap<String, String> globalStr;
     private static HashMap<String, Integer> globalAddr;
+    private static FuncFrame mainFunc = null;
 
-    // symbol table of main func
-    private SymTab rootTab = null;
-    private FuncDefNode mainFunc = null;
-
-    // string id generator
+    // generator
     private static int strCnt = 0;
+    private static int tagCnt = 0;
+    // generate addr of .data
+    public static final int DATA = 0;
+    public static int dataSize = 0;
 
     public MidCode() {
         funcTab = new HashMap<>();
-        globalSymbol = new HashMap<>();
+        globalSym = new HashMap<>();
         globalStr = new HashMap<>();
         globalAddr = new HashMap<>();
     }
-
-    // basic
-    public static void putFunc(FuncDefNode funcDefNode) {
-        funcTab.put(funcDefNode.getIdent(), funcDefNode);
+    // ir part
+    public static int getGlobalBias(int newSize) {
+        int originBias = dataSize;
+        dataSize += newSize;
+        return originBias;
     }
 
-    public static void putSym(DefNode defNode) {
-        globalSymbol.put(defNode.getIdent(), defNode);
+    // tag id generator
+    public static int genTagId() {
+        return tagCnt++;
+    }
+    // basic
+    public static void putFunc(FuncFrame funcFrame) {
+        funcTab.put(funcFrame.getIdent(), funcFrame);
+    }
+
+    public static void putSym(Symbol symbol) {
+        globalSym.put(symbol.getIdent(), symbol);
     }
 
     public static String putString(String str) {
@@ -46,12 +56,12 @@ public class MidCode {
         globalAddr.put(ident, addr);
     }
 
-    public static FuncDefNode getFunc(String funcName) {
+    public static FuncFrame getFunc(String funcName) {
         return funcTab.getOrDefault(funcName, null);
     }
 
-    public static DefNode getSymbol(String symbolName) {
-        return globalSymbol.getOrDefault(symbolName, null);
+    public static Symbol getGlobalSym(String symbolName) {
+        return globalSym.getOrDefault(symbolName, null);
     }
 
     public static String getString(String label) {

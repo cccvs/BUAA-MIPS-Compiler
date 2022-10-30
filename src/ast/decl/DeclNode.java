@@ -19,7 +19,7 @@ public class DeclNode implements BlockItemNode {
     }
 
     // ir part
-    public void fillTab() {
-
+    public void fillGlobalSymTab() {
+        defNodes.forEach(DefNode::fillGlobalSymTab);
     }
 }

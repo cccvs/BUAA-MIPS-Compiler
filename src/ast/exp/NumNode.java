@@ -7,7 +7,7 @@ public class NumNode implements ExpNode {
         this.num = num;
     }
 
-    public Integer getConstVal() {
+    public Integer getConst() {
         return num;
     }
 }

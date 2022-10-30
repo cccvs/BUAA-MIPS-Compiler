@@ -1,12 +1,13 @@
-package ir;
+package ir.frame;
 
-import ast.decl.DefNode;
+import ir.MidCode;
+import ir.operand.Symbol;
 
 import java.util.HashMap;
 
 public class SymTab {
     // local
-    private HashMap<String, DefNode> symTab = new HashMap<>();
+    private HashMap<String, Symbol> symTab = new HashMap<>();
     private SymTab prevTab = null;       // 对于函数的第一层，prevTab是空
 
     public SymTab() {
@@ -20,7 +21,7 @@ public class SymTab {
     }
 
     // ir part
-    public DefNode findSym(String symIdent) {
+    public Symbol findSym(String symIdent) {
         SymTab tab = this;
         while (tab != null && !tab.symTab.containsKey(symIdent)) {
             tab = tab.prevTab;
@@ -28,12 +29,12 @@ public class SymTab {
         if (tab != null) {
             return tab.symTab.get(symIdent);
         } else {
-            return MidCode.getSymbol(symIdent);
+            return MidCode.getGlobalSym(symIdent);
         }
     }
 
     // basic
-    public void putSym(DefNode defNode) {
-        symTab.put(defNode.getIdent(), defNode);
+    public void putSym(Symbol symbol) {
+        symTab.put(symbol.getIdent(), symbol);
     }
 }

@@ -18,7 +18,7 @@ public class FuncCallNode implements ExpNode {
     // ir part
 
     @Override
-    public Integer getConstVal() {
+    public Integer getConst() {
         return 0;
     }
 }

@@ -1,6 +1,8 @@
 package ast.func;
 
 import ast.stmt.BlockNode;
+import ir.MidCode;
+import ir.frame.FuncFrame;
 import util.TkType;
 
 import java.util.ArrayList;
@@ -20,6 +22,13 @@ public class FuncDefNode {
         assert type.equals(TkType.INTTK) || type.equals(TkType.VOIDTK);
     }
 
+    // ir part
+    public void fillFuncTab() {
+        FuncFrame funcFrame = new FuncFrame(this);
+        MidCode.putFunc(funcFrame);
+    }
+
+    // basic
     public void addParam(FuncFParamNode param) {
         params.add(param);
     }
@@ -30,5 +39,17 @@ public class FuncDefNode {
 
     public String getIdent() {
         return ident;
+    }
+
+    public TkType getFuncType() {
+        return funcType;
+    }
+
+    public ArrayList<FuncFParamNode> getParams() {
+        return params;
+    }
+
+    public BlockNode getBlock() {
+        return block;
     }
 }

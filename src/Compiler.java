@@ -1,4 +1,5 @@
 import ast.CompUnitNode;
+import ir.IrRunner;
 import lexical.Lexer;
 import syntax.Parser;
 
@@ -29,7 +30,7 @@ public class Compiler {
         CompUnitNode compUnit = parser.parseCompUnit();
         parser.printAll();
         // intermediate part
-
+        IrRunner irRunner = new IrRunner(compUnit);
     }
 
     public static String readAll(Scanner in) {

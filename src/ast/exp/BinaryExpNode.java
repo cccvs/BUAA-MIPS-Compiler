@@ -41,8 +41,8 @@ public class BinaryExpNode implements ExpNode {
     }
 
     @Override
-    public Integer getConstVal() {
+    public Integer getConst() {
         BinaryCal binaryCal = opMap.get(operand);
-        return binaryCal.cal(leftExp.getConstVal(), rightExp.getConstVal());
+        return binaryCal.cal(leftExp.getConst(), rightExp.getConst());
     }
 }

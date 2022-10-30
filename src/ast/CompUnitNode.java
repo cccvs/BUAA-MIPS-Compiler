@@ -16,6 +16,13 @@ public class CompUnitNode {
         this.mainFuncDefNode = null;
     }
 
+    // ir part
+    public void fillGlobalTab() {
+        declNodes.forEach(DeclNode::fillGlobalSymTab);
+        // funcDefNodes.forEach();
+    }
+
+    // basic
     public void addDecl(DeclNode declNode) {
         declNodes.add(declNode);
     }

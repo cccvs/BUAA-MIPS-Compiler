@@ -1,7 +1,7 @@
 package ast.exp;
 
 import ir.MidCode;
-import ast.decl.DefNode;
+import ir.operand.Symbol;
 
 import java.util.ArrayList;
 import java.util.stream.Collectors;
@@ -24,10 +24,10 @@ public class LValNode implements ExpNode {
     }
 
     // ir part
-    public Integer getConstVal() {
-        DefNode defNode = MidCode.getSymbol(ident);
-        if (defNode.isConst()) {
-            return defNode.getConstVal(arrayIndexes.stream().map(ExpNode::getConstVal).collect(Collectors.toList()));
+    public Integer getConst() {
+        Symbol symbol = MidCode.getGlobalSym(ident);
+        if (symbol.isConst()) {
+            return symbol.getConstVal(arrayIndexes.stream().map(ExpNode::getConst).collect(Collectors.toList()));
         } else {
             System.out.println("expect Const or Num, get Var!");
             System.exit(3);
