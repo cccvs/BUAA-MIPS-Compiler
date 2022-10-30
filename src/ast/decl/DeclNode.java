@@ -13,7 +13,13 @@ public class DeclNode implements BlockItemNode {
         this.defNodes = new ArrayList<>();
     }
 
+    // syntax part
     public void addDefs(DefNode defNode) {
         defNodes.add(defNode);
+    }
+
+    // ir part
+    public void fillTab() {
+
     }
 }

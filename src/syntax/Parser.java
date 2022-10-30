@@ -1,12 +1,25 @@
 package syntax;
 
-import ast.*;
+import ast.CompUnitNode;
 import ast.decl.DeclNode;
 import ast.decl.DefNode;
-import ast.exp.*;
+import ast.exp.BinaryExpNode;
+import ast.exp.ExpNode;
+import ast.exp.FuncCallNode;
+import ast.exp.LValNode;
+import ast.exp.NumNode;
+import ast.exp.UnaryExpNode;
 import ast.func.FuncDefNode;
 import ast.func.FuncFParamNode;
-import ast.stmt.*;
+import ast.stmt.AssignNode;
+import ast.stmt.BlockNode;
+import ast.stmt.BreakNode;
+import ast.stmt.ContinueNode;
+import ast.stmt.IfNode;
+import ast.stmt.LoopNode;
+import ast.stmt.PrintfNode;
+import ast.stmt.ReturnNode;
+import ast.stmt.StmtNode;
 import lexical.Lexer;
 import lexical.Token;
 import util.TkType;
@@ -226,6 +239,7 @@ public class Parser {
         if (tokens.get(pos).eqType(TkType.LBRACK)) {
             next(TkType.LBRACK);
             next(TkType.RBRACK);
+            funcFParamNode.setPointer(true);
             while (tokens.get(pos).eqType(TkType.LBRACK)) {
                 next(TkType.LBRACK);
                 funcFParamNode.addDimension(parseConstExp());

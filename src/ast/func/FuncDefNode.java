@@ -27,4 +27,8 @@ public class FuncDefNode {
     public void setBlock(BlockNode block) {
         this.block = block;
     }
+
+    public String getIdent() {
+        return ident;
+    }
 }

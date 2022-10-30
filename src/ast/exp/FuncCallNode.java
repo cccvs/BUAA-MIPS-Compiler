@@ -14,4 +14,11 @@ public class FuncCallNode implements ExpNode {
     public void addParam(ExpNode exp) {
         realParams.add(exp);
     }
+
+    // ir part
+
+    @Override
+    public Integer getConstVal() {
+        return 0;
+    }
 }

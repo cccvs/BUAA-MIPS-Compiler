@@ -5,7 +5,9 @@ import syntax.Parser;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.stream.Collectors;
 
 import static util.Constant.INPUT_FILE;
 
@@ -26,6 +28,8 @@ public class Compiler {
         Parser parser = new Parser(lexer);
         CompUnitNode compUnit = parser.parseCompUnit();
         parser.printAll();
+        // intermediate part
+
     }
 
     public static String readAll(Scanner in) {

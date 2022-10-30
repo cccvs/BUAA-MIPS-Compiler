@@ -6,4 +6,8 @@ public class NumNode implements ExpNode {
     public NumNode(int num) {
         this.num = num;
     }
+
+    public Integer getConstVal() {
+        return num;
+    }
 }
