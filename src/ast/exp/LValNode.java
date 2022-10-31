@@ -1,9 +1,15 @@
 package ast.exp;
 
 import ir.MidCode;
+import ir.code.BasicIns;
+import ir.code.MemOp;
+import ir.frame.BasicBlock;
+import ir.operand.Operand;
 import ir.operand.Symbol;
+import ir.operand.TmpVar;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class LValNode implements ExpNode {
@@ -31,6 +37,20 @@ public class LValNode implements ExpNode {
         } else {
             System.out.println("expect Const or Num, get Var!");
             System.exit(3);
+            return null;
+        }
+    }
+
+    @Override
+    public Operand expToIr(BasicBlock basicBlock) {
+        TmpVar recv = new TmpVar(basicBlock);
+        Symbol symbol = basicBlock.getSymTab().findSym(ident);
+        if (symbol.getRefType() == Symbol.RefType.VALUE) {
+            MemOp memOp = new MemOp(MemOp.Type.LOAD, symbol, recv);
+            basicBlock.addIns(memOp);
+            return recv;
+        } else {
+            // TODO[1]: cond of array
             return null;
         }
     }

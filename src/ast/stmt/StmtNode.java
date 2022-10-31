@@ -1,5 +1,6 @@
 package ast.stmt;
 
-public interface StmtNode extends BlockItemNode {
+import ir.frame.BasicBlock;
 
+public interface StmtNode extends BlockItemNode {
 }

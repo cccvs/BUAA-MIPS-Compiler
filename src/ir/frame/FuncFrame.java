@@ -5,6 +5,7 @@ import ast.func.FuncFParamNode;
 import ir.operand.Symbol;
 import util.TkType;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class FuncFrame {
@@ -24,16 +25,11 @@ public class FuncFrame {
 
     public FuncFrame(FuncDefNode funcDef) {
         this.ident = funcDef.getIdent();
-        this.body = new BasicBlock(funcDef, params);
         this.retType = funcDef.getFuncType().equals(TkType.VOIDTK) ? RetType.VOID : RetType.INT;
         this.isMain = "main".equals(this.ident) && RetType.INT.equals(this.retType);
-//        for (FuncFParamNode param : funcDef.getParams()) {
-//            Symbol symbol = new Symbol(this, param);
-//            this.params.add(symbol);
-//            this.body.putSym(symbol);
-//        }
-//        // fill remain information
-//        this.body.fillInfo(funcDef.getBlock());
+        // fill format params into symtab of body
+        this.params = new ArrayList<>();
+        this.body = new BasicBlock(funcDef, params);
     }
 
     // ir part

@@ -350,7 +350,7 @@ public class Parser {
                 next(TkType.RPARENT);
                 assignNode.setGetInt();
             } else {
-                assignNode.setRight(parseExp());
+                assignNode.setExp(parseExp());
             }
             next(TkType.SEMICN);
             retStmt = assignNode;

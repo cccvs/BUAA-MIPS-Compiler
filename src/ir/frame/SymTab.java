@@ -35,9 +35,8 @@ public class SymTab {
     }
 
     public int getStackOffset(int newSize) {
-        int originalSize = stackSize;
         stackSize += newSize;
-        return originalSize;
+        return stackSize;
     }
 
     // basic

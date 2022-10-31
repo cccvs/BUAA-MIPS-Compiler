@@ -31,7 +31,7 @@ public class DefNode {
 
     // ir part
     public void fillGlobalSymTab() {
-        Symbol symbol = new Symbol(this, true);
+        Symbol symbol = new Symbol(this);
         MidCode.putSym(symbol);
     }
 

@@ -1,5 +1,10 @@
 package ir.code;
 
-public class PrintStr {
+public class PrintStr implements BasicIns{
     // Originate from printf
+    private String label;
+
+    public PrintStr(String label) {
+        this.label = label;
+    }
 }

@@ -22,13 +22,13 @@ public class BasicBlock implements BasicIns {
     // basic information
     private Type blockType;
     // sym tab information
-    protected SymTab symTab;
+    private SymTab symTab;
     private int stackSize = 0;
     // tmp tab information
     private HashMap<Integer, TmpVar> tmpTab = new HashMap<>();    // id to tmpVar
     private int tmpSize = 0;
     // mid ins
-    private List<BasicIns> insList = new ArrayList<>();
+    private final List<BasicIns> insList = new ArrayList<>();
 
     public BasicBlock(FuncDefNode funcDef, List<Symbol> params) {
         this.blockType = Type.FUNC;
@@ -37,28 +37,32 @@ public class BasicBlock implements BasicIns {
         for (FuncFParamNode param : funcDef.getParams()) {
             Symbol symbol = new Symbol(this.symTab, param);
             params.add(symbol);
-            symTab.putSym(symbol);
+            this.symTab.putSym(symbol);
         }
         // translate stmt
-        // ...
-        // ...
+        funcDef.getBlock().toIr(this);
     }
 
-
-    // ir part
-    public void genIns() {
-
+    public BasicBlock(BasicBlock parent) {
+        this.blockType = Type.BASIC;
+        this.symTab = new SymTab(parent.symTab);
     }
 
     public int getTmpOffset() {
-        int originSize = tmpSize;
         tmpSize += 4;
-        return originSize;
+        return tmpSize;
     }
-
 
     // basic function
     public void putTmp(TmpVar tmpVar) {
         tmpTab.put(tmpVar.getId(), tmpVar);
+    }
+
+    public SymTab getSymTab() {
+        return symTab;
+    }
+
+    public void addIns(BasicIns ins) {
+        insList.add(ins);
     }
 }

@@ -1,5 +1,12 @@
 package ir.code;
 
-public class PrintInt {
+import ir.operand.Operand;
+
+public class PrintInt implements BasicIns{
     // Originate from printf
+    private Operand src;
+
+    public PrintInt(Operand src) {
+        this.src = src;
+    }
 }

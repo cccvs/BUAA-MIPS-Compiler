@@ -5,11 +5,11 @@ import ir.frame.BasicBlock;
 
 public class TmpVar implements Operand{
     private final int id;
-    private final int offset;
+    private final int tmpOffset;
 
     public TmpVar(BasicBlock basicBlock) {
         this.id = MidCode.genTagId();
-        this.offset = basicBlock.getTmpOffset();
+        this.tmpOffset = basicBlock.getTmpOffset();
         basicBlock.putTmp(this);
     }
 
@@ -17,8 +17,8 @@ public class TmpVar implements Operand{
         return id;
     }
 
-    public int getOffset() {
-        return offset;
+    public int getTmpOffset() {
+        return tmpOffset;
     }
 
     @Override
