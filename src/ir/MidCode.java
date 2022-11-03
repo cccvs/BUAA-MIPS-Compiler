@@ -7,7 +7,6 @@ import java.util.HashMap;
 
 public class MidCode {
     private static HashMap<String, FuncFrame> funcTab;
-    private static HashMap<String, Symbol> globalSym;
     private static HashMap<String, String> globalStr;
     private static HashMap<String, Integer> globalAddr;
     private static FuncFrame mainFunc = null;
@@ -21,7 +20,6 @@ public class MidCode {
 
     public MidCode() {
         funcTab = new HashMap<>();
-        globalSym = new HashMap<>();
         globalStr = new HashMap<>();
         globalAddr = new HashMap<>();
     }
@@ -36,13 +34,10 @@ public class MidCode {
     public static int genTagId() {
         return tagCnt++;
     }
+
     // basic
     public static void putFunc(FuncFrame funcFrame) {
         funcTab.put(funcFrame.getIdent(), funcFrame);
-    }
-
-    public static void putSym(Symbol symbol) {
-        globalSym.put(symbol.getIdent(), symbol);
     }
 
     public static String putString(String str) {
@@ -58,10 +53,6 @@ public class MidCode {
 
     public static FuncFrame getFunc(String funcName) {
         return funcTab.getOrDefault(funcName, null);
-    }
-
-    public static Symbol getGlobalSym(String symbolName) {
-        return globalSym.getOrDefault(symbolName, null);
     }
 
     public static String getString(String label) {

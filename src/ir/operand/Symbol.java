@@ -3,7 +3,7 @@ package ir.operand;
 import ast.decl.DefNode;
 import ast.exp.ExpNode;
 import ast.func.FuncFParamNode;
-import ir.IrRunner;
+import ir.IrConverter;
 import ir.MidCode;
 import ir.frame.SymTab;
 
@@ -24,20 +24,23 @@ public class Symbol implements Operand{
      *  For array decl "int ident[5]", its "dimensions" is [5].
      */
     public enum RefType {
-        VALUE,
-        POINTER
+        VALUE,      // 全局变量, 局部变量
+        POINTER,    // 函数数组形参
+        ARRAY       // 全局数组, 局部数组
     }
 
     // basic information
-    private boolean isConst;
     private String ident;
+    private RefType refType;
+    // for array
     private List<Integer> dimensions;   // for POINTER, 1 <= size <= 2, first element may be null
     private List<Integer> values;
     // ir information
-    private boolean isParam;
+    private boolean isConst;
     private boolean isGlobal;
-    private RefType refType;
     private Integer stackOffset;          // offset from sp or .data
+
+
 
     // global var/const
     public Symbol(DefNode defNode) {
@@ -47,11 +50,9 @@ public class Symbol implements Operand{
         this.dimensions = defNode.getDimensions().stream().map(ExpNode::getConst).collect(Collectors.toList());
         this.values = defNode.getInitValues().stream().map(ExpNode::getConst).collect(Collectors.toList());
         // ir information
-        this.isParam = false;
         this.isGlobal = true;
         this.refType = (dimensions.size() > 0) ? RefType.POINTER : RefType.VALUE;
         this.stackOffset = MidCode.getGlobalBias(getSize());
-        outputGlobal();
     }
 
     // format param
@@ -67,7 +68,6 @@ public class Symbol implements Operand{
         }
         this.values = null;
         // ir information
-        this.isParam = true;
         this.isGlobal = false;
         this.refType = param.isPointer() ? RefType.POINTER : RefType.VALUE;
         this.stackOffset = symTab.getStackOffset(getSize());
@@ -81,7 +81,6 @@ public class Symbol implements Operand{
         this.dimensions = defNode.getDimensions().stream().map(ExpNode::getConst).collect(Collectors.toList());
         this.values = defNode.getInitValues().stream().map(ExpNode::getConst).collect(Collectors.toList());
         // ir information
-        this.isParam = false;
         this.isGlobal = false;
         this.refType = (dimensions.size() > 0) ? RefType.POINTER : RefType.VALUE;
         this.stackOffset = symTab.getStackOffset(getSize());
@@ -96,11 +95,6 @@ public class Symbol implements Operand{
             arrayBias += indexes.get(j);
         }
         return values.get(arrayBias);
-    }
-
-    // output
-    public void outputGlobal() {
-        IrRunner.addOutput(ident + "[0x" + Integer.toHexString(stackOffset + MidCode.DATA) + "]: " + values);
     }
 
     // basic function

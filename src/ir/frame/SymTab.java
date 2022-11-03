@@ -7,8 +7,8 @@ import java.util.HashMap;
 
 public class SymTab {
     // local
-    private HashMap<String, Symbol> symTab = new HashMap<>();
-    private SymTab prevTab = null;       // 对于函数的第一层，prevTab是空
+    private HashMap<String, Symbol> symTab;
+    private SymTab prevTab;       // 对于函数的第一层，prevTab是空
     private int stackSize = 0;
 
     public SymTab() {
@@ -30,7 +30,7 @@ public class SymTab {
         if (tab != null) {
             return tab.symTab.get(symIdent);
         } else {
-            return MidCode.getGlobalSym(symIdent);
+            return null;
         }
     }
 
@@ -42,5 +42,13 @@ public class SymTab {
     // basic
     public void putSym(Symbol symbol) {
         symTab.put(symbol.getIdent(), symbol);
+    }
+
+    public boolean isGlobal() {
+        return prevTab == null;
+    }
+
+    public SymTab prev() {
+        return prevTab;
     }
 }

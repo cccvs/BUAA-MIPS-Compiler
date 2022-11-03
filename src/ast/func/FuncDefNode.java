@@ -22,12 +22,6 @@ public class FuncDefNode {
         assert type.equals(TkType.INTTK) || type.equals(TkType.VOIDTK);
     }
 
-    // ir part
-    public void fillFuncTab() {
-        FuncFrame funcFrame = new FuncFrame(this);
-        MidCode.putFunc(funcFrame);
-    }
-
     // basic
     public void addParam(FuncFParamNode param) {
         params.add(param);

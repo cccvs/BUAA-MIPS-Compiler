@@ -1,5 +1,6 @@
 package ast.exp;
 
+import ir.IrConverter;
 import ir.MidCode;
 import ir.code.BasicIns;
 import ir.code.MemOp;
@@ -14,7 +15,7 @@ import java.util.stream.Collectors;
 
 public class LValNode implements ExpNode {
     private String ident;
-    private final ArrayList<ExpNode> arrayIndexes;
+    private final List<ExpNode> arrayIndexes;
 
     public LValNode() {
         ident = null;
@@ -31,7 +32,7 @@ public class LValNode implements ExpNode {
 
     // ir part
     public Integer getConst() {
-        Symbol symbol = MidCode.getGlobalSym(ident);
+        Symbol symbol = IrConverter.getGlobalSym(ident);
         if (symbol.isConst()) {
             return symbol.getConstVal(arrayIndexes.stream().map(ExpNode::getConst).collect(Collectors.toList()));
         } else {

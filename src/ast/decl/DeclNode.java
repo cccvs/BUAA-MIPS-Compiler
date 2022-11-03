@@ -3,6 +3,7 @@ package ast.decl;
 import ast.stmt.BlockItemNode;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class DeclNode implements BlockItemNode {
     private final boolean isConst;
@@ -13,13 +14,12 @@ public class DeclNode implements BlockItemNode {
         this.defNodes = new ArrayList<>();
     }
 
-    // syntax part
     public void addDefs(DefNode defNode) {
         defNodes.add(defNode);
     }
 
-    // ir part
-    public void fillGlobalSymTab() {
-        defNodes.forEach(DefNode::fillGlobalSymTab);
+    public Iterator<DefNode> defIter() {
+        return defNodes.iterator();
     }
+
 }

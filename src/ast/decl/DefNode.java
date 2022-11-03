@@ -29,12 +29,6 @@ public class DefNode {
         initValues.add(initValue);
     }
 
-    // ir part
-    public void fillGlobalSymTab() {
-        Symbol symbol = new Symbol(this);
-        MidCode.putSym(symbol);
-    }
-
     // basic func
     public String getIdent() {
         return ident;

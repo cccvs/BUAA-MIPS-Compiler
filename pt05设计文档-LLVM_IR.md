@@ -148,7 +148,7 @@ int a = 4;
 printf("%d", a);
 ```
 
-#### 6. 循环
+#### 6.循环
 
 ​	while, break, continue
 

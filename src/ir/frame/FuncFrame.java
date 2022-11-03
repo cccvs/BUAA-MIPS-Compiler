@@ -1,7 +1,6 @@
 package ir.frame;
 
 import ast.func.FuncDefNode;
-import ast.func.FuncFParamNode;
 import ir.operand.Symbol;
 import util.TkType;
 
@@ -18,18 +17,15 @@ public class FuncFrame {
     }
     // basic information
     private String ident;
-    private BasicBlock body;
     private RetType retType;
-    private boolean isMain;
     private List<Symbol> params;
+    private BasicBlock body;
 
-    public FuncFrame(FuncDefNode funcDef) {
-        this.ident = funcDef.getIdent();
-        this.retType = funcDef.getFuncType().equals(TkType.VOIDTK) ? RetType.VOID : RetType.INT;
-        this.isMain = "main".equals(this.ident) && RetType.INT.equals(this.retType);
-        // fill format params into symtab of body
-        this.params = new ArrayList<>();
-        this.body = new BasicBlock(funcDef, params);
+    public FuncFrame(String ident, TkType tkType) {
+        this.ident = ident;
+        this.retType = tkType.equals(TkType.VOIDTK) ? RetType.VOID : RetType.INT;
+        this.params = null;
+        this.body = null;
     }
 
     // ir part
@@ -46,10 +42,6 @@ public class FuncFrame {
 
     public RetType getRetType() {
         return retType;
-    }
-
-    public boolean isMain() {
-        return isMain;
     }
 
     public List<Symbol> getParams() {

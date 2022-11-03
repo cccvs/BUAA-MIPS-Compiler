@@ -4,6 +4,7 @@ import ast.decl.DeclNode;
 import ast.func.FuncDefNode;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class CompUnitNode {
     private ArrayList<DeclNode> declNodes;
@@ -14,12 +15,6 @@ public class CompUnitNode {
         this.declNodes = new ArrayList<>();
         this.funcDefNodes = new ArrayList<>();
         this.mainFuncDefNode = null;
-    }
-
-    // ir part
-    public void fillGlobalTab() {
-        declNodes.forEach(DeclNode::fillGlobalSymTab);
-        // funcDefNodes.forEach();
     }
 
     // basic
@@ -33,5 +28,17 @@ public class CompUnitNode {
 
     public void setMainFuncDef(FuncDefNode mainFuncDefNode) {
         this.mainFuncDefNode = mainFuncDefNode;
+    }
+
+    public Iterator<DeclNode> getDeclIter() {
+        return declNodes.iterator();
+    }
+
+    public Iterator<FuncDefNode> getFuncIter() {
+        return funcDefNodes.iterator();
+    }
+
+    public FuncDefNode getMainFuncDefNode() {
+        return mainFuncDefNode;
     }
 }

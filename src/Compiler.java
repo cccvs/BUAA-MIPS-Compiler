@@ -1,14 +1,12 @@
 import ast.CompUnitNode;
-import ir.IrRunner;
+import ir.IrConverter;
 import lexical.Lexer;
 import syntax.Parser;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Scanner;
-import java.util.stream.Collectors;
 
 import static util.Constant.INPUT_FILE;
 
@@ -30,7 +28,7 @@ public class Compiler {
         CompUnitNode compUnit = parser.parseCompUnit();
         parser.printAll();
         // intermediate part
-        IrRunner irRunner = new IrRunner(compUnit);
+        IrConverter irConverter = new IrConverter(compUnit);
     }
 
     public static String readAll(Scanner in) {
