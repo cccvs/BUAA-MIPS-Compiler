@@ -1,7 +1,6 @@
 package ir;
 
 import ir.frame.FuncFrame;
-import ir.operand.Symbol;
 
 import java.util.HashMap;
 
@@ -13,31 +12,26 @@ public class MidCode {
 
     // generator
     private static int strCnt = 0;
-    private static int tagCnt = 0;
-    // generate addr of .data
-    public static final int DATA = 0;
-    public static int dataSize = 0;
+    private static int IdCnt = 0;
 
     public MidCode() {
         funcTab = new HashMap<>();
         globalStr = new HashMap<>();
         globalAddr = new HashMap<>();
     }
-    // ir part
-    public static int getGlobalBias(int newSize) {
-        int originBias = dataSize;
-        dataSize += newSize;
-        return originBias;
-    }
 
     // tag id generator
-    public static int genTagId() {
-        return tagCnt++;
+    public static int genId() {
+        return IdCnt++;
     }
 
     // basic
     public static void putFunc(FuncFrame funcFrame) {
         funcTab.put(funcFrame.getIdent(), funcFrame);
+    }
+
+    public static void putMainFunc(FuncFrame func) {
+        mainFunc = func;
     }
 
     public static String putString(String str) {
@@ -53,6 +47,10 @@ public class MidCode {
 
     public static FuncFrame getFunc(String funcName) {
         return funcTab.getOrDefault(funcName, null);
+    }
+
+    public static FuncFrame getMainFunc() {
+        return mainFunc;
     }
 
     public static String getString(String label) {

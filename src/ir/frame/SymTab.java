@@ -1,6 +1,5 @@
 package ir.frame;
 
-import ir.MidCode;
 import ir.operand.Symbol;
 
 import java.util.HashMap;
@@ -34,14 +33,15 @@ public class SymTab {
         }
     }
 
-    public int getStackOffset(int newSize) {
-        stackSize += newSize;
+    public int getStackSize() {
         return stackSize;
     }
 
     // basic
     public void putSym(Symbol symbol) {
         symTab.put(symbol.getIdent(), symbol);
+        stackSize += symbol.getSize();
+        symbol.setStackOffset(stackSize);
     }
 
     public boolean isGlobal() {

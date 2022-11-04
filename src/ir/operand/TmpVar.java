@@ -4,13 +4,11 @@ import ir.MidCode;
 import ir.frame.BasicBlock;
 
 public class TmpVar implements Operand{
-    private final int id;
-    private final int tmpOffset;
+    private final Integer id;
+    private final Integer tmpOffset = null;
 
-    public TmpVar(BasicBlock basicBlock) {
-        this.id = MidCode.genTagId();
-        this.tmpOffset = basicBlock.getTmpOffset();
-        basicBlock.putTmp(this);
+    public TmpVar() {
+        this.id = MidCode.genId();
     }
 
     public int getId() {

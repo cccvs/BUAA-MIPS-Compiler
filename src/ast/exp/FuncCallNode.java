@@ -1,13 +1,7 @@
 package ast.exp;
 
-import ir.MidCode;
-import ir.code.Call;
-import ir.frame.BasicBlock;
-import ir.frame.FuncFrame;
-import ir.operand.Operand;
-import ir.operand.TmpVar;
-
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class FuncCallNode implements ExpNode {
     private String ident;
@@ -22,27 +16,17 @@ public class FuncCallNode implements ExpNode {
         realParams.add(exp);
     }
 
-    // ir part
-    @Override
-    public Operand expToIr(BasicBlock basicBlock) {
-        FuncFrame func = MidCode.getFunc(ident);
-        // call part
-        TmpVar recv = null;
-        if (func.getRetType().equals(FuncFrame.RetType.INT)) {
-            recv = new TmpVar(basicBlock);
-        }
-        Call call = new Call(func, recv);
-        // params part
-        for (ExpNode realParam : realParams) {
-            call.addParam(realParam.expToIr(basicBlock));
-        }
-        // add and ret
-        basicBlock.addIns(call);
-        return recv;    // may be null
-    }
-
     @Override
     public Integer getConst() {
+        System.exit(4);
         return 0;
+    }
+
+    public String getIdent() {
+        return ident;
+    }
+
+    public Iterator<ExpNode> iterParam() {
+        return realParams.iterator();
     }
 }

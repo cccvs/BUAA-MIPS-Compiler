@@ -5,6 +5,7 @@ import ir.operand.Symbol;
 import util.TkType;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class FuncFrame {
@@ -44,7 +45,19 @@ public class FuncFrame {
         return retType;
     }
 
-    public List<Symbol> getParams() {
-        return params;
+    public Iterator<Symbol> iterParam() {
+        return params.iterator();
+    }
+
+    public void addParam(Symbol param) {
+        params.add(param);
+    }
+
+    public void setBody(BasicBlock body) {
+        this.body = body;
+    }
+
+    public String getLabel() {
+        return "f_" + ident;
     }
 }

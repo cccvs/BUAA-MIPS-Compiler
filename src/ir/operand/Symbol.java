@@ -30,6 +30,7 @@ public class Symbol implements Operand{
     }
 
     // basic information
+    private int id;
     private String ident;
     private RefType refType;
     // for array
@@ -38,26 +39,26 @@ public class Symbol implements Operand{
     // ir information
     private boolean isConst;
     private boolean isGlobal;
-    private Integer stackOffset;          // offset from sp or .data
-
-
+    private Integer stackOffset;          // offset from sp or .data, default for null
 
     // global var/const
-    public Symbol(DefNode defNode) {
+    public Symbol(DefNode defNode, boolean isGlobal) {
         // basic information
+        this.id = MidCode.genId();
         this.isConst = defNode.isConst();
         this.ident = defNode.getIdent();
         this.dimensions = defNode.getDimensions().stream().map(ExpNode::getConst).collect(Collectors.toList());
         this.values = defNode.getInitValues().stream().map(ExpNode::getConst).collect(Collectors.toList());
         // ir information
-        this.isGlobal = true;
-        this.refType = (dimensions.size() > 0) ? RefType.POINTER : RefType.VALUE;
-        this.stackOffset = MidCode.getGlobalBias(getSize());
+        this.isGlobal = isGlobal;
+        this.refType = (dimensions.size() > 0) ? RefType.ARRAY : RefType.VALUE;
+        this.stackOffset = null;
     }
 
     // format param
-    public Symbol(SymTab symTab, FuncFParamNode param) {
+    public Symbol(FuncFParamNode param) {
         // basic information
+        this.id = MidCode.genId();
         this.isConst = false;
         this.ident = param.getIdent();
         if (param.isPointer()) {
@@ -70,20 +71,7 @@ public class Symbol implements Operand{
         // ir information
         this.isGlobal = false;
         this.refType = param.isPointer() ? RefType.POINTER : RefType.VALUE;
-        this.stackOffset = symTab.getStackOffset(getSize());
-    }
-
-    // local var/const
-    public Symbol(SymTab symTab, DefNode defNode) {
-        // basic information
-        this.isConst = defNode.isConst();
-        this.ident = defNode.getIdent();
-        this.dimensions = defNode.getDimensions().stream().map(ExpNode::getConst).collect(Collectors.toList());
-        this.values = defNode.getInitValues().stream().map(ExpNode::getConst).collect(Collectors.toList());
-        // ir information
-        this.isGlobal = false;
-        this.refType = (dimensions.size() > 0) ? RefType.POINTER : RefType.VALUE;
-        this.stackOffset = symTab.getStackOffset(getSize());
+        this.stackOffset = null;
     }
 
     // ir part
@@ -98,7 +86,7 @@ public class Symbol implements Operand{
     }
 
     // basic function
-    private int getSize() {
+    public int getSize() {
         // if it's a pointer representing a fParam, terminate with error!
         assert !(refType.equals(RefType.POINTER) && dimensions.get(0) != null);
         if (refType.equals(RefType.POINTER)) {
@@ -124,11 +112,11 @@ public class Symbol implements Operand{
         return stackOffset;
     }
 
-    public boolean isParam() {
-        return isParam;
-    }
-
     public RefType getRefType() {
         return refType;
+    }
+
+    public void setStackOffset(Integer stackOffset) {
+        this.stackOffset = stackOffset;
     }
 }

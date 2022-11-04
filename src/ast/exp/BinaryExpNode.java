@@ -1,9 +1,6 @@
 package ast.exp;
 
 import ir.code.BinaryOp;
-import ir.frame.BasicBlock;
-import ir.operand.Operand;
-import ir.operand.TmpVar;
 import util.TkType;
 
 import java.util.HashMap;
@@ -17,7 +14,7 @@ public class BinaryExpNode implements ExpNode {
     private TkType op;
     private ExpNode leftExp;
     private ExpNode rightExp;
-    private final HashMap<TkType, BinaryCal> opMap = new HashMap<TkType, BinaryCal>() {{
+    private static final HashMap<TkType, BinaryCal> opMap = new HashMap<TkType, BinaryCal>() {{
             // AddExp
             put(TkType.PLUS, Integer::sum);
             put(TkType.MINU, (a, b) -> a - b);
@@ -72,18 +69,19 @@ public class BinaryExpNode implements ExpNode {
         return binaryCal.cal(leftExp.getConst(), rightExp.getConst());
     }
 
-    @Override
-    public Operand expToIr(BasicBlock basicBlock) {
-        if (!op.equals(TkType.AND) && !op.equals(TkType.OR)) {
-            Operand left = leftExp.expToIr(basicBlock);
-            Operand right = rightExp.expToIr(basicBlock);
-            TmpVar dst = new TmpVar(basicBlock);
-            BinaryOp binaryOp = new BinaryOp(typeMap.get(op), left, right, dst);
-            basicBlock.addIns(binaryOp);
-            return dst;
-        } else {
-            // TODO[2]: cond of && and ||
-            return null;
-        }
+    public TkType getOp() {
+        return op;
+    }
+
+    public ExpNode getLeftExp() {
+        return leftExp;
+    }
+
+    public ExpNode getRightExp() {
+        return rightExp;
+    }
+
+    public static BinaryOp.Type typeMap(TkType op) {
+        return typeMap.get(op);
     }
 }

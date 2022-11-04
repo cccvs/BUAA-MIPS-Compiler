@@ -6,6 +6,7 @@ import ir.frame.FuncFrame;
 import util.TkType;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class FuncDefNode {
     private TkType funcType;
@@ -39,8 +40,8 @@ public class FuncDefNode {
         return funcType;
     }
 
-    public ArrayList<FuncFParamNode> getParams() {
-        return params;
+    public Iterator<FuncFParamNode> paramIter() {
+        return params.iterator();
     }
 
     public BlockNode getBlock() {
