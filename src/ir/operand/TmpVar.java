@@ -21,6 +21,6 @@ public class TmpVar implements Operand{
 
     @Override
     public String toString() {
-        return "t_" + id;
+        return "t" + id + "[v]";
     }
 }

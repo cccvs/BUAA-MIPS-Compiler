@@ -15,5 +15,8 @@ public class Imm implements Operand{
         this.val = val;
     }
 
-
+    @Override
+    public String toString() {
+        return val + "[v]";
+    }
 }

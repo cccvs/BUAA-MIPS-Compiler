@@ -9,4 +9,9 @@ public class PrintInt implements BasicIns{
     public PrintInt(Operand src) {
         this.src = src;
     }
+
+    @Override
+    public String toString() {
+        return "\tPRINT_INT " + src;
+    }
 }

@@ -21,4 +21,8 @@ public class ReturnNode implements StmtNode {
         this.retVal = retVal;
         this.hasExp = true;
     }
+
+    public ExpNode getRetVal() {
+        return retVal;
+    }
 }

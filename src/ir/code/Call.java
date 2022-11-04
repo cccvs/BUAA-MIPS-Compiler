@@ -20,4 +20,17 @@ public class Call implements BasicIns{
     public void addParam(Operand realParam) {
         params.add(realParam);
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\tCALL ").append(func.getLabel()).append("(");
+        sb.append(params.stream().map(Operand::toString).reduce((x, y) -> x + ", " + y).orElse(""));
+        sb.append(")");
+        if (ret != null) {
+            sb.append(" -> ");
+            sb.append(ret);
+        }
+        return sb.toString();
+    }
 }

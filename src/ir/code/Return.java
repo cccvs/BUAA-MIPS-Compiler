@@ -13,4 +13,9 @@ public class Return implements BasicIns{
     public Return() {
         this.retVal = null;
     }
+
+    @Override
+    public String toString() {
+        return "\tRETURN " + retVal;
+    }
 }

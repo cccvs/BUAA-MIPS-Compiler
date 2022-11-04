@@ -26,5 +26,8 @@ public class BinaryOp implements BasicIns{
         this.dst = dst;
     }
 
-
+    @Override
+    public String toString() {
+        return "\t" + op.name() + " " + dst + ", " + src1 + ", " + src2;
+    }
 }

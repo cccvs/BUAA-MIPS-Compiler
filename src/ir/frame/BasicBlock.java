@@ -5,11 +5,8 @@ import ast.func.FuncFParamNode;
 import ast.stmt.BlockNode;
 import ir.MidCode;
 import ir.code.BasicIns;
-import ir.operand.Symbol;
-import ir.operand.TmpVar;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class BasicBlock implements BasicIns {
@@ -40,10 +37,16 @@ public class BasicBlock implements BasicIns {
     }
 
     public String getLabel() {
-        return "label_" + id;
+        return "label" + id;
     }
 
     public BasicBlock prev() {
         return prev;
+    }
+
+    @Override
+    public String toString() {
+        return getLabel() + ":\n" +
+                insList.stream().map(BasicIns::toString).reduce((x, y) -> x + "\n" + y).orElse("") + "\n";
     }
 }

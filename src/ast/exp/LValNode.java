@@ -40,4 +40,8 @@ public class LValNode implements ExpNode {
     public String getIdent() {
         return ident;
     }
+
+    public List<ExpNode> getArrayIndexes() {
+        return arrayIndexes;
+    }
 }

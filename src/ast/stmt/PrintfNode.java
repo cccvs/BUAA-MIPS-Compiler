@@ -4,6 +4,7 @@ import ast.exp.ExpNode;
 import ir.frame.BasicBlock;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class PrintfNode implements StmtNode {
     private String formatStr;
@@ -14,12 +15,27 @@ public class PrintfNode implements StmtNode {
         this.params = new ArrayList<>();
     }
 
-    // ir part
-    public void toIr(BasicBlock basicBlock) {
-        // TODO[4]: 1031, convert printf
+    public boolean checkParam() {
+        int cnt = 0;
+        int pos = 0;
+        while (formatStr.indexOf("%d", pos) != -1) {
+            pos = formatStr.indexOf("%d", pos);
+            pos += 2;
+            ++cnt;
+        }
+        return cnt == params.size();
     }
+
     // basic method
     public void addParam(ExpNode param) {
         params.add(param);
+    }
+
+    public String getFormatStr() {
+        return formatStr.substring(1, formatStr.length() - 1);
+    }
+
+    public Iterator<ExpNode> iterParam() {
+        return params.iterator();
     }
 }

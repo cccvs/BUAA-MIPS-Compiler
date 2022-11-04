@@ -2,10 +2,8 @@ package ast.stmt;
 
 import ast.exp.ExpNode;
 import ast.exp.LValNode;
-import ir.code.Input;
 import ir.frame.BasicBlock;
 import ir.operand.Operand;
-import ir.operand.TmpVar;
 
 public class AssignNode implements StmtNode {
     private boolean getInt;
@@ -18,12 +16,6 @@ public class AssignNode implements StmtNode {
         this.getInt = false;
     }
 
-    // ir part
-    public void toIr(BasicBlock basicBlock) {
-        Operand recv;
-        // TODO[3]: 1031, design array op interface
-    }
-
     // basic method
     public void setExp(ExpNode exp) {
         this.exp = exp;
@@ -33,5 +25,17 @@ public class AssignNode implements StmtNode {
     public void setGetInt() {
         this.exp = null;
         this.getInt = true;
+    }
+
+    public boolean isGetInt() {
+        return getInt;
+    }
+
+    public LValNode getLeftVal() {
+        return leftVal;
+    }
+
+    public ExpNode getExp() {
+        return exp;
     }
 }

@@ -7,4 +7,9 @@ public class PrintStr implements BasicIns{
     public PrintStr(String label) {
         this.label = label;
     }
+
+    @Override
+    public String toString() {
+        return "\tPRINT_STR " + label;
+    }
 }

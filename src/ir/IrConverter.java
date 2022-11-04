@@ -7,10 +7,7 @@ import ast.exp.*;
 import ast.func.FuncDefNode;
 import ast.func.FuncFParamNode;
 import ast.stmt.*;
-import ir.code.BinaryOp;
-import ir.code.Call;
-import ir.code.MemOp;
-import ir.code.UnaryOp;
+import ir.code.*;
 import ir.frame.BasicBlock;
 import ir.frame.FuncFrame;
 import ir.frame.SymTab;
@@ -18,14 +15,18 @@ import ir.operand.Imm;
 import ir.operand.Operand;
 import ir.operand.Symbol;
 import ir.operand.TmpVar;
+import util.Constant;
 import util.TkType;
 
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 public class IrConverter {
     private static List<Symbol> globalSyms = new ArrayList<>();
+    private static List<String> globalStrLabels = new ArrayList<>();
     private static MidCode midCode = new MidCode();
 
     // current info
@@ -33,8 +34,13 @@ public class IrConverter {
     private static FuncFrame curFunc = null;
     private static BasicBlock curBlock = null;
 
-    public IrConverter(CompUnitNode compUnitNode) {
+    // PrintStream
+    private PrintStream ps;
+
+    public IrConverter(CompUnitNode compUnitNode) throws FileNotFoundException {
         convCompUnit(compUnitNode);
+        ps = new PrintStream(Constant.MID_CODE);
+        outputMidCode();
         // testGlobal();
     }
 
@@ -52,7 +58,7 @@ public class IrConverter {
             MidCode.putFunc(new FuncFrame(funcDefNode.getIdent(), funcDefNode.getFuncType()));
         }
         FuncDefNode mainFunc = compUnitNode.getMainFuncDefNode();
-        MidCode.putFunc(new FuncFrame(mainFunc.getIdent(), mainFunc.getFuncType()));
+        MidCode.setMainFunc(new FuncFrame(mainFunc.getIdent(), mainFunc.getFuncType()));
         // fill in params/body info
         funcDefs = compUnitNode.getFuncIter();
         while (funcDefs.hasNext()) {
@@ -76,7 +82,7 @@ public class IrConverter {
         // construct symbol
         boolean isGlobal = curTab.isGlobal();
         Symbol symbol = new Symbol(defNode, isGlobal);  // create new symbol
-        curTab.putSym(symbol);                      // put current symbol tab.update/set stack size
+        putSymbolAndUpdateStack(symbol);
         if (isGlobal) {
             globalSyms.add(symbol);
         }
@@ -96,12 +102,6 @@ public class IrConverter {
         BlockNode block = funcDefNode.getBlock();
         BasicBlock funcBlock = convBlock(block);
         curFunc.setBody(funcBlock);
-        // put func frame
-        if (!isMain) {
-            MidCode.putFunc(curFunc);
-        } else {
-            MidCode.putMainFunc(curFunc);
-        }
         curFunc = null;
     }
 
@@ -117,7 +117,7 @@ public class IrConverter {
             Iterator<Symbol> paramIter = curFunc.iterParam();
             while (paramIter.hasNext()) {
                 Symbol param = paramIter.next();
-                curTab.putSym(param);
+                putSymbolAndUpdateStack(param);
             }
         }
         // analyze block item
@@ -142,28 +142,76 @@ public class IrConverter {
             BasicBlock basicBlock = convBlock((BlockNode) stmtNode);
             curBlock.append(basicBlock);
         } else if (stmtNode instanceof AssignNode) {
-
+            convAssign((AssignNode) stmtNode);
         } else if (stmtNode instanceof PrintfNode) {
-
+            convPrintf((PrintfNode) stmtNode);
         } else if (stmtNode instanceof ReturnNode) {
-
+            convReturn((ReturnNode) stmtNode);
         } else if (stmtNode instanceof ExpNode) {
-
-        } else { // hw 2
-            return;
+            convExp((ExpNode) stmtNode);
+        } else { // TODO[7] branch part
+            System.out.println("illegal file for hw1!");
+            System.exit(5);
         }
     }
 
     private void convAssign(AssignNode assignNode) {
-
+        LValNode leftVal = assignNode.getLeftVal();
+        ExpNode exp = assignNode.getExp();
+        Symbol leftSym = curTab.findSym(leftVal.getIdent());
+        assert !leftSym.getRefType().equals(Symbol.RefType.POINTER);
+        assert leftSym.getDimension() == leftVal.getArrayIndexes().size();
+        if (leftSym.getRefType().equals(Symbol.RefType.VALUE)) {
+            if (assignNode.isGetInt()) {    // e.g. a = getint();
+                GetInt getInt = new GetInt(leftSym);
+                curBlock.append(getInt);
+            } else {
+                Operand src = convExp(exp);
+                UnaryOp mov = new UnaryOp(UnaryOp.Type.MOV, src, leftSym);
+                curBlock.append(mov);
+            }
+        } else {                            // e.g. a[3] = getint()
+            // TODO[8] array part
+            System.exit(7);
+        }
     }
 
     private void convPrintf(PrintfNode printfNode) {
-
+        int pos = 0;
+        int beginPos = 0;
+        String formatStr = printfNode.getFormatStr();
+        Iterator<ExpNode> params = printfNode.iterParam();
+        while (formatStr.indexOf("%d", pos) != -1) {
+            beginPos = pos;
+            pos = formatStr.indexOf("%d", pos);
+            if (beginPos < pos) {
+                String label = MidCode.genStrLabel(formatStr.substring(beginPos, pos));
+                globalStrLabels.add(label);
+                curBlock.append(new PrintStr(label));
+            }
+            ExpNode param = params.next();
+            Operand operand = convExp(param);
+            curBlock.append(new PrintInt(operand));
+            pos += 2;
+        }
+        if (pos < formatStr.length()) {
+            String label = MidCode.genStrLabel(formatStr.substring(pos));
+            globalStrLabels.add(label);
+            curBlock.append(new PrintStr(label));
+        }
     }
 
     private void convReturn(ReturnNode returnNode) {
-
+        ExpNode retVal = returnNode.getRetVal();
+        boolean voidRet = (retVal == null) && curFunc.getRetType().equals(FuncFrame.RetType.VOID);
+        boolean intRet = (retVal != null) && !curFunc.getRetType().equals(FuncFrame.RetType.VOID);
+        assert voidRet || intRet;
+        if (voidRet) {
+            curBlock.append(new Return());
+        } else {
+            Operand retOperand = convExp(retVal);
+            curBlock.append(new Return(retOperand));
+        }
     }
 
     // exp
@@ -179,20 +227,18 @@ public class IrConverter {
         } else if (expNode instanceof UnaryExpNode) {
             return convUnaryExp((UnaryExpNode) expNode);
         } else {
-            System.exit(5);
+            System.exit(6);
             return null;
         }
     }
 
     private Operand convLVal(LValNode lValNode) {
-        TmpVar recv = new TmpVar();
         String ident = lValNode.getIdent();
         Symbol symbol = curTab.findSym(ident);
         if (symbol.getRefType() == Symbol.RefType.VALUE) {
-            MemOp memOp = new MemOp(MemOp.Type.LOAD, symbol, recv);
-            curBlock.append(memOp);
-            return recv;
+            return symbol;
         } else {
+            TmpVar recv = new TmpVar();
             // TODO[1]: cond of array/pointer
             return null;
         }
@@ -256,10 +302,31 @@ public class IrConverter {
         return curTab.findSym(ident);
     }
 
+    private void putSymbolAndUpdateStack(Symbol symbol) {
+        curTab.putSym(symbol);                          // put current symbol tab.update/set stack size
+        int newStackSize = curFunc.addStackSize(symbol.getSize());
+        symbol.setStackOffset(newStackSize);
+    }
+
     // test
-    private void testGlobal() {
+
+
+    private void outputMidCode() {
+        ps.println("# Global Value:");
         for (Symbol symbol : globalSyms) {
-            System.out.println(symbol.getIdent() + "[0x" + Integer.toHexString(symbol.getStackOffset()) + "]");
+            ps.println(symbol.getIdent() + "[0x" + Integer.toHexString(symbol.getStackOffset()) + "]");
         }
+        ps.println();
+        ps.println("# Global String:");
+        for (String label : globalStrLabels) {
+            ps.println(label + ": \"" + MidCode.getStr(label) + "\"");
+        }
+        ps.println();
+        Iterator<FuncFrame> funcIter = MidCode.funcIter();
+        while (funcIter.hasNext()) {
+            ps.println(funcIter.next().toString());
+            ps.println();
+        }
+        ps.println(MidCode.getMainFunc().toString());
     }
 }

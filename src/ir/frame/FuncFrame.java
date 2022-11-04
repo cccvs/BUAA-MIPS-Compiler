@@ -21,16 +21,19 @@ public class FuncFrame {
     private RetType retType;
     private List<Symbol> params;
     private BasicBlock body;
+    private int stackSize = 0;
 
     public FuncFrame(String ident, TkType tkType) {
         this.ident = ident;
         this.retType = tkType.equals(TkType.VOIDTK) ? RetType.VOID : RetType.INT;
-        this.params = null;
+        this.params = new ArrayList<>();
         this.body = null;
     }
 
-    // ir part
-
+    public int addStackSize(int size) {
+        stackSize += size;
+        return size;
+    }
 
     // basic function
     public String getIdent() {
@@ -59,5 +62,13 @@ public class FuncFrame {
 
     public String getLabel() {
         return "f_" + ident;
+    }
+
+    @Override
+    public String toString() {
+        return "# Function " + ident + "[stack size: 0x" +
+                Integer.toHexString(stackSize) + "]\n" +
+                getLabel() + ":\n" +
+                body;
     }
 }

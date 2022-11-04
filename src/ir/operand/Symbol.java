@@ -85,17 +85,30 @@ public class Symbol implements Operand{
         return values.get(arrayBias);
     }
 
-    // basic function
     public int getSize() {
         // if it's a pointer representing a fParam, terminate with error!
         assert !(refType.equals(RefType.POINTER) && dimensions.get(0) != null);
         if (refType.equals(RefType.POINTER)) {
+            System.out.println(ident);
+            System.out.println(dimensions.size());
             return dimensions.stream().reduce((x, y) -> x * y).orElse(1) << 2;
         } else {
             return 4;
         }
     }
 
+    @Override
+    public String toString() {
+        if (refType.equals(RefType.VALUE)) {
+            return "v" + id + "_" + ident + "[v]";
+        } else if (refType.equals(RefType.POINTER)) {
+            return "v" + id + "_" + ident + "[p]";
+        } else {
+            return "v" + id + "_" + ident + "[a]";
+        }
+    }
+
+    // basic function
     public boolean isConst() {
         return isConst;
     }
@@ -118,5 +131,9 @@ public class Symbol implements Operand{
 
     public void setStackOffset(Integer stackOffset) {
         this.stackOffset = stackOffset;
+    }
+
+    public Integer getDimension() {
+        return dimensions.size();
     }
 }

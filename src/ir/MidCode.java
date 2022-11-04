@@ -3,6 +3,7 @@ package ir;
 import ir.frame.FuncFrame;
 
 import java.util.HashMap;
+import java.util.Iterator;
 
 public class MidCode {
     private static HashMap<String, FuncFrame> funcTab;
@@ -30,15 +31,8 @@ public class MidCode {
         funcTab.put(funcFrame.getIdent(), funcFrame);
     }
 
-    public static void putMainFunc(FuncFrame func) {
+    public static void setMainFunc(FuncFrame func) {
         mainFunc = func;
-    }
-
-    public static String putString(String str) {
-        String strLabel = "str_" + strCnt;
-        globalStr.put(strLabel, str);
-        ++strCnt;
-        return strLabel;
     }
 
     public static void putAddr(String ident, int addr) {
@@ -53,8 +47,19 @@ public class MidCode {
         return mainFunc;
     }
 
-    public static String getString(String label) {
-        return globalStr.getOrDefault(label, null);
+    public static Iterator<FuncFrame> funcIter() {
+        return funcTab.values().iterator();
+    }
+
+    public static String genStrLabel(String str) {
+        String strLabel = "str" + strCnt;
+        globalStr.put(strLabel, str);
+        ++strCnt;
+        return strLabel;
+    }
+
+    public static String getStr(String label) {
+        return globalStr.get(label);
     }
 
     public int getAddr(String symbolName) {
