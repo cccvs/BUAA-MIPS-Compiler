@@ -20,14 +20,10 @@ import util.TkType;
 
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 public class IrConverter {
-    private static List<Symbol> globalSyms = new ArrayList<>();
-    private static List<String> globalStrLabels = new ArrayList<>();
-    private static MidCode midCode = new MidCode();
+    private final MidCode midCode = new MidCode();
 
     // current info
     private static SymTab curTab = new SymTab();   // 初始化为全局符号表
@@ -35,7 +31,7 @@ public class IrConverter {
     private static BasicBlock curBlock = null;
 
     // PrintStream
-    private PrintStream ps;
+    private final PrintStream ps;
 
     public IrConverter(CompUnitNode compUnitNode) throws FileNotFoundException {
         convCompUnit(compUnitNode);
@@ -55,10 +51,10 @@ public class IrConverter {
         Iterator<FuncDefNode> funcDefs = compUnitNode.getFuncIter();
         while (funcDefs.hasNext()) {
             FuncDefNode funcDefNode = funcDefs.next();
-            MidCode.putFunc(new FuncFrame(funcDefNode.getIdent(), funcDefNode.getFuncType()));
+            midCode.putFunc(new FuncFrame(funcDefNode.getIdent(), funcDefNode.getFuncType()));
         }
         FuncDefNode mainFunc = compUnitNode.getMainFuncDefNode();
-        MidCode.setMainFunc(new FuncFrame(mainFunc.getIdent(), mainFunc.getFuncType()));
+        midCode.setMainFunc(new FuncFrame(mainFunc.getIdent(), mainFunc.getFuncType()));
         // fill in params/body info
         funcDefs = compUnitNode.getFuncIter();
         while (funcDefs.hasNext()) {
@@ -84,13 +80,13 @@ public class IrConverter {
         Symbol symbol = new Symbol(defNode, isGlobal);  // create new symbol
         putSymbolAndUpdateStack(symbol);
         if (isGlobal) {
-            globalSyms.add(symbol);
+            midCode.putGlobalSym(symbol);
         }
     }
 
     // func part
     private void convFunc(FuncDefNode funcDefNode, boolean isMain) {
-        curFunc = isMain ? MidCode.getMainFunc() : MidCode.getFunc(funcDefNode.getIdent());
+        curFunc = isMain ? midCode.getMainFunc() : midCode.getFunc(funcDefNode.getIdent());
         // params part
         Iterator<FuncFParamNode> paramIter = funcDefNode.paramIter();
         while (paramIter.hasNext()) {
@@ -178,15 +174,13 @@ public class IrConverter {
 
     private void convPrintf(PrintfNode printfNode) {
         int pos = 0;
-        int beginPos = 0;
         String formatStr = printfNode.getFormatStr();
         Iterator<ExpNode> params = printfNode.iterParam();
         while (formatStr.indexOf("%d", pos) != -1) {
-            beginPos = pos;
+            int beginPos = pos;
             pos = formatStr.indexOf("%d", pos);
             if (beginPos < pos) {
-                String label = MidCode.genStrLabel(formatStr.substring(beginPos, pos));
-                globalStrLabels.add(label);
+                String label = midCode.genStrLabel(formatStr.substring(beginPos, pos));
                 curBlock.append(new PrintStr(label));
             }
             ExpNode param = params.next();
@@ -195,8 +189,7 @@ public class IrConverter {
             pos += 2;
         }
         if (pos < formatStr.length()) {
-            String label = MidCode.genStrLabel(formatStr.substring(pos));
-            globalStrLabels.add(label);
+            String label = midCode.genStrLabel(formatStr.substring(pos));
             curBlock.append(new PrintStr(label));
         }
     }
@@ -250,7 +243,7 @@ public class IrConverter {
 
     private TmpVar convFuncCall(FuncCallNode funcCallNode) {
         String ident = funcCallNode.getIdent();
-        FuncFrame func = MidCode.getFunc(ident);
+        FuncFrame func = midCode.getFunc(ident);
         // call part
         TmpVar recv = func.getRetType().equals(FuncFrame.RetType.INT) ? new TmpVar(Operand.RefType.VALUE) : null;
         Call call = new Call(func, recv);
@@ -306,26 +299,30 @@ public class IrConverter {
     private void putSymbolAndUpdateStack(Symbol symbol) {
         curTab.putSym(symbol);                  // put current symbol tab.update/set stack size
         int symbolSize = symbol.getSize();
-        int newStackSize = curTab.isGlobal() ? MidCode.addStackSize(symbolSize) : curFunc.addStackSize(symbolSize);
+        int newStackSize = curTab.isGlobal() ? midCode.addStackSize(symbolSize) : curFunc.addStackSize(symbolSize);
         symbol.setStackOffset(newStackSize);
     }
 
     // test
     private void outputMidCode() {
         ps.println("# Global Value:");
-        for (Symbol symbol : globalSyms) {
-            ps.println(symbol.getIdent() + "[0x" + Integer.toHexString(symbol.getStackOffset()) + "]");
+        Iterator<Symbol> globalSyms = midCode.symIter();
+        while (globalSyms.hasNext()){
+            Symbol symbol = globalSyms.next();
+            ps.println("[0x" + Integer.toHexString(symbol.getStackOffset()) + "]: " + symbol.getIdent());
         }
         ps.println();
         ps.println("# Global String:");
-        for (String label : globalStrLabels) {
-            ps.println(label + ": \"" + MidCode.getStr(label) + "\"");
+        Iterator<String> strLabels = midCode.strLabelIter();
+        while (strLabels.hasNext()){
+            String label = strLabels.next();
+            ps.println(label + ": \"" + midCode.getStr(label) + "\"");
         }
         ps.println();
-        Iterator<FuncFrame> funcIter = MidCode.funcIter();
+        Iterator<FuncFrame> funcIter = midCode.funcIter();
         while (funcIter.hasNext()) {
             ps.println(funcIter.next().toString());
         }
-        ps.println(MidCode.getMainFunc().toString());
+        ps.println(midCode.getMainFunc().toString());
     }
 }
