@@ -105,6 +105,11 @@ public class Symbol implements Operand {
         return isConst;
     }
 
+    @Override
+    public Integer getId() {
+        return id;
+    }
+
     public String getIdent() {
         return ident;
     }

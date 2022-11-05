@@ -27,20 +27,21 @@ import util.TkType;
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.List;
 
-import static util.Constant.OUTPUT_FILE;
+import static util.Constant.SYNTAX;
 
 public class Parser {
-    private ArrayList<Token> tokens;
+    private List<Token> tokens;
     private int pos;
     // private CompUnitNode root;
     private PrintStream out;
-    private ArrayList<String> outStrings = new ArrayList<>();
+    private List<String> outStrings = new ArrayList<>();
 
     public Parser(Lexer lexer) throws FileNotFoundException {
         this.tokens = lexer.getTokens();
         this.pos = 0;
-        this.out = new PrintStream(OUTPUT_FILE);
+        this.out = new PrintStream(SYNTAX);
         // this.root = parseCompUnit();
     }
 

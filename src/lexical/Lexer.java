@@ -1,6 +1,8 @@
 package lexical;
 
 import java.util.ArrayList;
+import java.util.List;
+
 import util.TkType;
 
 public class Lexer {
@@ -9,7 +11,7 @@ public class Lexer {
 
     private int pos;
     private String curToken;
-    private final ArrayList<Token> tokens;
+    private final List<Token> tokens;
 
     public Lexer(String inputStr) {
         this.inputStr = inputStr;
@@ -46,7 +48,6 @@ public class Lexer {
                 error();
             }
         }
-        return;
     }
 
     private void skipSpace() {
@@ -226,7 +227,7 @@ public class Lexer {
         }
     }
 
-    public ArrayList<Token> getTokens() {
+    public List<Token> getTokens() {
         return tokens;
     }
 

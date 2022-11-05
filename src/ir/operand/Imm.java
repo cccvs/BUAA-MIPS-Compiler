@@ -24,4 +24,9 @@ public class Imm implements Operand{
     public RefType getRefType() {
         return RefType.VALUE;
     }
+
+    @Override
+    public Integer getId() {
+        return null;
+    }
 }

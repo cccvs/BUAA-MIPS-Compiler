@@ -1,7 +1,6 @@
 package ir.operand;
 
 import ir.MidCode;
-import ir.frame.BasicBlock;
 
 public class TmpVar implements Operand {
     private final Integer id;
@@ -14,7 +13,8 @@ public class TmpVar implements Operand {
         this.refType = refType;
     }
 
-    public int getId() {
+    @Override
+    public Integer getId() {
         return id;
     }
 
