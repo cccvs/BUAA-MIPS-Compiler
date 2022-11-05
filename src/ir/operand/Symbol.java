@@ -3,15 +3,12 @@ package ir.operand;
 import ast.decl.DefNode;
 import ast.exp.ExpNode;
 import ast.func.FuncFParamNode;
-import ir.IrConverter;
-import ir.MidCode;
-import ir.frame.SymTab;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Symbol implements Operand {
+public class Symbol extends MidVar {
     /*
      *  Originate from DefNode, FuncFParamNode.
      *  For (VALUE/POINTER) RefType, it represents (constant/variable/format parameter)
@@ -25,9 +22,7 @@ public class Symbol implements Operand {
      */
 
     // basic information
-    private final int id;
     private final String ident;
-    private final RefType refType;
     // for array
     private final List<Integer> dimensions;   // for POINTER, 1 <= size <= 2, first element may be null
     private final List<Integer> values;
@@ -38,22 +33,20 @@ public class Symbol implements Operand {
 
     // global var/const
     public Symbol(DefNode defNode, boolean isGlobal) {
+        super(defNode);
         // basic information
-        this.id = MidCode.genId();
         this.isConst = defNode.isConst();
         this.ident = defNode.getIdent();
         this.dimensions = defNode.getDimensions().stream().map(ExpNode::getConst).collect(Collectors.toList());
         this.values = defNode.getInitValues().stream().map(ExpNode::getConst).collect(Collectors.toList());
         // ir information
         this.isGlobal = isGlobal;
-        this.refType = (dimensions.size() > 0) ? RefType.ARRAY : RefType.VALUE;
-        this.stackOffset = null;
     }
 
     // format param
     public Symbol(FuncFParamNode param) {
+        super(param);
         // basic information
-        this.id = MidCode.genId();
         this.isConst = false;
         this.ident = param.getIdent();
         if (param.isPointer()) {
@@ -65,8 +58,6 @@ public class Symbol implements Operand {
         this.values = null;
         // ir information
         this.isGlobal = false;
-        this.refType = param.isPointer() ? RefType.POINTER : RefType.VALUE;
-        this.stackOffset = null;
     }
 
     // ir part
@@ -113,11 +104,6 @@ public class Symbol implements Operand {
         return isConst;
     }
 
-    @Override
-    public Integer getId() {
-        return id;
-    }
-
     public String getIdent() {
         return ident;
     }
@@ -126,16 +112,22 @@ public class Symbol implements Operand {
         return isGlobal;
     }
 
+    @Override
+    public Integer getId() {
+        return id;
+    }
+
+    @Override
     public Integer getOffset() {
         return stackOffset;
     }
 
     @Override
-    public RefType getRefType() {
+    public Operand.RefType getRefType() {
         return refType;
     }
 
-    public void setStackOffset(Integer stackOffset) {
+    public void updateStackOffset(Integer stackOffset) {
         this.stackOffset = stackOffset;
     }
 

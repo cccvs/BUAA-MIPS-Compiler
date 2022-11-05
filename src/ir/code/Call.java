@@ -2,7 +2,7 @@ package ir.code;
 
 import ir.frame.FuncFrame;
 import ir.operand.Operand;
-import ir.operand.TmpVar;
+import ir.operand.MidVar;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,9 +11,9 @@ public class Call implements BasicIns{
     // Originate from FuncCall
     private FuncFrame func;
     private List<Operand> params;
-    private TmpVar ret;
+    private MidVar ret;
 
-    public Call(FuncFrame func, TmpVar ret) {
+    public Call(FuncFrame func, MidVar ret) {
         this.func = func;
         this.params = new ArrayList<>();
         this.ret = ret;

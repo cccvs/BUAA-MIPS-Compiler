@@ -1,7 +1,6 @@
 package ir.code;
 
 import ir.operand.Operand;
-import ir.operand.TmpVar;
 
 public class UnaryOp implements BasicIns{
     // Originate from UnaryExp

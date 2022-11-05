@@ -16,13 +16,6 @@ public class Imm implements Operand{
     }
 
     @Override
-    public Integer getOffset() {
-        assert false;
-        System.exit(7);
-        return null;
-    }
-
-    @Override
     public String toString() {
         return val + "[v]";
     }
@@ -30,10 +23,5 @@ public class Imm implements Operand{
     @Override
     public RefType getRefType() {
         return RefType.VALUE;
-    }
-
-    @Override
-    public Integer getId() {
-        return null;
     }
 }

@@ -14,12 +14,9 @@ import ir.frame.SymTab;
 import ir.operand.Imm;
 import ir.operand.Operand;
 import ir.operand.Symbol;
-import ir.operand.TmpVar;
-import util.Constant;
+import ir.operand.MidVar;
 import util.TkType;
 
-import java.io.FileNotFoundException;
-import java.io.PrintStream;
 import java.util.Iterator;
 
 public class IrConverter {
@@ -230,7 +227,7 @@ public class IrConverter {
         if (symbol.getRefType() == Symbol.RefType.VALUE) {
             return symbol;
         } else {
-            TmpVar recv = new TmpVar(Operand.RefType.POINTER);
+            MidVar recv = new MidVar(MidVar.RefType.POINTER);
             // TODO[1]: cond of array/pointer
             return null;
         }
@@ -240,11 +237,11 @@ public class IrConverter {
         return new Imm(numNode.getConst());
     }
 
-    private TmpVar convFuncCall(FuncCallNode funcCallNode) {
+    private MidVar convFuncCall(FuncCallNode funcCallNode) {
         String ident = funcCallNode.getIdent();
         FuncFrame func = midCode.getFunc(ident);
         // call part
-        TmpVar recv = func.getRetType().equals(FuncFrame.RetType.INT) ? new TmpVar(Operand.RefType.VALUE) : null;
+        MidVar recv = func.getRetType().equals(FuncFrame.RetType.INT) ? new MidVar(MidVar.RefType.VALUE) : null;
         Call call = new Call(func, recv);
         // params part
         Iterator<ExpNode> realParams = funcCallNode.iterParam();
@@ -258,14 +255,14 @@ public class IrConverter {
         return recv;    // may be null
     }
 
-    private TmpVar convBinaryExp(BinaryExpNode binaryExpNode) {
+    private MidVar convBinaryExp(BinaryExpNode binaryExpNode) {
         TkType op = binaryExpNode.getOp();
         ExpNode leftExp = binaryExpNode.getLeftExp();
         ExpNode rightExp = binaryExpNode.getRightExp();
         if (!op.equals(TkType.AND) && !op.equals(TkType.OR)) {
             Operand left = convExp(leftExp);
             Operand right = convExp(rightExp);
-            TmpVar dst = new TmpVar(left.getRefType());
+            MidVar dst = new MidVar(left.getRefType());
             BinaryOp binaryOp = new BinaryOp(BinaryExpNode.typeMap(op), left, right, dst);
             curBlock.append(binaryOp);
             return dst;
@@ -282,7 +279,7 @@ public class IrConverter {
         if (op.equals(TkType.PLUS)) {
             return src;
         } else {
-            TmpVar dst = new TmpVar(Operand.RefType.VALUE);
+            MidVar dst = new MidVar(MidVar.RefType.VALUE);
             UnaryOp unaryOp = new UnaryOp(UnaryExpNode.typeMap(op), src, dst);
             curBlock.append(unaryOp);
             return dst;
@@ -299,6 +296,6 @@ public class IrConverter {
         curTab.putSym(symbol);                  // put current symbol tab.update/set stack size
         int symbolSize = symbol.getSize();
         int newStackSize = curTab.isGlobal() ? midCode.addStackSize(symbolSize) : curFunc.addStackSize(symbolSize);
-        symbol.setStackOffset(newStackSize);
+        symbol.updateStackOffset(newStackSize);
     }
 }

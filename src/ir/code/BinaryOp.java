@@ -1,7 +1,7 @@
 package ir.code;
 
 import ir.operand.Operand;
-import ir.operand.TmpVar;
+import ir.operand.MidVar;
 
 public class BinaryOp implements BasicIns{
     public enum Type {
@@ -13,9 +13,9 @@ public class BinaryOp implements BasicIns{
     private Type op;
     private Operand src1;
     private Operand src2;
-    private TmpVar dst;
+    private MidVar dst;
 
-    public BinaryOp(Type op, Operand src1, Operand src2, TmpVar dst) {
+    public BinaryOp(Type op, Operand src1, Operand src2, MidVar dst) {
         this.op = op;
         this.src1 = src1;
         this.src2 = src2;
@@ -39,7 +39,7 @@ public class BinaryOp implements BasicIns{
         return src2;
     }
 
-    public TmpVar getDst() {
+    public MidVar getDst() {
         return dst;
     }
 }

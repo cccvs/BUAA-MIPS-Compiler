@@ -2,7 +2,7 @@ package back;
 
 import ir.operand.Operand;
 import ir.operand.Symbol;
-import ir.operand.TmpVar;
+import ir.operand.MidVar;
 
 import java.util.*;
 
@@ -23,14 +23,12 @@ public class RegAllocator {
         reset();
     }
 
-    public void freeReg(Operand var) {
-        assert var instanceof TmpVar || var instanceof Symbol;
+    public void freeReg(MidVar var) {
         int reg = regMap.remove(var.getId());
         freeRegs.add(reg);
     }
 
-    public Integer allocReg(Operand var) {
-        assert var instanceof TmpVar || var instanceof Symbol;
+    public Integer allocReg(MidVar var) {
         if (freeRegs.isEmpty()) {
             return null;
         }
@@ -44,8 +42,7 @@ public class RegAllocator {
         return !freeRegs.isEmpty();
     }
 
-    public Integer getReg(Operand var) {
-        assert var instanceof TmpVar || var instanceof Symbol;
+    public Integer getReg(MidVar var) {
         int id = var.getId();
         return regMap.getOrDefault(id, null);
     }

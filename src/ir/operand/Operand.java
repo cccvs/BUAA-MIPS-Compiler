@@ -7,6 +7,4 @@ public interface Operand {
         ARRAY       // 全局数组, 局部数组
     }
     public RefType getRefType();
-    public Integer getId();
-    public Integer getOffset();
 }

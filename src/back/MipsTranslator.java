@@ -8,7 +8,7 @@ import ir.frame.FuncFrame;
 import ir.operand.Imm;
 import ir.operand.Operand;
 import ir.operand.Symbol;
-import ir.operand.TmpVar;
+import ir.operand.MidVar;
 
 import java.io.PrintStream;
 import java.util.*;
@@ -23,7 +23,7 @@ public class MipsTranslator {
     // current
     private boolean isMain = false; // 标记当前函数是否为main函数，特殊处理return
     private Integer stackSize = null;
-    private Queue<Operand> regBuffer = new LinkedList<>();
+    private Queue<MidVar> regBuffer = new LinkedList<>();
 
     public MipsTranslator(MidCode midCode) {
         this.midCode = midCode;
@@ -81,7 +81,7 @@ public class MipsTranslator {
         BinaryOp.Type op = binaryOp.getOp();
         Operand src1 = binaryOp.getSrc1();
         Operand src2 = binaryOp.getSrc2();
-        TmpVar tmpVar = binaryOp.getDst();
+        MidVar midVar = binaryOp.getDst();
         if (src1 instanceof Imm && src2 instanceof Imm) {
 
         } else if (!(src1 instanceof Imm) && !(src2 instanceof Imm)) {
@@ -109,11 +109,11 @@ public class MipsTranslator {
 
 
     // util
-    private void allocReg(Operand operand, boolean isSrc) {
-        assert operand instanceof TmpVar || operand instanceof Symbol;
+    private void allocReg(MidVar operand, boolean isSrc) {
+        assert operand instanceof MidVar || operand instanceof Symbol;
         if (regAllocator.getReg(operand) == null) {
             if (!regAllocator.hasFreeReg()) {
-                Operand replaced = replaceAlgo();
+                MidVar replaced = replaceAlgo();
                 allocStack(replaced);       // 如果已经分配栈，则不操作
                 mipsInsList.add(new Sw(regAllocator.getReg(replaced), -replaced.getOffset(), 29));
                 regAllocator.freeReg(replaced);
@@ -124,16 +124,14 @@ public class MipsTranslator {
         }
     }
 
-    private Operand replaceAlgo() {
+    private MidVar replaceAlgo() {
         return regBuffer.remove();
     }
 
-    private void allocStack(Operand operand) {
-        assert operand instanceof TmpVar || operand instanceof Symbol;
-        if (operand instanceof TmpVar && operand.getOffset() == null) {
-            TmpVar tmpVar = (TmpVar) operand;
+    private void allocStack(MidVar midVar) {
+        if (midVar.getOffset() == null) {
             stackSize += 4;
-            tmpVar.setStackOffset(stackSize);
+            midVar.setStackOffset(stackSize);
         }
     }
 
