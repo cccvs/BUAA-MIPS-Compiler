@@ -32,7 +32,7 @@ public class FuncFrame {
 
     public int addStackSize(int size) {
         stackSize += size;
-        return size;
+        return stackSize;
     }
 
     // basic function
@@ -66,9 +66,10 @@ public class FuncFrame {
 
     @Override
     public String toString() {
+        // System.out.println(getLabel());
         return "# Function " + ident + "[stack size: 0x" +
                 Integer.toHexString(stackSize) + "]\n" +
                 getLabel() + ":\n" +
-                body;
+                body.toString();
     }
 }

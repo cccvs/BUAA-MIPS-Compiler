@@ -19,4 +19,9 @@ public class Imm implements Operand{
     public String toString() {
         return val + "[v]";
     }
+
+    @Override
+    public RefType getRefType() {
+        return RefType.VALUE;
+    }
 }

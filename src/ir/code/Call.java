@@ -4,6 +4,7 @@ import ir.frame.FuncFrame;
 import ir.operand.Operand;
 import ir.operand.TmpVar;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class Call implements BasicIns{
@@ -14,6 +15,7 @@ public class Call implements BasicIns{
 
     public Call(FuncFrame func, TmpVar ret) {
         this.func = func;
+        this.params = new ArrayList<>();
         this.ret = ret;
     }
 

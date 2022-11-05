@@ -238,7 +238,7 @@ public class IrConverter {
         if (symbol.getRefType() == Symbol.RefType.VALUE) {
             return symbol;
         } else {
-            TmpVar recv = new TmpVar();
+            TmpVar recv = new TmpVar(Operand.RefType.POINTER);
             // TODO[1]: cond of array/pointer
             return null;
         }
@@ -252,13 +252,14 @@ public class IrConverter {
         String ident = funcCallNode.getIdent();
         FuncFrame func = MidCode.getFunc(ident);
         // call part
-        TmpVar recv = func.getRetType().equals(FuncFrame.RetType.INT) ? new TmpVar() : null;
+        TmpVar recv = func.getRetType().equals(FuncFrame.RetType.INT) ? new TmpVar(Operand.RefType.VALUE) : null;
         Call call = new Call(func, recv);
         // params part
         Iterator<ExpNode> realParams = funcCallNode.iterParam();
         while (realParams.hasNext()) {
             ExpNode param = realParams.next();
             Operand op = convExp(param);
+            call.addParam(op);
         }
         // add and ret
         curBlock.append(call);
@@ -272,7 +273,7 @@ public class IrConverter {
         if (!op.equals(TkType.AND) && !op.equals(TkType.OR)) {
             Operand left = convExp(leftExp);
             Operand right = convExp(rightExp);
-            TmpVar dst = new TmpVar();
+            TmpVar dst = new TmpVar(left.getRefType());
             BinaryOp binaryOp = new BinaryOp(BinaryExpNode.typeMap(op), left, right, dst);
             curBlock.append(binaryOp);
             return dst;
@@ -289,7 +290,7 @@ public class IrConverter {
         if (op.equals(TkType.PLUS)) {
             return src;
         } else {
-            TmpVar dst = new TmpVar();
+            TmpVar dst = new TmpVar(Operand.RefType.VALUE);
             UnaryOp unaryOp = new UnaryOp(UnaryExpNode.typeMap(op), src, dst);
             curBlock.append(unaryOp);
             return dst;
@@ -303,14 +304,13 @@ public class IrConverter {
     }
 
     private void putSymbolAndUpdateStack(Symbol symbol) {
-        curTab.putSym(symbol);                          // put current symbol tab.update/set stack size
-        int newStackSize = curFunc.addStackSize(symbol.getSize());
+        curTab.putSym(symbol);                  // put current symbol tab.update/set stack size
+        int symbolSize = symbol.getSize();
+        int newStackSize = curTab.isGlobal() ? MidCode.addStackSize(symbolSize) : curFunc.addStackSize(symbolSize);
         symbol.setStackOffset(newStackSize);
     }
 
     // test
-
-
     private void outputMidCode() {
         ps.println("# Global Value:");
         for (Symbol symbol : globalSyms) {
@@ -325,7 +325,6 @@ public class IrConverter {
         Iterator<FuncFrame> funcIter = MidCode.funcIter();
         while (funcIter.hasNext()) {
             ps.println(funcIter.next().toString());
-            ps.println();
         }
         ps.println(MidCode.getMainFunc().toString());
     }

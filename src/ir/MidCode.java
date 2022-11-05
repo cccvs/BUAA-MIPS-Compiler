@@ -14,6 +14,7 @@ public class MidCode {
     // generator
     private static int strCnt = 0;
     private static int IdCnt = 0;
+    private static int globalStackSize = 0;
 
     public MidCode() {
         funcTab = new HashMap<>();
@@ -62,7 +63,12 @@ public class MidCode {
         return globalStr.get(label);
     }
 
-    public int getAddr(String symbolName) {
+    public static int getAddr(String symbolName) {
         return globalAddr.getOrDefault(symbolName, null);
+    }
+
+    public static int addStackSize(int size) {
+        globalStackSize += size;
+        return globalStackSize;
     }
 }

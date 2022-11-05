@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class Symbol implements Operand{
+public class Symbol implements Operand {
     /*
      *  Originate from DefNode, FuncFParamNode.
      *  For (VALUE/POINTER) RefType, it represents (constant/variable/format parameter)
@@ -23,11 +23,6 @@ public class Symbol implements Operand{
      *  For array decl "int ident[5][6]", its "dimensions" is [5, 6].
      *  For array decl "int ident[5]", its "dimensions" is [5].
      */
-    public enum RefType {
-        VALUE,      // 全局变量, 局部变量
-        POINTER,    // 函数数组形参
-        ARRAY       // 全局数组, 局部数组
-    }
 
     // basic information
     private int id;
@@ -99,13 +94,10 @@ public class Symbol implements Operand{
 
     @Override
     public String toString() {
-        if (refType.equals(RefType.VALUE)) {
-            return "v" + id + "_" + ident + "[v]";
-        } else if (refType.equals(RefType.POINTER)) {
-            return "v" + id + "_" + ident + "[p]";
-        } else {
-            return "v" + id + "_" + ident + "[a]";
-        }
+        String typeStr = refType.name().substring(0, 1).toLowerCase();
+        return "v" + id + "_" + ident + "[" + typeStr +
+                ", sp-0x" + Integer.toHexString(stackOffset) + "]";
+
     }
 
     // basic function
@@ -125,6 +117,7 @@ public class Symbol implements Operand{
         return stackOffset;
     }
 
+    @Override
     public RefType getRefType() {
         return refType;
     }
