@@ -8,4 +8,5 @@ public interface Operand {
     }
     public RefType getRefType();
     public Integer getId();
+    public Integer getOffset();
 }

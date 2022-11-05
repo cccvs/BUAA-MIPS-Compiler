@@ -23,6 +23,10 @@ public class Call implements BasicIns{
         params.add(realParam);
     }
 
+    public FuncFrame getFunc() {
+        return func;
+    }
+
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();

@@ -1,11 +1,7 @@
 package ir.code;
 
 import ir.operand.Operand;
-import ir.operand.Symbol;
 import ir.operand.TmpVar;
-import util.TkType;
-
-import java.util.HashMap;
 
 public class BinaryOp implements BasicIns{
     public enum Type {
@@ -29,5 +25,21 @@ public class BinaryOp implements BasicIns{
     @Override
     public String toString() {
         return "\t" + op.name() + " " + dst + ", " + src1 + ", " + src2;
+    }
+
+    public Type getOp() {
+        return op;
+    }
+
+    public Operand getSrc1() {
+        return src1;
+    }
+
+    public Operand getSrc2() {
+        return src2;
+    }
+
+    public TmpVar getDst() {
+        return dst;
     }
 }

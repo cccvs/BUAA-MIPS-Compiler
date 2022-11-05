@@ -25,15 +25,15 @@ public class Symbol implements Operand {
      */
 
     // basic information
-    private int id;
-    private String ident;
-    private RefType refType;
+    private final int id;
+    private final String ident;
+    private final RefType refType;
     // for array
-    private List<Integer> dimensions;   // for POINTER, 1 <= size <= 2, first element may be null
-    private List<Integer> values;
+    private final List<Integer> dimensions;   // for POINTER, 1 <= size <= 2, first element may be null
+    private final List<Integer> values;
     // ir information
-    private boolean isConst;
-    private boolean isGlobal;
+    private final boolean isConst;
+    private final boolean isGlobal;
     private Integer stackOffset;          // offset from sp or .data, default for null
 
     // global var/const
@@ -82,10 +82,8 @@ public class Symbol implements Operand {
 
     public int getSize() {
         // if it's a pointer representing a fParam, terminate with error!
-        assert !(refType.equals(RefType.POINTER) && dimensions.get(0) != null);
-        if (refType.equals(RefType.POINTER)) {
-            System.out.println(ident);
-            System.out.println(dimensions.size());
+        assert !(refType.equals(RefType.ARRAY) && dimensions.get(0) != null);
+        if (refType.equals(RefType.ARRAY)) {
             return dimensions.stream().reduce((x, y) -> x * y).orElse(1) << 2;
         } else {
             return 4;
@@ -98,6 +96,16 @@ public class Symbol implements Operand {
         return "v" + id + "_" + ident + "[" + typeStr +
                 ", sp-0x" + Integer.toHexString(stackOffset) + "]";
 
+    }
+
+    // mips part
+    public List<Integer> getInitVal() {
+        int length = getSize() >> 2;
+        List<Integer> initList = new ArrayList<>();
+        for (int i = 0; i < length; i++) {
+            initList.add(values.isEmpty() ? 0 : values.get(i));
+        }
+        return initList;
     }
 
     // basic function
@@ -118,7 +126,7 @@ public class Symbol implements Operand {
         return isGlobal;
     }
 
-    public int getStackOffset() {
+    public Integer getOffset() {
         return stackOffset;
     }
 

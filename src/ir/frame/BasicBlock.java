@@ -7,6 +7,7 @@ import ir.MidCode;
 import ir.code.BasicIns;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class BasicBlock implements BasicIns {
@@ -42,6 +43,10 @@ public class BasicBlock implements BasicIns {
 
     public BasicBlock prev() {
         return prev;
+    }
+
+    public Iterator<BasicIns> iterIns() {
+        return insList.iterator();
     }
 
     @Override

@@ -32,22 +32,18 @@ import java.util.List;
 import static util.Constant.SYNTAX;
 
 public class Parser {
-    private List<Token> tokens;
+    private final List<Token> tokens;
     private int pos;
-    // private CompUnitNode root;
-    private PrintStream out;
-    private List<String> outStrings = new ArrayList<>();
+    private final List<String> outStrings = new ArrayList<>();
 
-    public Parser(Lexer lexer) throws FileNotFoundException {
+    public Parser(Lexer lexer) {
         this.tokens = lexer.getTokens();
         this.pos = 0;
-        this.out = new PrintStream(SYNTAX);
-        // this.root = parseCompUnit();
     }
 
-    public void printAll() {
+    public void outputSyntax(PrintStream ps) {
         for (String outString : outStrings) {
-            out.println(outString);
+            ps.println(outString);
         }
     }
 

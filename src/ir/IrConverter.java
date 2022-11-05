@@ -30,14 +30,13 @@ public class IrConverter {
     private static FuncFrame curFunc = null;
     private static BasicBlock curBlock = null;
 
-    // PrintStream
-    private final PrintStream ps;
-
-    public IrConverter(CompUnitNode compUnitNode) throws FileNotFoundException {
+    public IrConverter(CompUnitNode compUnitNode){
         convCompUnit(compUnitNode);
-        ps = new PrintStream(Constant.MID_CODE);
-        outputMidCode();
         // testGlobal();
+    }
+
+    public MidCode getMidCode() {
+        return midCode;
     }
 
     public void convCompUnit(CompUnitNode compUnitNode) {
@@ -301,28 +300,5 @@ public class IrConverter {
         int symbolSize = symbol.getSize();
         int newStackSize = curTab.isGlobal() ? midCode.addStackSize(symbolSize) : curFunc.addStackSize(symbolSize);
         symbol.setStackOffset(newStackSize);
-    }
-
-    // test
-    private void outputMidCode() {
-        ps.println("# Global Value:");
-        Iterator<Symbol> globalSyms = midCode.symIter();
-        while (globalSyms.hasNext()){
-            Symbol symbol = globalSyms.next();
-            ps.println("[0x" + Integer.toHexString(symbol.getStackOffset()) + "]: " + symbol.getIdent());
-        }
-        ps.println();
-        ps.println("# Global String:");
-        Iterator<String> strLabels = midCode.strLabelIter();
-        while (strLabels.hasNext()){
-            String label = strLabels.next();
-            ps.println(label + ": \"" + midCode.getStr(label) + "\"");
-        }
-        ps.println();
-        Iterator<FuncFrame> funcIter = midCode.funcIter();
-        while (funcIter.hasNext()) {
-            ps.println(funcIter.next().toString());
-        }
-        ps.println(midCode.getMainFunc().toString());
     }
 }

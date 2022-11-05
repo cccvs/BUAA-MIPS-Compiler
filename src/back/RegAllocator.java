@@ -4,10 +4,7 @@ import ir.operand.Operand;
 import ir.operand.Symbol;
 import ir.operand.TmpVar;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 
 public class RegAllocator {
     private final HashSet<Integer> allocatableRegs = new HashSet<>
@@ -19,7 +16,7 @@ public class RegAllocator {
             "k0", "k1", "gp", "sp", "fp", "ra"
     };
 
-    private final Map<Integer, Integer> regMap = new HashMap<>();
+    private final Map<Integer, Integer> regMap = new LinkedHashMap<>();
     private final HashSet<Integer> freeRegs = new HashSet<>();
 
     public RegAllocator() {

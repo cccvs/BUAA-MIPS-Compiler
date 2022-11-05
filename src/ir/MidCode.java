@@ -3,6 +3,7 @@ package ir;
 import ir.frame.FuncFrame;
 import ir.operand.Symbol;
 
+import java.io.PrintStream;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -78,5 +79,26 @@ public class MidCode {
 
     public Iterator<String> strLabelIter() {
         return globalStr.keySet().iterator();
+    }
+
+    // output
+    public void outputMidCode(PrintStream ps) {
+        // Global value
+        ps.println("# Global Value:");
+        for (Symbol symbol : globalSym.values()) {
+            ps.println("[0x" + Integer.toHexString(symbol.getOffset()) + "]: " + symbol.getIdent());
+        }
+        ps.println();
+        // Global Str
+        ps.println("# Global String:");
+        for (String label : globalStr.keySet()) {
+            ps.println(label + ": \"" + globalStr.get(label) + "\"");
+        }
+        ps.println();
+        // Functions
+        for (FuncFrame func : funcTab.values()) {
+            ps.println(func.toString());
+        }
+        ps.println(mainFunc.toString());
     }
 }
