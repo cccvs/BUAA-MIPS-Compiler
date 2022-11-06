@@ -1,5 +1,6 @@
 package back.ins;
 
+import back.Reg;
 import back.special.MipsIns;
 
 public class Mult extends MipsIns {
@@ -17,5 +18,10 @@ public class Mult extends MipsIns {
 
     public int getSrc2() {
         return src2;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("mult $%s, $%s", Reg.name(src1), Reg.name(src2));
     }
 }

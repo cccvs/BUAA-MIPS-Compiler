@@ -1,5 +1,6 @@
 package back.ins;
 
+import back.Reg;
 import back.special.MipsIns;
 
 // pseudo ins, only for print str part
@@ -18,5 +19,10 @@ public class La extends MipsIns {
 
     public String getLabel() {
         return label;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("la $%s, %s", Reg.name(dst), label);
     }
 }

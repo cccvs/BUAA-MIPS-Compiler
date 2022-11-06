@@ -1,5 +1,6 @@
 package back.ins;
 
+import back.Reg;
 import back.special.MipsIns;
 
 public class Sw extends MipsIns {
@@ -23,5 +24,10 @@ public class Sw extends MipsIns {
 
     public Integer getBase() {
         return base;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("sw $%s, %d($%s)", Reg.name(reg), offset, Reg.name(base));
     }
 }

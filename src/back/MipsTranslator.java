@@ -1,6 +1,8 @@
 package back;
 
 import back.ins.*;
+import back.special.Comment;
+import back.special.Label;
 import back.special.MipsIns;
 import back.special.Syscall;
 import ir.MidCode;
@@ -33,6 +35,7 @@ public class MipsTranslator {
     }
 
     private void transIr() {
+        mipsInsList.add(new J(midCode.getMainFunc().getLabel()));
         Iterator<FuncFrame> funcIter = midCode.funcIter();
         while (funcIter.hasNext()) {
             FuncFrame func = funcIter.next();
@@ -43,12 +46,14 @@ public class MipsTranslator {
     }
 
     private void transFunc(FuncFrame func) {
+        mipsInsList.add(new Label("\n" + func.getLabel()));
         stackSize = func.addStackSize(0);   // 相当于getStackSize
         BasicBlock basicBlock = func.getBody();
         transBlock(basicBlock);
     }
 
     private void transBlock(BasicBlock basicBlock) {
+        mipsInsList.add(new Label(basicBlock.getLabel()));
         Iterator<BasicIns> insIter = basicBlock.iterIns();
         while (insIter.hasNext()) {
             BasicIns basicIns = insIter.next();
@@ -81,6 +86,7 @@ public class MipsTranslator {
 
     // stack ver, a1-a1(4-6)used to calculate
     private void transBinaryOp(BinaryOp binaryOp) {
+        mipsInsList.add(new Comment(binaryOp.toString()));
         BinaryOp.Type op = binaryOp.getOp();
         Operand src1 = binaryOp.getSrc1();
         Operand src2 = binaryOp.getSrc2();
@@ -92,6 +98,7 @@ public class MipsTranslator {
     }
 
     private void transUnaryOp(UnaryOp unaryOp) {
+        mipsInsList.add(new Comment(unaryOp.toString()));
         UnaryOp.Type op = unaryOp.getOp();
         Operand src = unaryOp.getSrc();
         MidVar dst = unaryOp.getDst();
@@ -101,6 +108,7 @@ public class MipsTranslator {
     }
 
     private void transCall(Call call) {
+        mipsInsList.add(new Comment(call.toString()));
         // save current reg
         int movSize = stackSize + 4;
         mipsInsList.add(new Sw(Reg.RA, -movSize, Reg.SP));
@@ -128,6 +136,7 @@ public class MipsTranslator {
     }
 
     private void transGetInt(GetInt getInt) {
+        mipsInsList.add(new Comment(getInt.toString()));
         Symbol var = getInt.getVar();
         mipsInsList.add(new Addi(Reg.V0, Reg.ZERO, 5));
         mipsInsList.add(new Syscall());
@@ -135,6 +144,7 @@ public class MipsTranslator {
     }
 
     private void transPrintInt(PrintInt printInt) {
+        mipsInsList.add(new Comment(printInt.toString()));
         Operand src = printInt.getSrc();
         loadRegHelper(src, Reg.A0);
         mipsInsList.add(new Addi(Reg.V0, Reg.ZERO, 1));
@@ -142,6 +152,7 @@ public class MipsTranslator {
     }
 
     private void transPrintStr(PrintStr printStr) {
+        mipsInsList.add(new Comment(printStr.toString()));
         String label = printStr.getLabel();
         mipsInsList.add(new La(Reg.A0, label));
         mipsInsList.add(new Addi(Reg.V0, Reg.ZERO, 4));
@@ -149,6 +160,7 @@ public class MipsTranslator {
     }
 
     private void transReturn(Return ret) {
+        mipsInsList.add(new Comment(ret.toString()));
         Operand retVal = ret.getRetVal();
         if (isMain) {
             assert retVal instanceof Imm && ((Imm) retVal).getVal() == 0;
@@ -263,5 +275,8 @@ public class MipsTranslator {
 
     private void outputIns(PrintStream ps) {
         ps.println(".text");
+        for (MipsIns mipsIns : mipsInsList) {
+            ps.println("\t" + mipsIns.toString());
+        }
     }
 }

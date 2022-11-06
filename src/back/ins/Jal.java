@@ -1,5 +1,6 @@
 package back.ins;
 
+import back.Reg;
 import back.special.MipsIns;
 
 public class Jal extends MipsIns {
@@ -11,5 +12,10 @@ public class Jal extends MipsIns {
 
     public String getLabel() {
         return label;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("jal %s", label);
     }
 }

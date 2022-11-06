@@ -1,6 +1,6 @@
 package back.special;
 
-public class Label {
+public class Label extends MipsIns{
     private final String label;
 
     public Label(String label) {

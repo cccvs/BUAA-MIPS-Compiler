@@ -1,5 +1,6 @@
 package back.ins;
 
+import back.Reg;
 import back.special.MipsIns;
 
 public class Addi extends MipsIns {
@@ -23,5 +24,10 @@ public class Addi extends MipsIns {
 
     public int getImm() {
         return imm;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("addi $%s, $%s, %d", Reg.name(dst), Reg.name(src1), imm);
     }
 }

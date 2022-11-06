@@ -1,5 +1,6 @@
 package back.ins;
 
+import back.Reg;
 import back.special.MipsIns;
 
 public class Sub extends MipsIns {
@@ -23,5 +24,10 @@ public class Sub extends MipsIns {
 
     public int getSrc2() {
         return src2;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("sub $%s, $%s, $%s", Reg.name(dst), Reg.name(src1), Reg.name(src2));
     }
 }
