@@ -188,7 +188,7 @@ public class MipsTranslator {
             assert midVar.getOffset() != null;
             if (midVar instanceof Symbol && ((Symbol) midVar).isGlobal()) {
                 Symbol symbol = (Symbol) midVar;
-                mipsInsList.add(new Lw(reg, symbol.getOffset(), Reg.ZERO));
+                mipsInsList.add(new Lw(reg, symbol.getLabel()));
             } else {
                 mipsInsList.add(new Lw(reg, -midVar.getOffset(), Reg.SP));
             }
@@ -200,7 +200,8 @@ public class MipsTranslator {
             allocStack(midVar);
         }
         if (midVar instanceof Symbol && ((Symbol) midVar).isGlobal()) {
-            mipsInsList.add(new Sw(reg, midVar.getOffset(), Reg.ZERO));
+            Symbol symbol = (Symbol) midVar;
+            mipsInsList.add(new Sw(reg, symbol.getLabel()));
         } else {
             mipsInsList.add(new Sw(reg, -midVar.getOffset(), Reg.SP));
         }
@@ -277,7 +278,7 @@ public class MipsTranslator {
             Symbol symbol = globalSyms.next();
             List<Integer> initList = symbol.getInitVal();
             String initStr = initList.stream().map(x -> Integer.toString(x)).reduce((x, y) -> x + " " + y).orElse("");
-            ps.println("\t" + symbol.getIdent() + ": .word " + initStr);
+            ps.println("\t" + symbol.getLabel() + ": .word " + initStr);
         }
         // constant str
         Iterator<String> strLabels = midCode.strLabelIter();
