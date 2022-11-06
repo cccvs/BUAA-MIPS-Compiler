@@ -25,10 +25,10 @@ public class MipsTranslator {
     private final List<MipsIns> mipsInsList = new ArrayList<>();
 
     // current
-    private boolean isMain = false; // 标记当前函数是否为main函数，特殊处理return
+    private boolean isMain = false;     // 标记当前函数是否为main函数，特殊处理return
+    private boolean hasReturn = true;   // 标记当前函数是否含有return语句
     private Integer stackSize = null;
-    private Queue<MidVar> regBuffer = new LinkedList<>();
-    private boolean hasReturn = true;
+    private final Queue<MidVar> regBuffer = new LinkedList<>();
 
     public MipsTranslator(MidCode midCode) {
         this.midCode = midCode;
@@ -199,7 +199,11 @@ public class MipsTranslator {
         if (midVar.getOffset() == null) {
             allocStack(midVar);
         }
-        mipsInsList.add(new Sw(reg, -midVar.getOffset(), Reg.SP));
+        if (midVar instanceof Symbol && ((Symbol) midVar).isGlobal()) {
+            mipsInsList.add(new Sw(reg, midVar.getOffset(), Reg.ZERO));
+        } else {
+            mipsInsList.add(new Sw(reg, -midVar.getOffset(), Reg.SP));
+        }
     }
 
     private void BinaryInsHelper(BinaryOp.Type type, int dst, int src1, int src2) {

@@ -84,9 +84,13 @@ public class Symbol extends MidVar {
     @Override
     public String toString() {
         String typeStr = refType.name().substring(0, 1).toLowerCase();
-        return "v" + id + "_" + ident + "[" + typeStr +
-                ", sp-0x" + Integer.toHexString(stackOffset) + "]";
-
+        if (isGlobal) {
+            return "v" + id + "_" + ident + "[" + typeStr +
+                    ", data+0x" + Integer.toHexString(stackOffset) + "]";
+        } else {
+            return "v" + id + "_" + ident + "[" + typeStr +
+                    ", sp-0x" + Integer.toHexString(stackOffset) + "]";
+        }
     }
 
     // mips part
@@ -131,8 +135,13 @@ public class Symbol extends MidVar {
         return refType;
     }
 
+    // 全局变量向上增长，偏移需要-4
     public void updateStackOffset(Integer stackOffset) {
-        this.stackOffset = stackOffset;
+        if (isGlobal) {
+            this.stackOffset = stackOffset - 4;
+        } else {
+            this.stackOffset = stackOffset;
+        }
     }
 
     public Integer getDimension() {
