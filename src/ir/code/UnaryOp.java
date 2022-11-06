@@ -1,5 +1,6 @@
 package ir.code;
 
+import ir.operand.MidVar;
 import ir.operand.Operand;
 
 public class UnaryOp implements BasicIns{
@@ -12,12 +13,24 @@ public class UnaryOp implements BasicIns{
 
     private Type op;
     private Operand src;
-    private Operand dst;
+    private MidVar dst;
 
-    public UnaryOp(Type op, Operand src, Operand dst) {
+    public UnaryOp(Type op, Operand src, MidVar dst) {
         this.op = op;
         this.src = src;
         this.dst = dst;
+    }
+
+    public Type getOp() {
+        return op;
+    }
+
+    public Operand getSrc() {
+        return src;
+    }
+
+    public MidVar getDst() {
+        return dst;
     }
 
     @Override

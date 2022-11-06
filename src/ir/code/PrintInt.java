@@ -10,6 +10,10 @@ public class PrintInt implements BasicIns{
         this.src = src;
     }
 
+    public Operand getSrc() {
+        return src;
+    }
+
     @Override
     public String toString() {
         return "\tPRINT_INT " + src;

@@ -1,5 +1,7 @@
 package back.ins;
 
+import back.special.MipsIns;
+
 public class Addi extends MipsIns {
     private final int dst;
     private final int src1;

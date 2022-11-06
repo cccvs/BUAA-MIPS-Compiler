@@ -1,4 +1,4 @@
-package back.ins;
+package back.special;
 
 public abstract class MipsIns {
 

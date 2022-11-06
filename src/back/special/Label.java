@@ -1,4 +1,4 @@
-package back;
+package back.special;
 
 public class Label {
     private final String label;
@@ -9,5 +9,10 @@ public class Label {
 
     public String getLabel() {
         return label;
+    }
+
+    @Override
+    public String toString() {
+        return label + ":";
     }
 }

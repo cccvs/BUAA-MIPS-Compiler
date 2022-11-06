@@ -1,6 +1,8 @@
 package back.ins;
 
-public class Jal extends MipsIns{
+import back.special.MipsIns;
+
+public class Jal extends MipsIns {
     private final String label;
 
     public Jal(String label) {

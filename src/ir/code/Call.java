@@ -5,13 +5,14 @@ import ir.operand.Operand;
 import ir.operand.MidVar;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public class Call implements BasicIns{
     // Originate from FuncCall
     private FuncFrame func;
     private List<Operand> params;
-    private MidVar ret;
+    private MidVar ret;     // null if void
 
     public Call(FuncFrame func, MidVar ret) {
         this.func = func;
@@ -25,6 +26,14 @@ public class Call implements BasicIns{
 
     public FuncFrame getFunc() {
         return func;
+    }
+
+    public Iterator<Operand> iterRealParam() {
+        return params.iterator();
+    }
+
+    public MidVar getRet() {
+        return ret;
     }
 
     @Override

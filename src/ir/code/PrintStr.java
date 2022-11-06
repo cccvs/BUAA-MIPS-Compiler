@@ -8,6 +8,10 @@ public class PrintStr implements BasicIns{
         this.label = label;
     }
 
+    public String getLabel() {
+        return label;
+    }
+
     @Override
     public String toString() {
         return "\tPRINT_STR " + label;

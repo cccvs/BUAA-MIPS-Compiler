@@ -48,7 +48,7 @@ public class FuncFrame {
         return retType;
     }
 
-    public Iterator<Symbol> iterParam() {
+    public Iterator<Symbol> iterFormatParam() {
         return params.iterator();
     }
 

@@ -106,7 +106,7 @@ public class IrConverter {
         curBlock = new BasicBlock();
         // fill params into symbol table
         if (isFuncBlock) {
-            Iterator<Symbol> paramIter = curFunc.iterParam();
+            Iterator<Symbol> paramIter = curFunc.iterFormatParam();
             while (paramIter.hasNext()) {
                 Symbol param = paramIter.next();
                 putSymbolAndUpdateStack(param);

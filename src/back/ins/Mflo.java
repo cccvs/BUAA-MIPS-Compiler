@@ -1,6 +1,8 @@
 package back.ins;
 
-public class Mflo extends MipsIns{
+import back.special.MipsIns;
+
+public class Mflo extends MipsIns {
     private final int dst;
 
     public Mflo(int dst) {

@@ -1,6 +1,8 @@
 package back.ins;
 
-public class Div extends MipsIns{
+import back.special.MipsIns;
+
+public class Div extends MipsIns {
     private final int src1;
     private final int src2;
 

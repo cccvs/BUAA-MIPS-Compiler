@@ -1,6 +1,8 @@
 package back.ins;
 
-public class Sub extends MipsIns{
+import back.special.MipsIns;
+
+public class Sub extends MipsIns {
     private final int dst;
     private final int src1;
     private final int src2;

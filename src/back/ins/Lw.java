@@ -1,6 +1,8 @@
 package back.ins;
 
-public class Lw extends MipsIns{
+import back.special.MipsIns;
+
+public class Lw extends MipsIns {
     private final Integer reg;
     private final Integer offset;
     private final Integer base;

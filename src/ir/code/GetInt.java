@@ -9,6 +9,10 @@ public class GetInt implements BasicIns{
         this.var = var;
     }
 
+    public Symbol getVar() {
+        return var;
+    }
+
     @Override
     public String toString() {
         return "\t" + "GETINT " + var;

@@ -1,6 +1,8 @@
 package back.ins;
 
-public class Add extends MipsIns{
+import back.special.MipsIns;
+
+public class Add extends MipsIns {
     private final int dst;
     private final int src1;
     private final int src2;
@@ -22,4 +24,6 @@ public class Add extends MipsIns{
     public int getSrc2() {
         return src2;
     }
+
+
 }

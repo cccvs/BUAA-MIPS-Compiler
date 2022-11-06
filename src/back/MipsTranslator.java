@@ -1,6 +1,8 @@
 package back;
 
 import back.ins.*;
+import back.special.MipsIns;
+import back.special.Syscall;
 import ir.MidCode;
 import ir.code.*;
 import ir.frame.BasicBlock;
@@ -31,7 +33,7 @@ public class MipsTranslator {
     }
 
     private void transIr() {
-        Iterator<FuncFrame> funcIter =  midCode.funcIter();
+        Iterator<FuncFrame> funcIter = midCode.funcIter();
         while (funcIter.hasNext()) {
             FuncFrame func = funcIter.next();
             transFunc(func);
@@ -60,72 +62,153 @@ public class MipsTranslator {
         } else if (basicIns instanceof BinaryOp) {
             transBinaryOp((BinaryOp) basicIns);
         } else if (basicIns instanceof UnaryOp) {
-
+            transUnaryOp((UnaryOp) basicIns);
         } else if (basicIns instanceof Call) {
-
+            transCall((Call) basicIns);
         } else if (basicIns instanceof GetInt) {
-
+            transGetInt((GetInt) basicIns);
         } else if (basicIns instanceof PrintInt) {
-
+            transPrintInt((PrintInt) basicIns);
         } else if (basicIns instanceof PrintStr) {
-
+            transPrintStr((PrintStr) basicIns);
         } else if (basicIns instanceof Return) {
-
+            transReturn((Return) basicIns);
         } else {    // TODO[8] branch part
             System.out.println("illegal file for hw1!");
             System.exit(8);
         }
     }
 
+    // stack ver, a1-a1(4-6)used to calculate
     private void transBinaryOp(BinaryOp binaryOp) {
         BinaryOp.Type op = binaryOp.getOp();
         Operand src1 = binaryOp.getSrc1();
         Operand src2 = binaryOp.getSrc2();
-        MidVar midVar = binaryOp.getDst();
-        if (src1 instanceof Imm && src2 instanceof Imm) {
-
-        } else if (!(src1 instanceof Imm) && !(src2 instanceof Imm)) {
-
-        } else {
-
-        }
+        MidVar dst = binaryOp.getDst();
+        loadRegHelper(src1, Reg.A2);
+        loadRegHelper(src2, Reg.A3);
+        BinaryInsHelper(op, Reg.A1, Reg.A2, Reg.A3);
+        storeRegHelper(dst, Reg.A1);
     }
 
     private void transUnaryOp(UnaryOp unaryOp) {
-
+        UnaryOp.Type op = unaryOp.getOp();
+        Operand src = unaryOp.getSrc();
+        MidVar dst = unaryOp.getDst();
+        loadRegHelper(src, Reg.A2);
+        UnaryInsHelper(op, Reg.A1, Reg.A2);
+        storeRegHelper(dst, Reg.A1);
     }
 
     private void transCall(Call call) {
+        // save current reg
+        int movSize = stackSize + 4;
+        mipsInsList.add(new Sw(Reg.RA, -movSize, Reg.SP));
+        mipsInsList.add(new Addi(Reg.SP, Reg.SP, -movSize));  // $ra stackSize + 4
+        // store param
         FuncFrame func = call.getFunc();
-        mipsInsList.add(new Addi(29, 29, -stackSize));
-        Iterator<Symbol> params = func.iterParam();
-        while (params.hasNext()) {
-            Symbol param = params.next();
-            // mipsInsList.add(new Lw())
+        Iterator<Operand> realParams = call.iterRealParam();
+        Iterator<Symbol> formatParams = func.iterFormatParam();
+        while (realParams.hasNext()) {
+            Operand realParam = realParams.next();
+            Symbol formatParam = formatParams.next();
+            loadRegHelper(realParam, Reg.A1);
+            mipsInsList.add(new Sw(Reg.A1, -formatParam.getOffset(), Reg.SP));
         }
+        // jump and link
         mipsInsList.add(new Jal(func.getLabel()));
-        stackSize = func.addStackSize(0);
+        // recover
+        mipsInsList.add(new Addi(Reg.SP, Reg.SP, movSize));  // $ra stackSize + 4
+        mipsInsList.add(new Lw(Reg.RA, -movSize, Reg.SP));
+        // recv ret val, 必须在恢复现场之后, 否则store时sp不对
+        MidVar retVal = call.getRet();
+        if (retVal != null) {
+            storeRegHelper(retVal, Reg.V0);
+        }
     }
 
+    private void transGetInt(GetInt getInt) {
+        Symbol var = getInt.getVar();
+        mipsInsList.add(new Addi(Reg.V0, Reg.ZERO, 5));
+        mipsInsList.add(new Syscall());
+        storeRegHelper(var, Reg.V0);
+    }
+
+    private void transPrintInt(PrintInt printInt) {
+        Operand src = printInt.getSrc();
+        loadRegHelper(src, Reg.A0);
+        mipsInsList.add(new Addi(Reg.V0, Reg.ZERO, 1));
+        mipsInsList.add(new Syscall());
+    }
+
+    private void transPrintStr(PrintStr printStr) {
+        String label = printStr.getLabel();
+        mipsInsList.add(new La(Reg.A0, label));
+        mipsInsList.add(new Addi(Reg.V0, Reg.ZERO, 4));
+        mipsInsList.add(new Syscall());
+    }
+
+    private void transReturn(Return ret) {
+        Operand retVal = ret.getRetVal();
+        if (isMain) {
+            assert retVal instanceof Imm && ((Imm) retVal).getVal() == 0;
+            mipsInsList.add(new Addi(Reg.V0, Reg.ZERO, 10));
+            mipsInsList.add(new Syscall());
+        } else {
+            if (retVal != null) {
+                loadRegHelper(retVal, Reg.V0);
+            }
+            mipsInsList.add(new Jr(Reg.RA));
+        }
+    }
 
     // util
-    private void allocReg(MidVar operand, boolean isSrc) {
-        assert operand instanceof MidVar || operand instanceof Symbol;
-        if (regAllocator.getReg(operand) == null) {
-            if (!regAllocator.hasFreeReg()) {
-                MidVar replaced = replaceAlgo();
-                allocStack(replaced);       // 如果已经分配栈，则不操作
-                mipsInsList.add(new Sw(regAllocator.getReg(replaced), -replaced.getOffset(), 29));
-                regAllocator.freeReg(replaced);
-            }
-            regAllocator.allocReg(operand);
-            regBuffer.add(operand);
-            mipsInsList.add(new Lw(regAllocator.getReg(operand), -operand.getOffset(), 29));
+    private void loadRegHelper(Operand operand, int reg) {
+        if (operand instanceof Imm) {
+            mipsInsList.add(new Addi(reg, Reg.ZERO,((Imm) operand).getVal()));
+        } else {
+            MidVar midVar = (MidVar) operand;
+            assert midVar.getOffset() != null;
+            mipsInsList.add(new Lw(reg, -midVar.getOffset(), Reg.SP));
         }
     }
 
-    private MidVar replaceAlgo() {
-        return regBuffer.remove();
+    private void storeRegHelper(MidVar midVar, int reg) {
+        if (midVar.getOffset() == null) {
+            allocStack(midVar);
+        }
+        mipsInsList.add(new Sw(reg, -midVar.getOffset(), Reg.SP));
+    }
+
+    private void BinaryInsHelper(BinaryOp.Type type, int dst, int src1, int src2) {
+        if (type.equals(BinaryOp.Type.ADD)) {
+            mipsInsList.add(new Add(dst, src1, src2));
+        } else if (type.equals(BinaryOp.Type.SUB)) {
+            mipsInsList.add(new Sub(dst, src1, src2));
+        } else if (type.equals(BinaryOp.Type.MUL)) {
+            mipsInsList.add(new Mult(src1, src2));
+            mipsInsList.add(new Mflo(dst));
+        } else if (type.equals(BinaryOp.Type.DIV)) {
+            mipsInsList.add(new Div(src1, src2));
+            mipsInsList.add(new Mflo(dst));
+        } else if (type.equals(BinaryOp.Type.MOD)) {
+            mipsInsList.add(new Div(src1, src2));
+            mipsInsList.add(new Mfhi(dst));
+        } else {
+            // TODO[11], other op
+            System.exit(11);
+        }
+    }
+
+    private void UnaryInsHelper(UnaryOp.Type type, int dst, int src) {
+        if (type.equals(UnaryOp.Type.MOV)) {
+            mipsInsList.add(new Add(dst, src, Reg.ZERO));
+        } else if (type.equals(UnaryOp.Type.NEG)) {
+            mipsInsList.add(new Sub(dst, Reg.ZERO, src));
+        } else {
+            // TODO[12], other op
+            System.exit(12);
+        }
     }
 
     private void allocStack(MidVar midVar) {
@@ -135,6 +218,25 @@ public class MipsTranslator {
         }
     }
 
+    private void allocReg(MidVar operand, boolean isSrc) {
+        if (regAllocator.getReg(operand) == null) {
+            if (!regAllocator.hasFreeReg()) {
+                MidVar replaced = replaceAlgo();
+                allocStack(replaced);       // 如果已经分配栈，则不操作
+                mipsInsList.add(new Sw(regAllocator.getReg(replaced), -replaced.getOffset(), Reg.SP));
+                regAllocator.freeReg(replaced);
+            }
+            regAllocator.allocReg(operand);
+            regBuffer.add(operand);
+            if (isSrc) {
+                mipsInsList.add(new Lw(regAllocator.getReg(operand), -operand.getOffset(), Reg.SP));
+            }
+        }
+    }
+
+    private MidVar replaceAlgo() {
+        return regBuffer.remove();
+    }
     // output
     public void outputMips(PrintStream ps) {
         outputGlobal(ps);
@@ -144,7 +246,7 @@ public class MipsTranslator {
     private void outputGlobal(PrintStream ps) {
         ps.println(".data");
         // global var
-        Iterator<Symbol> globalSyms =  midCode.symIter();
+        Iterator<Symbol> globalSyms = midCode.symIter();
         while (globalSyms.hasNext()) {
             Symbol symbol = globalSyms.next();
             List<Integer> initList = symbol.getInitVal();
