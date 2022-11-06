@@ -108,6 +108,10 @@ public class Symbol extends MidVar {
         return ident;
     }
 
+    public String getLabel() {
+        return ident;
+    }
+
     public boolean isGlobal() {
         return isGlobal;
     }

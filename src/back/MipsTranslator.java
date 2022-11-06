@@ -28,6 +28,7 @@ public class MipsTranslator {
     private boolean isMain = false; // 标记当前函数是否为main函数，特殊处理return
     private Integer stackSize = null;
     private Queue<MidVar> regBuffer = new LinkedList<>();
+    private boolean hasReturn = true;
 
     public MipsTranslator(MidCode midCode) {
         this.midCode = midCode;
@@ -46,10 +47,14 @@ public class MipsTranslator {
     }
 
     private void transFunc(FuncFrame func) {
+        hasReturn = false;
         mipsInsList.add(new Label("\n" + func.getLabel()));
         stackSize = func.addStackSize(0);   // 相当于getStackSize
         BasicBlock basicBlock = func.getBody();
         transBlock(basicBlock);
+        if (!hasReturn) {
+            mipsInsList.add(new Jr(Reg.RA));
+        }
     }
 
     private void transBlock(BasicBlock basicBlock) {
@@ -108,11 +113,8 @@ public class MipsTranslator {
     }
 
     private void transCall(Call call) {
-        mipsInsList.add(new Comment(call.toString()));
-        // save current reg
         int movSize = stackSize + 4;
-        mipsInsList.add(new Sw(Reg.RA, -movSize, Reg.SP));
-        mipsInsList.add(new Addi(Reg.SP, Reg.SP, -movSize));  // $ra stackSize + 4
+        mipsInsList.add(new Comment(call.toString()));
         // store param
         FuncFrame func = call.getFunc();
         Iterator<Operand> realParams = call.iterRealParam();
@@ -121,9 +123,11 @@ public class MipsTranslator {
             Operand realParam = realParams.next();
             Symbol formatParam = formatParams.next();
             loadRegHelper(realParam, Reg.A1);
-            mipsInsList.add(new Sw(Reg.A1, -formatParam.getOffset(), Reg.SP));
+            mipsInsList.add(new Sw(Reg.A1, -movSize-formatParam.getOffset(), Reg.SP));
         }
-        // jump and link
+        // save current reg
+        mipsInsList.add(new Sw(Reg.RA, -movSize, Reg.SP));
+        mipsInsList.add(new Addi(Reg.SP, Reg.SP, -movSize));  // $ra stackSize + 4// jump and link
         mipsInsList.add(new Jal(func.getLabel()));
         // recover
         mipsInsList.add(new Addi(Reg.SP, Reg.SP, movSize));  // $ra stackSize + 4
@@ -172,6 +176,7 @@ public class MipsTranslator {
             }
             mipsInsList.add(new Jr(Reg.RA));
         }
+        hasReturn = true;
     }
 
     // util
@@ -181,7 +186,12 @@ public class MipsTranslator {
         } else {
             MidVar midVar = (MidVar) operand;
             assert midVar.getOffset() != null;
-            mipsInsList.add(new Lw(reg, -midVar.getOffset(), Reg.SP));
+            if (midVar instanceof Symbol && ((Symbol) midVar).isGlobal()) {
+                Symbol symbol = (Symbol) midVar;
+                mipsInsList.add(new Lw(reg, symbol.getOffset(), Reg.ZERO));
+            } else {
+                mipsInsList.add(new Lw(reg, -midVar.getOffset(), Reg.SP));
+            }
         }
     }
 

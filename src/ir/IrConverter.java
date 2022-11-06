@@ -77,6 +77,14 @@ public class IrConverter {
         putSymbolAndUpdateStack(symbol);
         if (isGlobal) {
             midCode.putGlobalSym(symbol);
+        } else {
+            if (symbol.getRefType() == Operand.RefType.VALUE) {
+                UnaryOp unaryOp = new UnaryOp(UnaryOp.Type.MOV, new Imm(symbol.getInitVal().get(0)), symbol);
+                curBlock.append(unaryOp);
+            } else {
+                // TODO[12] array
+                System.exit(12);
+            }
         }
     }
 

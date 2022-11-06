@@ -26,8 +26,7 @@ import util.TkType;
 
 import java.io.FileNotFoundException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 import static util.Constant.SYNTAX;
 
@@ -462,7 +461,7 @@ public class Parser {
     private ExpNode parseMulExp() {
         ExpNode leftExp = parseUnaryExp();
         outStrings.add("<MulExp>");
-        if (isMulLink()) {
+        while (isMulLink()) {
             TkType mulLink = tokens.get(pos).getType();
             if (mulLink.equals(TkType.MULT)) {
                 next(TkType.MULT);
@@ -471,7 +470,8 @@ public class Parser {
             } else {
                 next(TkType.MOD);
             }
-            return new BinaryExpNode(mulLink, leftExp, parseMulExp());
+            leftExp = new BinaryExpNode(mulLink, leftExp, parseUnaryExp());
+            outStrings.add("<MulExp>");
         }
         return leftExp;
     }
@@ -479,14 +479,15 @@ public class Parser {
     private ExpNode parseAddExp() {
         ExpNode leftExp = parseMulExp();
         outStrings.add("<AddExp>");
-        if (isAddLink()) {
+        while (isAddLink()) {
             TkType addLink = tokens.get(pos).getType();
             if (addLink.equals(TkType.PLUS)) {
                 next(TkType.PLUS);
             } else {
                 next(TkType.MINU);
             }
-            return new BinaryExpNode(addLink, leftExp, parseAddExp());
+            leftExp = new BinaryExpNode(addLink, leftExp, parseMulExp());
+            outStrings.add("<AddExp>");
         }
         return leftExp;
     }
@@ -505,10 +506,10 @@ public class Parser {
             } else {
                 next(TkType.GEQ);
             }
-            return new BinaryExpNode(relLink, leftExp, parseRelExp());
-        } else {
-            return leftExp;
+            leftExp =  new BinaryExpNode(relLink, leftExp, parseAddExp());
+            outStrings.add("<RelExp>");
         }
+        return leftExp;
     }
 
     private ExpNode parseEqExp() {
@@ -521,10 +522,9 @@ public class Parser {
             } else {
                 next(TkType.NEQ);
             }
-            return new BinaryExpNode(eqLink, leftExp, parseEqExp());
-        } else {
-            return leftExp;
+            leftExp = new BinaryExpNode(eqLink, leftExp, parseRelExp());
         }
+        return leftExp;
     }
 
     private ExpNode parseLAndExp() {
@@ -533,7 +533,8 @@ public class Parser {
         if (tokens.get(pos).eqType(TkType.AND)) {
             TkType andLink = tokens.get(pos).getType();
             next(TkType.AND);
-            return new BinaryExpNode(andLink, leftExp, parseLAndExp());
+            leftExp = new BinaryExpNode(andLink, leftExp, parseEqExp());
+            outStrings.add("<LAndExp>");
         }
         return leftExp;
     }
@@ -544,7 +545,8 @@ public class Parser {
         if (tokens.get(pos).eqType(TkType.OR)) {
             TkType orLink = tokens.get(pos).getType();
             next(TkType.OR);
-            return new BinaryExpNode(orLink, leftExp, parseLOrExp());
+            leftExp = new BinaryExpNode(orLink, leftExp, parseLAndExp());
+            outStrings.add("<LOrExp>");
         }
         return leftExp;
     }
