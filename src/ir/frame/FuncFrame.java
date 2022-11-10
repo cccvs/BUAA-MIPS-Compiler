@@ -17,17 +17,17 @@ public class FuncFrame {
         INT, VOID
     }
     // basic information
-    private String ident;
-    private RetType retType;
-    private List<Symbol> params;
-    private BasicBlock body;
+    private final String ident;
+    private final RetType retType;
+    private final List<Symbol> params;
+    private final List<BasicBlock> bodyBlocks;
     private int stackSize = 0;
 
     public FuncFrame(String ident, TkType tkType) {
         this.ident = ident;
         this.retType = tkType.equals(TkType.VOIDTK) ? RetType.VOID : RetType.INT;
         this.params = new ArrayList<>();
-        this.body = null;
+        this.bodyBlocks = new ArrayList<>();
     }
 
     public int addStackSize(int size) {
@@ -40,8 +40,8 @@ public class FuncFrame {
         return ident;
     }
 
-    public BasicBlock getBody() {
-        return body;
+    public Iterator<BasicBlock> iterBody() {
+        return bodyBlocks.iterator();
     }
 
     public RetType getRetType() {
@@ -56,8 +56,8 @@ public class FuncFrame {
         params.add(param);
     }
 
-    public void setBody(BasicBlock body) {
-        this.body = body;
+    public void appendBody(BasicBlock body) {
+        this.bodyBlocks.add(body);
     }
 
     public String getLabel() {
@@ -70,6 +70,6 @@ public class FuncFrame {
         return "# Function " + ident + "[stack size: 0x" +
                 Integer.toHexString(stackSize) + "]\n" +
                 getLabel() + ":\n" +
-                body.toString();
+                bodyBlocks.stream().map(BasicBlock::toString).reduce((x, y) -> x + y).orElse("");
     }
 }

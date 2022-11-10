@@ -26,7 +26,6 @@ public class MipsTranslator {
 
     // current
     private boolean isMain = false;     // 标记当前函数是否为main函数，特殊处理return
-    private boolean hasReturn = true;   // 标记当前函数是否含有return语句
     private Integer stackSize = null;
     private final Queue<MidVar> regBuffer = new LinkedList<>();
 
@@ -47,13 +46,12 @@ public class MipsTranslator {
     }
 
     private void transFunc(FuncFrame func) {
-        hasReturn = false;
         mipsInsList.add(new Label("\n" + func.getLabel()));
         stackSize = func.addStackSize(0);   // 相当于getStackSize
-        BasicBlock basicBlock = func.getBody();
-        transBlock(basicBlock);
-        if (!hasReturn) {
-            mipsInsList.add(new Jr(Reg.RA));
+        Iterator<BasicBlock> blocks = func.iterBody();
+        while (blocks.hasNext()) {
+            BasicBlock basicBlock = blocks.next();
+            transBlock(basicBlock);
         }
     }
 
@@ -176,7 +174,6 @@ public class MipsTranslator {
             }
             mipsInsList.add(new Jr(Reg.RA));
         }
-        hasReturn = true;
     }
 
     // util

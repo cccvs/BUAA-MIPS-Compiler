@@ -1,8 +1,5 @@
 package ir.frame;
 
-import ast.func.FuncDefNode;
-import ast.func.FuncFParamNode;
-import ast.stmt.BlockNode;
 import ir.MidCode;
 import ir.code.BasicIns;
 
@@ -10,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class BasicBlock implements BasicIns {
+public class BasicBlock {
     public enum Type {
         FUNC,
         BRANCH,
@@ -19,18 +16,11 @@ public class BasicBlock implements BasicIns {
     }
 
     // basic information
-    private Integer id;
-    private BasicBlock prev;
+    private final Integer id;
     private final List<BasicIns> insList = new ArrayList<>();
 
     public BasicBlock() {
         this.id = MidCode.genId();
-        this.prev = null;
-    }
-
-    public BasicBlock(BasicBlock prev) {
-        this.id = MidCode.genId();
-        this.prev = prev;
     }
 
     public void append(BasicIns ins) {
@@ -39,10 +29,6 @@ public class BasicBlock implements BasicIns {
 
     public String getLabel() {
         return "label" + id;
-    }
-
-    public BasicBlock prev() {
-        return prev;
     }
 
     public Iterator<BasicIns> iterIns() {

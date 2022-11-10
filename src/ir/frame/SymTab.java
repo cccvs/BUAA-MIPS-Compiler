@@ -6,8 +6,8 @@ import java.util.HashMap;
 
 public class SymTab {
     // local
-    private HashMap<String, Symbol> symTab;
-    private SymTab prevTab;       // 对于函数的第一层，prevTab是空
+    private final HashMap<String, Symbol> symTab;
+    private final SymTab prevTab;       // 对于函数的第一层，prevTab是空
 
     public SymTab() {
         this.symTab = new HashMap<>();

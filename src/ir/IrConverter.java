@@ -23,9 +23,10 @@ public class IrConverter {
     private final MidCode midCode = new MidCode();
 
     // current info
-    private static SymTab curTab = new SymTab();   // 初始化为全局符号表
+    private static SymTab curTab = new SymTab();    // 初始化为全局符号表
     private static FuncFrame curFunc = null;
     private static BasicBlock curBlock = null;
+    private boolean hasReturn = true;               // 标志当前函数是否含有return语句
 
     public IrConverter(CompUnitNode compUnitNode){
         convCompUnit(compUnitNode);
@@ -91,6 +92,7 @@ public class IrConverter {
     // func part
     private void convFunc(FuncDefNode funcDefNode, boolean isMain) {
         curFunc = isMain ? midCode.getMainFunc() : midCode.getFunc(funcDefNode.getIdent());
+        hasReturn = false;
         // params part
         Iterator<FuncFParamNode> paramIter = funcDefNode.paramIter();
         while (paramIter.hasNext()) {
@@ -99,19 +101,24 @@ public class IrConverter {
             curFunc.addParam(param);
         }
         // block and symTab part
+        curBlock = new BasicBlock();
+        curFunc.appendBody(curBlock);
         BlockNode block = funcDefNode.getBlock();
-        BasicBlock funcBlock = convBlock(block);
-        curFunc.setBody(funcBlock);
+        convBlock(block);
+        // append "return;" for void func
+        if (curFunc.getRetType().equals(FuncFrame.RetType.VOID) && !hasReturn) {
+            curBlock.append(new Return());
+        }
         curFunc = null;
+        curBlock = null;
     }
 
     // stmt part
-    private BasicBlock convBlock(BlockNode blockNode) {
-        boolean isFuncBlock = curTab.isGlobal() && curBlock == null;
-        boolean isOtherBlock = !curTab.isGlobal() && curBlock != null;
+    private void convBlock(BlockNode blockNode) {
+        boolean isFuncBlock = curTab.isGlobal();
+        boolean isOtherBlock = !curTab.isGlobal();
         assert isFuncBlock || isOtherBlock;
         curTab = new SymTab(curTab);
-        curBlock = new BasicBlock();
         // fill params into symbol table
         if (isFuncBlock) {
             Iterator<Symbol> paramIter = curFunc.iterFormatParam();
@@ -131,16 +138,12 @@ public class IrConverter {
             }
         }
         // recover
-        BasicBlock basicBlock = curBlock;
         curTab = curTab.prev();
-        curBlock = curBlock.prev();
-        return basicBlock;
     }
 
     private void convStmt(StmtNode stmtNode) {
         if (stmtNode instanceof BlockNode) {
-            BasicBlock basicBlock = convBlock((BlockNode) stmtNode);
-            curBlock.append(basicBlock);
+            convBlock((BlockNode) stmtNode);
         } else if (stmtNode instanceof AssignNode) {
             convAssign((AssignNode) stmtNode);
         } else if (stmtNode instanceof PrintfNode) {
@@ -209,6 +212,7 @@ public class IrConverter {
             Operand retOperand = convExp(retVal);
             curBlock.append(new Return(retOperand));
         }
+        hasReturn = true;
     }
 
     // exp
