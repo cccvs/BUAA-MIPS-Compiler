@@ -15,7 +15,7 @@ import ast.stmt.AssignNode;
 import ast.stmt.BlockNode;
 import ast.stmt.BreakNode;
 import ast.stmt.ContinueNode;
-import ast.stmt.IfNode;
+import ast.stmt.BranchNode;
 import ast.stmt.LoopNode;
 import ast.stmt.PrintfNode;
 import ast.stmt.ReturnNode;
@@ -24,11 +24,8 @@ import lexical.Lexer;
 import lexical.Token;
 import util.TkType;
 
-import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.*;
-
-import static util.Constant.SYNTAX;
 
 public class Parser {
     private final List<Token> tokens;
@@ -281,12 +278,12 @@ public class Parser {
             next(TkType.RPARENT);
             StmtNode thenStmt = parseStmt();
             // new if
-            IfNode ifNode = new IfNode(cond, thenStmt);
+            BranchNode branchNode = new BranchNode(cond, thenStmt);
             while (tokens.get(pos).eqType(TkType.ELSETK)) {
                 next(TkType.ELSETK);
-                ifNode.setElseStmt(parseStmt());
+                branchNode.setElseStmt(parseStmt());
             }
-            retStmt = ifNode;
+            retStmt = branchNode;
         }
         // 'while' '(' Cond ')' Stmt
         else if (tokens.get(pos).eqType(TkType.WHILETK)) {

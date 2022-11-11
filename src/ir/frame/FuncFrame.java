@@ -56,10 +56,11 @@ public class FuncFrame {
         params.add(param);
     }
 
-    public void appendBody(BasicBlock body) {
-        this.bodyBlocks.add(body);
+    public void appendBlock(BasicBlock block) {
+        this.bodyBlocks.add(block);
     }
 
+    // TODO[13]: abandoned in the future
     public String getLabel() {
         return "f_" + ident;
     }

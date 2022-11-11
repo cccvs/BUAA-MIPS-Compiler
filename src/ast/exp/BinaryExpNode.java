@@ -11,9 +11,9 @@ public class BinaryExpNode implements ExpNode {
         int cal(int x, int y);
     }
 
-    private TkType op;
-    private ExpNode leftExp;
-    private ExpNode rightExp;
+    private final TkType op;
+    private final ExpNode leftExp;
+    private final ExpNode rightExp;
     private static final HashMap<TkType, BinaryCal> opMap = new HashMap<TkType, BinaryCal>() {{
             // AddExp
             put(TkType.PLUS, Integer::sum);
@@ -34,7 +34,7 @@ public class BinaryExpNode implements ExpNode {
             put(TkType.AND, (a, b) -> ((a != 0) && (b != 0)) ? 1 : 0);
             put(TkType.OR, (a, b) -> ((a != 0) || (b != 0)) ? 1 : 0);
         }};
-    private static HashMap<TkType, BinaryOp.Type> typeMap = new HashMap<TkType, BinaryOp.Type>() {{
+    private static final HashMap<TkType, BinaryOp.Type> typeMap = new HashMap<TkType, BinaryOp.Type>() {{
         // AddExp
         put(TkType.PLUS, BinaryOp.Type.ADD);
         put(TkType.MINU, BinaryOp.Type.SUB);
@@ -83,5 +83,22 @@ public class BinaryExpNode implements ExpNode {
 
     public static BinaryOp.Type typeMap(TkType op) {
         return typeMap.get(op);
+    }
+
+    public boolean isOrLink() {
+        return op.equals(TkType.OR);
+    }
+
+    public boolean isAndLink() {
+        return op.equals(TkType.AND);
+    }
+
+    public boolean isEqLink() {
+        return op.equals(TkType.EQL) || op.equals(TkType.NEQ);
+    }
+
+    public boolean isRelLink() {
+        return op.equals(TkType.GEQ) || op.equals(TkType.GRE)
+                || op.equals(TkType.LEQ) || op.equals(TkType.LSS);
     }
 }

@@ -9,18 +9,21 @@ import java.util.List;
 
 public class BasicBlock {
     public enum Type {
-        FUNC,
-        BRANCH,
-        LOOP,
-        BASIC,   // for loop
+        branch_then, branch_else, branch_end,
+        loop_begin, loop_body, loop_end,
+        and, or,
+        func,
+        break_follow, continue_follow
     }
 
     // basic information
     private final Integer id;
+    private final Type type;
     private final List<BasicIns> insList = new ArrayList<>();
 
-    public BasicBlock() {
+    public BasicBlock(Type type) {
         this.id = MidCode.genId();
+        this.type = type;
     }
 
     public void append(BasicIns ins) {
@@ -28,7 +31,7 @@ public class BasicBlock {
     }
 
     public String getLabel() {
-        return "label" + id;
+        return type.name() + "_" + id;
     }
 
     public Iterator<BasicIns> iterIns() {

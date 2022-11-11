@@ -1,5 +1,15 @@
 package ir.code;
 
+import ir.frame.BasicBlock;
+
 public class Jump implements BasicIns{
-    // Originate from If, Loop, Break, Continue
+    private final BasicBlock basicBlock;
+
+    public Jump(BasicBlock basicBlock) {
+        this.basicBlock = basicBlock;
+    }
+
+    public String getLabel() {
+        return basicBlock.getLabel();
+    }
 }

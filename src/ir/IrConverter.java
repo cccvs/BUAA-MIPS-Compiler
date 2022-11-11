@@ -7,6 +7,7 @@ import ast.exp.*;
 import ast.func.FuncDefNode;
 import ast.func.FuncFParamNode;
 import ast.stmt.*;
+import back.ins.J;
 import ir.code.*;
 import ir.frame.BasicBlock;
 import ir.frame.FuncFrame;
@@ -18,6 +19,7 @@ import ir.operand.MidVar;
 import util.TkType;
 
 import java.util.Iterator;
+import java.util.Stack;
 
 public class IrConverter {
     private final MidCode midCode = new MidCode();
@@ -25,8 +27,11 @@ public class IrConverter {
     // current info
     private static SymTab curTab = new SymTab();    // 初始化为全局符号表
     private static FuncFrame curFunc = null;
-    private static BasicBlock curBlock = null;
+    private static BasicBlock curBlock = null;      // 对curBlock更新统一调用updateBlock()方法
     private boolean hasReturn = true;               // 标志当前函数是否含有return语句
+
+    private final Stack<BasicBlock> loopBeginStack = new Stack<>();
+    private final Stack<BasicBlock> loopEndStack = new Stack<>();
 
     public IrConverter(CompUnitNode compUnitNode){
         convCompUnit(compUnitNode);
@@ -101,8 +106,8 @@ public class IrConverter {
             curFunc.addParam(param);
         }
         // block and symTab part
-        curBlock = new BasicBlock();
-        curFunc.appendBody(curBlock);
+        updateBlock(new BasicBlock(BasicBlock.Type.func));
+        curFunc.appendBlock(curBlock);
         BlockNode block = funcDefNode.getBlock();
         convBlock(block);
         // append "return;" for void func
@@ -152,7 +157,15 @@ public class IrConverter {
             convReturn((ReturnNode) stmtNode);
         } else if (stmtNode instanceof ExpNode) {
             convExp((ExpNode) stmtNode);
-        } else { // TODO[7] branch part
+        } else if (stmtNode instanceof BranchNode) {
+            convBranch((BranchNode) stmtNode);
+        } else if (stmtNode instanceof LoopNode) {
+            convLoop((LoopNode) stmtNode);
+        } else if (stmtNode instanceof BreakNode) {
+            convBreak((BreakNode) stmtNode);
+        } else if (stmtNode instanceof ContinueNode) {
+            convContinue((ContinueNode) stmtNode);
+        }  else { // TODO[7] branch part
             System.out.println("illegal file for hw1!");
             System.exit(5);
         }
@@ -215,6 +228,82 @@ public class IrConverter {
         hasReturn = true;
     }
 
+    private void convBranch(BranchNode branchNode) {
+        ExpNode cond = branchNode.getCond();
+        StmtNode thenBody = branchNode.getThenStmt();
+        BasicBlock branchThen = new BasicBlock(BasicBlock.Type.branch_then);
+        BasicBlock branchEnd = new BasicBlock(BasicBlock.Type.branch_end);
+        if (branchNode.hasElse()) {
+            StmtNode elseBody = branchNode.getElseStmt();
+            BasicBlock branchElse = new BasicBlock(BasicBlock.Type.branch_else);
+            // exp part
+            convOrExp(cond, branchThen, branchElse);
+            // then part
+            updateBlock(branchThen);
+            curTab = new SymTab(curTab);
+            convStmt(thenBody);
+            curBlock.append(new Jump(branchEnd));
+            curTab = curTab.prev();
+            // else part
+            updateBlock(branchElse);
+            curTab = new SymTab(curTab);
+            convStmt(elseBody);
+        } else {
+            // exp part
+            convOrExp(cond, branchThen, branchEnd);
+            // then part
+            updateBlock(branchThen);
+            curTab = new SymTab(curTab);
+            convStmt(thenBody);
+            curBlock.append(new Jump(branchEnd));
+        }
+        // end part
+        curTab = curTab.prev();     // 统一回到上一级符号表
+        updateBlock(branchEnd);
+    }
+
+    private void convLoop(LoopNode loopNode) {
+        ExpNode cond = loopNode.getCond();
+        StmtNode body = loopNode.getBody();
+        BasicBlock loopBegin = new BasicBlock(BasicBlock.Type.loop_begin);
+        BasicBlock loopBody = new BasicBlock(BasicBlock.Type.loop_body);
+        BasicBlock loopEnd = new BasicBlock(BasicBlock.Type.loop_end);
+        // exp part
+        updateBlock(loopBegin);
+        convOrExp(cond, loopBody, loopEnd);
+        // body part
+        updateBlock(loopBody);
+        curTab = new SymTab(curTab);    // 更新符号表
+        loopBeginStack.push(loopBegin); // continue
+        loopEndStack.push(loopEnd);     // break
+        convStmt(body);                 // convert loop body
+        loopBeginStack.pop();           // continue
+        loopEndStack.pop();             // break
+        curBlock.append(new Jump(loopBegin));
+        curTab = curTab.prev();         // 回到上一级符号表
+        // end part
+        updateBlock(loopEnd);
+    }
+
+    private void convBreak(BreakNode breakNode) {
+        curBlock.append(new Jump(loopEndStack.peek()));
+        updateBlock(new BasicBlock(BasicBlock.Type.break_follow));
+    }
+
+    private void convContinue(ContinueNode continueNode) {
+        curBlock.append(new Jump(loopBeginStack.peek()));
+        updateBlock(new BasicBlock(BasicBlock.Type.continue_follow));
+    }
+
+    private void convOrExp(ExpNode exp, BasicBlock labelTrue, BasicBlock labelFalse) {
+
+    }
+
+    private void convAndExp() {
+
+    }
+
+
     // exp
     private Operand convExp(ExpNode expNode) {
         if (expNode instanceof LValNode) {
@@ -271,17 +360,14 @@ public class IrConverter {
         TkType op = binaryExpNode.getOp();
         ExpNode leftExp = binaryExpNode.getLeftExp();
         ExpNode rightExp = binaryExpNode.getRightExp();
-        if (!op.equals(TkType.AND) && !op.equals(TkType.OR)) {
-            Operand left = convExp(leftExp);
-            Operand right = convExp(rightExp);
-            MidVar dst = new MidVar(left.getRefType());
-            BinaryOp binaryOp = new BinaryOp(BinaryExpNode.typeMap(op), left, right, dst);
-            curBlock.append(binaryOp);
-            return dst;
-        } else {
-            // TODO[2]: cond of && and ||
-            return null;
-        }
+        assert !op.equals(TkType.AND) && !op.equals(TkType.OR);
+        Operand left = convExp(leftExp);
+        Operand right = convExp(rightExp);
+        MidVar dst = new MidVar(left.getRefType());
+        BinaryOp binaryOp = new BinaryOp(BinaryExpNode.typeMap(op), left, right, dst);
+        curBlock.append(binaryOp);
+        return dst;
+        // TODO[2]: cond of && and ||
     }
 
     private Operand convUnaryExp(UnaryExpNode unaryExpNode) {
@@ -309,5 +395,10 @@ public class IrConverter {
         int symbolSize = symbol.getSize();
         int newStackSize = curTab.isGlobal() ? midCode.addStackSize(symbolSize) : curFunc.addStackSize(symbolSize);
         symbol.updateStackOffset(newStackSize);
+    }
+
+    private void updateBlock(BasicBlock basicBlock) {
+        curBlock = basicBlock;
+        curFunc.appendBlock(curBlock);
     }
 }
