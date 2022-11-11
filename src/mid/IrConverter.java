@@ -78,17 +78,24 @@ public class IrConverter {
     private void convDef(DefNode defNode) {
         // construct symbol
         boolean isGlobal = curTab.isGlobal();
-        Symbol symbol = new Symbol(defNode, isGlobal);  // create new symbol
-        putSymbolAndUpdateStack(symbol);
         if (isGlobal) {
+            Symbol symbol = new Symbol(defNode, true);  // create new symbol
+            putSymbolAndUpdateStack(symbol);
             midCode.putGlobalSym(symbol);
         } else {
-            if (symbol.getRefType() == Operand.RefType.VALUE) {
-                UnaryOp unaryOp = new UnaryOp(UnaryOp.Type.MOV, new Imm(symbol.getInitVal().get(0)), symbol);
-                curBlock.append(unaryOp);
-            } else {
-                // TODO[12] array
-                System.exit(12);
+            Symbol symbol = new Symbol(defNode);
+            putSymbolAndUpdateStack(symbol);
+            if (!defNode.getInitValues().isEmpty()) {
+                if (symbol.getRefType() == Operand.RefType.VALUE) {
+                    ExpNode initExp = defNode.getInitValues().get(0);
+                    Operand initOperand = convExp(initExp);
+                    // 非全局常量初值可能不是常量表达式
+                    UnaryOp unaryOp = new UnaryOp(UnaryOp.Type.MOV, initOperand, symbol);
+                    curBlock.append(unaryOp);
+                } else {
+                    // TODO[12] array
+                    System.exit(12);
+                }
             }
         }
     }

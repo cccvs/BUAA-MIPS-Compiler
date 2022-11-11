@@ -18,6 +18,7 @@ public class FuncCallNode extends ExpNode {
 
     @Override
     public Integer getConst() {
+        System.out.println(ident);
         System.exit(4);
         return 0;
     }

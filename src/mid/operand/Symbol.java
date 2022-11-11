@@ -31,7 +31,7 @@ public class Symbol extends MidVar {
     private final boolean isGlobal;
     private Integer stackOffset;          // offset from sp or .data, default for null
 
-    // global var/const
+    // global var/const, local const
     public Symbol(DefNode defNode, boolean isGlobal) {
         super(defNode);
         // basic information
@@ -41,6 +41,22 @@ public class Symbol extends MidVar {
         this.values = defNode.getInitValues().stream().map(ExpNode::getConst).collect(Collectors.toList());
         // ir information
         this.isGlobal = isGlobal;
+    }
+
+    // local var
+    public Symbol(DefNode defNode) {
+        super(defNode);
+        // basic information
+        this.isConst = defNode.isConst();
+        this.ident = defNode.getIdent();
+        this.dimensions = defNode.getDimensions().stream().map(ExpNode::getConst).collect(Collectors.toList());
+        if (isConst) {
+            this.values = defNode.getInitValues().stream().map(ExpNode::getConst).collect(Collectors.toList());
+        } else {
+            this.values = new ArrayList<>();    // need to be assigned?
+        }
+        // ir information
+        this.isGlobal = false;
     }
 
     // format param

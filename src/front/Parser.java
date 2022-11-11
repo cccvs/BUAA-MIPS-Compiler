@@ -455,6 +455,7 @@ public class Parser {
         outStrings.add("<FuncRParams>");
     }
 
+    // TODO[15] 树的形状不对!!
     private ExpNode parseMulExp() {
         ExpNode leftExp = parseUnaryExp();
         outStrings.add("<MulExp>");
@@ -492,7 +493,7 @@ public class Parser {
     private ExpNode parseRelExp() {
         ExpNode leftExp = parseAddExp();
         outStrings.add("<RelExp>");
-        if (isRelLink()) {
+        while (isRelLink()) {
             TkType relLink = tokens.get(pos).getType();
             if (tokens.get(pos).eqType(TkType.LSS)) {
                 next(TkType.LSS);
@@ -503,7 +504,7 @@ public class Parser {
             } else {
                 next(TkType.GEQ);
             }
-            leftExp =  new BinaryExpNode(relLink, leftExp, parseAddExp());
+            leftExp = new BinaryExpNode(relLink, leftExp, parseAddExp());
             outStrings.add("<RelExp>");
         }
         return leftExp;
@@ -512,7 +513,7 @@ public class Parser {
     private ExpNode parseEqExp() {
         ExpNode leftExp = parseRelExp();
         outStrings.add("<EqExp>");
-        if (isEqLink()) {
+        while (isEqLink()) {
             TkType eqLink = tokens.get(pos).getType();
             if (tokens.get(pos).eqType(TkType.EQL)) {
                 next(TkType.EQL);

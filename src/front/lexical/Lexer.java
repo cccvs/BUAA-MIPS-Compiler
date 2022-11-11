@@ -1,5 +1,6 @@
 package front.lexical;
 
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -229,6 +230,12 @@ public class Lexer {
 
     public List<Token> getTokens() {
         return tokens;
+    }
+
+    public void outputTokens(PrintStream ps) {
+        for (Token token : tokens) {
+            ps.println(token);
+        }
     }
 
     private void error() {

@@ -26,6 +26,7 @@ public class Compiler {
         // front.lexical part
         Lexer lexer = new Lexer(inputStr);
         lexer.lex();
+        lexer.outputTokens(new PrintStream(LEXER));
         // parse part
         Parser parser = new Parser(lexer);
         CompUnitNode compUnit = parser.parseCompUnit();
