@@ -1,9 +1,9 @@
-import ast.CompUnitNode;
+import front.ast.CompUnitNode;
 import back.MipsTranslator;
-import ir.IrConverter;
-import ir.MidCode;
-import lexical.Lexer;
-import syntax.Parser;
+import mid.IrConverter;
+import mid.MidCode;
+import front.lexical.Lexer;
+import front.Parser;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -23,7 +23,7 @@ public class Compiler {
         InputStream inputStream = new FileInputStream(INPUT_FILE);
         Scanner in = new Scanner(inputStream);
         String inputStr = readAll(in);
-        // lexical part
+        // front.lexical part
         Lexer lexer = new Lexer(inputStr);
         lexer.lex();
         // parse part

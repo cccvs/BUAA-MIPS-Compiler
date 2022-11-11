@@ -1,8 +1,6 @@
 package back;
 
-import ir.operand.Operand;
-import ir.operand.Symbol;
-import ir.operand.MidVar;
+import mid.operand.MidVar;
 
 import java.util.*;
 
