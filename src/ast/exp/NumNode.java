@@ -1,6 +1,6 @@
 package ast.exp;
 
-public class NumNode implements ExpNode {
+public class NumNode extends ExpNode {
     private final int num;
 
     public NumNode(int num) {

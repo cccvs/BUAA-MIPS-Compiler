@@ -7,7 +7,6 @@ import ast.exp.*;
 import ast.func.FuncDefNode;
 import ast.func.FuncFParamNode;
 import ast.stmt.*;
-import back.ins.J;
 import ir.code.*;
 import ir.frame.BasicBlock;
 import ir.frame.FuncFrame;
@@ -162,9 +161,9 @@ public class IrConverter {
         } else if (stmtNode instanceof LoopNode) {
             convLoop((LoopNode) stmtNode);
         } else if (stmtNode instanceof BreakNode) {
-            convBreak((BreakNode) stmtNode);
+            convBreak();
         } else if (stmtNode instanceof ContinueNode) {
-            convContinue((ContinueNode) stmtNode);
+            convContinue();
         }  else { // TODO[7] branch part
             System.out.println("illegal file for hw1!");
             System.exit(5);
@@ -285,24 +284,54 @@ public class IrConverter {
         updateBlock(loopEnd);
     }
 
-    private void convBreak(BreakNode breakNode) {
+    private void convBreak() {
         curBlock.append(new Jump(loopEndStack.peek()));
         updateBlock(new BasicBlock(BasicBlock.Type.break_follow));
     }
 
-    private void convContinue(ContinueNode continueNode) {
+    private void convContinue() {
         curBlock.append(new Jump(loopBeginStack.peek()));
         updateBlock(new BasicBlock(BasicBlock.Type.continue_follow));
     }
 
     private void convOrExp(ExpNode exp, BasicBlock labelTrue, BasicBlock labelFalse) {
-
+        if (exp.isOrBinary()) {
+            BasicBlock labelOr = new BasicBlock(BasicBlock.Type.or);
+            BinaryExpNode orExp = (BinaryExpNode) exp;
+            ExpNode left = orExp.getLeftExp();
+            ExpNode right = orExp.getRightExp();
+            // left
+            convAndExp(left, labelTrue, labelOr);       // 左递归, 左边不可能为OrExp
+            // right
+            updateBlock(labelOr);
+            convOrExp(right, labelTrue, labelFalse);    // 左递归, OrExp向右扩展
+        } else {
+            convAndExp(exp, labelTrue, labelFalse);
+        }
     }
 
-    private void convAndExp() {
-
+    private void convAndExp(ExpNode exp, BasicBlock labelTrue, BasicBlock labelFalse) {
+        if (exp.isAndBinary()) {
+            BasicBlock labelAnd = new BasicBlock(BasicBlock.Type.and);
+            BinaryExpNode andExp = (BinaryExpNode) exp;
+            ExpNode left = andExp.getLeftExp();
+            ExpNode right = andExp.getRightExp();
+            // left
+            convEqExp(left, labelAnd, labelFalse);      // 左递归, 左边不可能为AndExp
+            // right
+            updateBlock(labelAnd);
+            convAndExp(right, labelTrue, labelFalse);     // 左递归, AndExp向右扩展
+        } else {
+            convEqExp(exp, labelTrue, labelFalse);
+        }
     }
 
+    private void convEqExp(ExpNode exp, BasicBlock labelTrue, BasicBlock labelFalse) {
+        // TODO[14]: 后续窥孔优化[slt, bez]指令序列，以及[j label, label:]指令序列
+        Operand value = convExp(exp);
+        curBlock.append(new Branch(Branch.Type.BNEZ, value, labelTrue));
+        curBlock.append(new Jump(labelFalse));
+    }
 
     // exp
     private Operand convExp(ExpNode expNode) {

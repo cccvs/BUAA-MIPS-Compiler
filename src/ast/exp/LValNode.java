@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class LValNode implements ExpNode {
+public class LValNode extends ExpNode {
     private String ident;
     private final List<ExpNode> arrayIndexes;
 

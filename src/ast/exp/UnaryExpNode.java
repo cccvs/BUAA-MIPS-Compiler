@@ -5,14 +5,14 @@ import util.TkType;
 
 import java.util.HashMap;
 
-public class UnaryExpNode implements ExpNode {
+public class UnaryExpNode extends ExpNode {
     @FunctionalInterface
     private interface UnaryCal {
         int cal(int x);
     }
 
-    private TkType op;
-    private ExpNode exp;
+    private final TkType op;
+    private final ExpNode exp;
     private final static HashMap<TkType, UnaryCal> opMap = new HashMap<TkType, UnaryCal>() {{
         put(TkType.PLUS, x -> x);
         put(TkType.MINU, x -> -x);

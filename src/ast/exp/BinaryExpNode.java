@@ -5,7 +5,7 @@ import util.TkType;
 
 import java.util.HashMap;
 
-public class BinaryExpNode implements ExpNode {
+public class BinaryExpNode extends ExpNode {
     @FunctionalInterface
     private interface BinaryCal {
         int cal(int x, int y);

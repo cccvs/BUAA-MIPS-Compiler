@@ -4,15 +4,18 @@ import ir.frame.BasicBlock;
 import ir.operand.Operand;
 
 public class Branch implements BasicIns{
-    // Originate from If, Loop, BinaryExp(&&, ||)
+    // only list basic mips instruction
     public enum Type {
-        BEZ
+        BNEZ, BEZ,
+        BEQ, BNE
     }
 
+    private final Type type;
     private final Operand cond;
     private final BasicBlock basicBlock;
 
-    public Branch(Operand cond, BasicBlock basicBlock) {
+    public Branch(Type type, Operand cond, BasicBlock basicBlock) {
+        this.type = type;
         this.cond = cond;
         this.basicBlock = basicBlock;
     }
