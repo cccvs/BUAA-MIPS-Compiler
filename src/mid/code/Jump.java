@@ -12,4 +12,9 @@ public class Jump implements BasicIns{
     public String getLabel() {
         return basicBlock.getLabel();
     }
+
+    @Override
+    public String toString() {
+        return "\tJUMP " + getLabel();
+    }
 }

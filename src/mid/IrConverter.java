@@ -106,7 +106,6 @@ public class IrConverter {
         }
         // block and symTab part
         updateBlock(new BasicBlock(BasicBlock.Type.func));
-        curFunc.appendBlock(curBlock);
         BlockNode block = funcDefNode.getBlock();
         convBlock(block);
         // append "return;" for void func
@@ -294,6 +293,7 @@ public class IrConverter {
         updateBlock(new BasicBlock(BasicBlock.Type.continue_follow));
     }
 
+    // short circuit evaluation part
     private void convOrExp(ExpNode exp, BasicBlock labelTrue, BasicBlock labelFalse) {
         if (exp.isOrBinary()) {
             BasicBlock labelOr = new BasicBlock(BasicBlock.Type.or);
@@ -389,14 +389,13 @@ public class IrConverter {
         TkType op = binaryExpNode.getOp();
         ExpNode leftExp = binaryExpNode.getLeftExp();
         ExpNode rightExp = binaryExpNode.getRightExp();
-        assert !op.equals(TkType.AND) && !op.equals(TkType.OR);
+        assert !op.equals(TkType.AND) && !op.equals(TkType.OR); // no && and ||
         Operand left = convExp(leftExp);
         Operand right = convExp(rightExp);
         MidVar dst = new MidVar(left.getRefType());
         BinaryOp binaryOp = new BinaryOp(BinaryExpNode.typeMap(op), left, right, dst);
         curBlock.append(binaryOp);
         return dst;
-        // TODO[2]: cond of && and ||
     }
 
     private Operand convUnaryExp(UnaryExpNode unaryExpNode) {

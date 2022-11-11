@@ -6,8 +6,9 @@ import mid.operand.Operand;
 public class Branch implements BasicIns{
     // only list basic mips instruction
     public enum Type {
-        BNEZ, BEZ,
-        BEQ, BNE
+        BNEZ
+        //, BEZ,
+        //BEQ, BNE
     }
 
     private final Type type;
@@ -20,11 +21,20 @@ public class Branch implements BasicIns{
         this.basicBlock = basicBlock;
     }
 
+    public Type getType() {
+        return type;
+    }
+
     public String getLabel() {
         return basicBlock.getLabel();
     }
 
     public Operand getCond() {
         return cond;
+    }
+
+    @Override
+    public String toString() {
+        return "\t" + type.name() + " " + cond.toString() + " " +  getLabel();
     }
 }

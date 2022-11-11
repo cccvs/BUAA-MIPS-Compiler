@@ -81,8 +81,12 @@ public class MipsTranslator {
             transPrintStr((PrintStr) basicIns);
         } else if (basicIns instanceof Return) {
             transReturn((Return) basicIns);
-        } else {    // TODO[8] branch part
-            System.out.println("illegal file for hw1!");
+        } else if (basicIns instanceof Branch) {
+            transBranch((Branch) basicIns);
+        } else if (basicIns instanceof Jump) {
+            transJump((Jump) basicIns);
+        } else {
+            System.out.println("illegal basic ins!");
             System.exit(8);
         }
     }
@@ -176,6 +180,19 @@ public class MipsTranslator {
         }
     }
 
+    private void transBranch(Branch branch) {
+        mipsInsList.add(new Comment(branch.toString()));
+        Operand cond = branch.getCond();
+        String label = branch.getLabel();
+        //if (branch.getType().equals(Branch.Type.BNEZ))
+        loadRegHelper(cond, Reg.A0);
+        mipsInsList.add(new Bnez(Reg.A0, label));
+    }
+
+    private void transJump(Jump jump) {
+        mipsInsList.add(new J(jump.getLabel()));
+    }
+
     // util
     private void loadRegHelper(Operand operand, int reg) {
         if (operand instanceof Imm) {
@@ -218,6 +235,18 @@ public class MipsTranslator {
         } else if (type.equals(BinaryOp.Type.MOD)) {
             mipsInsList.add(new Div(src1, src2));
             mipsInsList.add(new Mfhi(dst));
+        } else if (type.equals(BinaryOp.Type.SGT)) {
+            mipsInsList.add(new Sgt(dst, src1, src2));
+        } else if (type.equals(BinaryOp.Type.SGE)) {
+            mipsInsList.add(new Sge(dst, src1, src2));
+        } else if (type.equals(BinaryOp.Type.SLT)) {
+            mipsInsList.add(new Slt(dst, src1, src2));
+        } else if (type.equals(BinaryOp.Type.SLE)) {
+            mipsInsList.add(new Sle(dst, src1, src2));
+        } else if (type.equals(BinaryOp.Type.SEQ)) {
+            mipsInsList.add(new Seq(dst, src1, src2));
+        } else if (type.equals(BinaryOp.Type.SNE)) {
+            mipsInsList.add(new Sne(dst, src1, src2));
         } else {
             // TODO[11], other op
             System.exit(11);
@@ -229,6 +258,8 @@ public class MipsTranslator {
             mipsInsList.add(new Add(dst, src, Reg.ZERO));
         } else if (type.equals(UnaryOp.Type.NEG)) {
             mipsInsList.add(new Sub(dst, Reg.ZERO, src));
+        } else if (type.equals(UnaryOp.Type.NOT)) {
+            mipsInsList.add(new Seq(dst, dst, Reg.ZERO));
         } else {
             // TODO[12], other op
             System.exit(12);
