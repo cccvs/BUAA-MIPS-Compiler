@@ -259,7 +259,7 @@ public class MipsTranslator {
         } else if (type.equals(UnaryOp.Type.NEG)) {
             mipsInsList.add(new Sub(dst, Reg.ZERO, src));
         } else if (type.equals(UnaryOp.Type.NOT)) {
-            mipsInsList.add(new Seq(dst, dst, Reg.ZERO));
+            mipsInsList.add(new Seq(dst, src, Reg.ZERO));
         } else {
             // TODO[12], other op
             System.exit(12);

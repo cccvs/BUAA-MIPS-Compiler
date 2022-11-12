@@ -17,7 +17,9 @@ import mid.operand.Symbol;
 import mid.operand.MidVar;
 import util.TkType;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Stack;
 
 public class IrConverter {
@@ -201,21 +203,26 @@ public class IrConverter {
         int pos = 0;
         String formatStr = printfNode.getFormatStr();
         Iterator<ExpNode> params = printfNode.iterParam();
+        List<BasicIns> printBuffer = new ArrayList<>();
         while (formatStr.indexOf("%d", pos) != -1) {
             int beginPos = pos;
             pos = formatStr.indexOf("%d", pos);
             if (beginPos < pos) {
                 String label = midCode.genStrLabel(formatStr.substring(beginPos, pos));
-                curBlock.append(new PrintStr(label));
+                printBuffer.add(new PrintStr(label));
             }
             ExpNode param = params.next();
             Operand operand = convExp(param);
-            curBlock.append(new PrintInt(operand));
+            printBuffer.add(new PrintInt(operand));
             pos += 2;
         }
         if (pos < formatStr.length()) {
             String label = midCode.genStrLabel(formatStr.substring(pos));
-            curBlock.append(new PrintStr(label));
+            printBuffer.add(new PrintStr(label));
+        }
+        // print buffer
+        for (BasicIns printIns : printBuffer) {
+            curBlock.append(printIns);
         }
     }
 
@@ -308,10 +315,10 @@ public class IrConverter {
             ExpNode left = orExp.getLeftExp();
             ExpNode right = orExp.getRightExp();
             // left
-            convAndExp(left, labelTrue, labelOr);       // 左递归, 左边不可能为OrExp
+            convOrExp(left, labelTrue, labelOr);         // 左递归, 右边不可能为OrExp
             // right
             updateBlock(labelOr);
-            convOrExp(right, labelTrue, labelFalse);    // 左递归, OrExp向右扩展
+            convAndExp(right, labelTrue, labelFalse);    // 左递归, OrExp向右上扩展
         } else {
             convAndExp(exp, labelTrue, labelFalse);
         }
@@ -324,10 +331,10 @@ public class IrConverter {
             ExpNode left = andExp.getLeftExp();
             ExpNode right = andExp.getRightExp();
             // left
-            convEqExp(left, labelAnd, labelFalse);      // 左递归, 左边不可能为AndExp
+            convAndExp(left, labelAnd, labelFalse);      // 左递归, 右边不可能为AndExp
             // right
             updateBlock(labelAnd);
-            convAndExp(right, labelTrue, labelFalse);     // 左递归, AndExp向右扩展
+            convEqExp(right, labelTrue, labelFalse);     // 左递归, AndExp向右上扩展
         } else {
             convEqExp(exp, labelTrue, labelFalse);
         }

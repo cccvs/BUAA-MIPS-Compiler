@@ -528,7 +528,7 @@ public class Parser {
     private ExpNode parseLAndExp() {
         ExpNode leftExp = parseEqExp();
         outStrings.add("<LAndExp>");
-        if (tokens.get(pos).eqType(TkType.AND)) {
+        while (tokens.get(pos).eqType(TkType.AND)) {
             TkType andLink = tokens.get(pos).getType();
             next(TkType.AND);
             leftExp = new BinaryExpNode(andLink, leftExp, parseEqExp());
@@ -540,7 +540,7 @@ public class Parser {
     private ExpNode parseLOrExp() {
         ExpNode leftExp = parseLAndExp();
         outStrings.add("<LOrExp>");
-        if (tokens.get(pos).eqType(TkType.OR)) {
+        while (tokens.get(pos).eqType(TkType.OR)) {
             TkType orLink = tokens.get(pos).getType();
             next(TkType.OR);
             leftExp = new BinaryExpNode(orLink, leftExp, parseLAndExp());
