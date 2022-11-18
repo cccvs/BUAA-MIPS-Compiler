@@ -198,6 +198,7 @@ public class MipsTranslator {
     }
 
     private void transMemOp(MemOp memOp) {
+        mipsInsList.add(new Comment(memOp.toString()));
         MidVar pointer = memOp.getPointer();
         Operand value = memOp.getValue();
         MemOp.Type type = memOp.getOp();
@@ -214,6 +215,7 @@ public class MipsTranslator {
     }
 
     private void transOffset(Offset offset) {
+        mipsInsList.add(new Comment(offset.toString()));
         MidVar dst = offset.getDst();
         MidVar base = offset.getBase();
         Operand offsetVal = offset.getOffsetVal();

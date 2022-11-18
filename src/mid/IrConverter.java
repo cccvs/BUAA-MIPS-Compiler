@@ -30,7 +30,6 @@ public class IrConverter {
     private static SymTab curTab = new SymTab();    // 初始化为全局符号表
     private static FuncFrame curFunc = null;
     private static BasicBlock curBlock = null;      // 对curBlock更新统一调用updateBlock()方法
-    private boolean hasReturn = true;               // 标志当前函数是否含有return语句
 
     private final Stack<BasicBlock> loopBeginStack = new Stack<>();
     private final Stack<BasicBlock> loopEndStack = new Stack<>();
@@ -115,7 +114,6 @@ public class IrConverter {
     // func part
     private void convFunc(FuncDefNode funcDefNode, boolean isMain) {
         curFunc = isMain ? midCode.getMainFunc() : midCode.getFunc(funcDefNode.getIdent());
-        hasReturn = false;
         // params part
         Iterator<FuncFParamNode> paramIter = funcDefNode.paramIter();
         while (paramIter.hasNext()) {
@@ -128,7 +126,7 @@ public class IrConverter {
         BlockNode block = funcDefNode.getBlock();
         convBlock(block);
         // append "return;" for void func
-        if (curFunc.getRetType().equals(FuncFrame.RetType.VOID) && !hasReturn) {
+        if (curFunc.getRetType().equals(FuncFrame.RetType.VOID)) {
             curBlock.append(new Return());
         }
         curFunc = null;
@@ -252,7 +250,6 @@ public class IrConverter {
             Operand retOperand = convExp(retVal);
             curBlock.append(new Return(retOperand));
         }
-        hasReturn = true;
     }
 
     private void convBranch(BranchNode branchNode) {
