@@ -31,32 +31,19 @@ public class Symbol extends MidVar {
     private final boolean isGlobal;
     private Integer stackOffset;          // offset from sp or .data, default for null
 
-    // global var/const, local const
-    public Symbol(DefNode defNode, boolean isGlobal) {
+    public Symbol(DefNode defNode, boolean isGlobal, boolean isConst) {
         super(defNode);
-        // basic information
         this.isConst = defNode.isConst();
         this.ident = defNode.getIdent();
         this.dimensions = defNode.getDimensions().stream().map(ExpNode::getConst).collect(Collectors.toList());
-        this.values = defNode.getInitValues().stream().map(ExpNode::getConst).collect(Collectors.toList());
-        // ir information
         this.isGlobal = isGlobal;
-    }
-
-    // local var
-    public Symbol(DefNode defNode) {
-        super(defNode);
-        // basic information
-        this.isConst = defNode.isConst();
-        this.ident = defNode.getIdent();
-        this.dimensions = defNode.getDimensions().stream().map(ExpNode::getConst).collect(Collectors.toList());
-        if (isConst) {
+        if (isGlobal || isConst) {
+            // global var/const, local const
             this.values = defNode.getInitValues().stream().map(ExpNode::getConst).collect(Collectors.toList());
         } else {
+            // local var
             this.values = new ArrayList<>();    // need to be assigned?
         }
-        // ir information
-        this.isGlobal = false;
     }
 
     // format param
@@ -72,11 +59,9 @@ public class Symbol extends MidVar {
             this.dimensions = new ArrayList<>();
         }
         this.values = null;
-        // ir information
         this.isGlobal = false;
     }
 
-    // ir part
     public int getConstVal(List<Integer> indexes) {
         assert dimensions.size() == indexes.size();
         int arrayBias = 0;
@@ -95,6 +80,17 @@ public class Symbol extends MidVar {
         } else {
             return 4;
         }
+    }
+
+    // with mult 4
+    public int getBase(int dimIndex) {
+        assert 0 <= dimIndex && dimIndex < dimensions.size();
+        assert refType.equals(RefType.ARRAY);
+        int prod = 1;
+        for (int j = dimensions.size() - 1; j > dimIndex; --j) {
+            prod *= dimensions.get(j);
+        }
+        return prod;
     }
 
     @Override
@@ -129,6 +125,7 @@ public class Symbol extends MidVar {
     }
 
     public String getLabel() {
+        assert isGlobal;
         return "g_" + ident;
     }
 
@@ -151,10 +148,10 @@ public class Symbol extends MidVar {
         return refType;
     }
 
-    // 全局变量向上增长，偏移需要-4
+    // 全局变量向上增长，偏移需要-size大小
     public void updateStackOffset(Integer stackOffset) {
         if (isGlobal) {
-            this.stackOffset = stackOffset - 4;
+            this.stackOffset = stackOffset - getSize();
         } else {
             this.stackOffset = stackOffset;
         }

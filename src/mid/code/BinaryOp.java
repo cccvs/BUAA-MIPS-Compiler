@@ -10,10 +10,10 @@ public class BinaryOp implements BasicIns{
 
 
     // Originate from BinaryExp
-    private Type op;
-    private Operand src1;
-    private Operand src2;
-    private MidVar dst;
+    private final Type op;
+    private final Operand src1;
+    private final Operand src2;
+    private final MidVar dst;
 
     public BinaryOp(Type op, Operand src1, Operand src2, MidVar dst) {
         this.op = op;

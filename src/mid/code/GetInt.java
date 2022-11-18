@@ -1,15 +1,15 @@
 package mid.code;
 
-import mid.operand.Symbol;
+import mid.operand.MidVar;
 
 public class GetInt implements BasicIns{
-    private Symbol var;
+    private final MidVar var;
 
-    public GetInt(Symbol var) {
+    public GetInt(MidVar var) {
         this.var = var;
     }
 
-    public Symbol getVar() {
+    public MidVar getVar() {
         return var;
     }
 

@@ -12,11 +12,6 @@ public class ReturnNode implements StmtNode {
 
     }
 
-    // ir part
-    public void toIr(BasicBlock basicBlock) {
-        // TODO[5]: 1031, fill return convert
-    }
-
     public void setRetVal(ExpNode retVal) {
         this.retVal = retVal;
         this.hasExp = true;

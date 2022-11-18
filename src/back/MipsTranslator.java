@@ -85,6 +85,10 @@ public class MipsTranslator {
             transBranch((Branch) basicIns);
         } else if (basicIns instanceof Jump) {
             transJump((Jump) basicIns);
+        } else if (basicIns instanceof MemOp) {
+            transMemOp((MemOp) basicIns);
+        } else if (basicIns instanceof Offset) {
+            transOffset((Offset) basicIns);
         } else {
             System.out.println("illegal basic ins!");
             System.exit(8);
@@ -143,7 +147,7 @@ public class MipsTranslator {
 
     private void transGetInt(GetInt getInt) {
         mipsInsList.add(new Comment(getInt.toString()));
-        Symbol var = getInt.getVar();
+        MidVar var = getInt.getVar();
         mipsInsList.add(new Addi(Reg.V0, Reg.ZERO, 5));
         mipsInsList.add(new Syscall());
         storeRegHelper(var, Reg.V0);
@@ -191,6 +195,44 @@ public class MipsTranslator {
 
     private void transJump(Jump jump) {
         mipsInsList.add(new J(jump.getLabel()));
+    }
+
+    private void transMemOp(MemOp memOp) {
+        MidVar pointer = memOp.getPointer();
+        Operand value = memOp.getValue();
+        MemOp.Type type = memOp.getOp();
+        loadRegHelper(pointer, Reg.A1);
+        if (type.equals(MemOp.Type.LOAD)) {
+            assert value instanceof MidVar;
+            allocStack((MidVar) value); // load 可能初次赋值
+            mipsInsList.add(new Lw(Reg.A2, 0, Reg.A1));
+            storeRegHelper((MidVar) value, Reg.A2);
+        } else {
+            loadRegHelper(value, Reg.A2);
+            mipsInsList.add(new Sw(Reg.A2, 0, Reg.A1));
+        }
+    }
+
+    private void transOffset(Offset offset) {
+        MidVar dst = offset.getDst();
+        MidVar base = offset.getBase();
+        Operand offsetVal = offset.getOffsetVal();
+        if (base.getRefType().equals(Operand.RefType.ARRAY)) {
+            assert base instanceof Symbol;
+            Symbol symBase = (Symbol) base;
+            loadRegHelper(offsetVal, Reg.A2);
+            if (symBase.isGlobal()) {
+                mipsInsList.add(new La(Reg.A1, symBase.getLabel(), Reg.A2));
+            } else {
+                mipsInsList.add(new Addi(Reg.A1, Reg.SP, -symBase.getOffset()));
+                mipsInsList.add(new Add(Reg.A1, Reg.A1, Reg.A2));
+            }
+        } else {
+            loadRegHelper(base, Reg.A2);
+            loadRegHelper(offsetVal, Reg.A3);
+            mipsInsList.add(new Add(Reg.A1, Reg.A2, Reg.A3));
+        }
+        storeRegHelper(dst, Reg.A1);
     }
 
     // util

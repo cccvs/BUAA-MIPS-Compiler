@@ -1,5 +1,6 @@
 package mid.code;
 
+import mid.operand.MidVar;
 import mid.operand.Operand;
 import mid.operand.Symbol;
 
@@ -10,13 +11,31 @@ public class MemOp implements BasicIns{
         STORE
     }
 
-    private Type op;
-    private Symbol pointer;
-    private Operand operand;
+    private final Type op;
+    private final Operand value;
+    private final MidVar pointer;
 
-    public MemOp(Type op, Symbol pointer, Operand operand) {
+    public MemOp(Type op, Operand value, MidVar pointer) {
+        assert pointer.getRefType().equals(Operand.RefType.POINTER);
         this.op = op;
+        this.value = value;
         this.pointer = pointer;
-        this.operand = operand;
+    }
+
+    @Override
+    public String toString() {
+        return "\t" + op.name() + " " + value + ", " + pointer;
+    }
+
+    public Type getOp() {
+        return op;
+    }
+
+    public MidVar getPointer() {
+        return pointer;
+    }
+
+    public Operand getValue() {
+        return value;
     }
 }

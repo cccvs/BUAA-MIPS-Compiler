@@ -17,6 +17,7 @@ import mid.operand.Symbol;
 import mid.operand.MidVar;
 import util.TkType;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -34,9 +35,8 @@ public class IrConverter {
     private final Stack<BasicBlock> loopBeginStack = new Stack<>();
     private final Stack<BasicBlock> loopEndStack = new Stack<>();
 
-    public IrConverter(CompUnitNode compUnitNode){
+    public IrConverter(CompUnitNode compUnitNode) {
         convCompUnit(compUnitNode);
-        // testGlobal();
     }
 
     public MidCode getMidCode() {
@@ -80,23 +80,33 @@ public class IrConverter {
     private void convDef(DefNode defNode) {
         // construct symbol
         boolean isGlobal = curTab.isGlobal();
+        Symbol symbol = new Symbol(defNode, isGlobal, defNode.isConst());  // create new symbol
+        fillSymbolTabAndUpdateStack(symbol);
         if (isGlobal) {
-            Symbol symbol = new Symbol(defNode, true);  // create new symbol
-            putSymbolAndUpdateStack(symbol);
             midCode.putGlobalSym(symbol);
-        } else {
-            Symbol symbol = new Symbol(defNode);
-            putSymbolAndUpdateStack(symbol);
-            if (!defNode.getInitValues().isEmpty()) {
-                if (symbol.getRefType() == Operand.RefType.VALUE) {
-                    ExpNode initExp = defNode.getInitValues().get(0);
+        } else if (!defNode.getInitValues().isEmpty()) {
+            // 如果声明语句包含初始赋值
+            if (symbol.getRefType() == Operand.RefType.VALUE) {
+                // get exp
+                ExpNode initExp = defNode.getInitValues().get(0);
+                Operand initOperand = convExp(initExp);
+                // mov
+                UnaryOp unaryOp = new UnaryOp(UnaryOp.Type.MOV, initOperand, symbol);   // 非全局常量初值可能不是常量表达式
+                curBlock.append(unaryOp);
+            } else {
+                assert symbol.getRefType() == Operand.RefType.ARRAY;
+                int size = symbol.getSize();    // has multiplied 4
+                for (int index = 0; index * 4 < size; ++index) {
+                    // offset
+                    MidVar pointer = new MidVar(Operand.RefType.POINTER);
+                    Offset calOffset = new Offset(symbol, new Imm(index * 4), pointer);
+                    curBlock.append(calOffset);
+                    // get exp
+                    ExpNode initExp = defNode.getInitValues().get(index);
                     Operand initOperand = convExp(initExp);
-                    // 非全局常量初值可能不是常量表达式
-                    UnaryOp unaryOp = new UnaryOp(UnaryOp.Type.MOV, initOperand, symbol);
-                    curBlock.append(unaryOp);
-                } else {
-                    // TODO[12] array
-                    System.exit(12);
+                    // store
+                    MemOp store = new MemOp(MemOp.Type.STORE, initOperand, pointer);
+                    curBlock.append(store);
                 }
             }
         }
@@ -136,7 +146,7 @@ public class IrConverter {
             Iterator<Symbol> paramIter = curFunc.iterFormatParam();
             while (paramIter.hasNext()) {
                 Symbol param = paramIter.next();
-                putSymbolAndUpdateStack(param);
+                fillSymbolTabAndUpdateStack(param);
             }
         }
         // analyze block item
@@ -172,7 +182,7 @@ public class IrConverter {
             convBreak();
         } else if (stmtNode instanceof ContinueNode) {
             convContinue();
-        }  else { // TODO[7] branch part
+        } else {
             System.out.println("illegal file for hw1!");
             System.exit(5);
         }
@@ -186,16 +196,21 @@ public class IrConverter {
         assert leftSym.getDimension() == leftVal.getArrayIndexes().size();
         if (leftSym.getRefType().equals(Symbol.RefType.VALUE)) {
             if (assignNode.isGetInt()) {    // e.g. a = getint();
-                GetInt getInt = new GetInt(leftSym);
-                curBlock.append(getInt);
+                curBlock.append(new GetInt(leftSym));
             } else {
                 Operand src = convExp(exp);
-                UnaryOp mov = new UnaryOp(UnaryOp.Type.MOV, src, leftSym);
-                curBlock.append(mov);
+                curBlock.append(new UnaryOp(UnaryOp.Type.MOV, src, leftSym));
             }
-        } else {                            // e.g. a[3] = getint()
-            // TODO[8] array part
-            System.exit(7);
+        } else {
+            MidVar leftPointer = convLVal(leftVal, true);
+            if (assignNode.isGetInt()) {    // e.g. a[3] = getint()
+                MidVar recv = new MidVar(Operand.RefType.VALUE);
+                curBlock.append(new GetInt(recv));
+                curBlock.append(new MemOp(MemOp.Type.STORE, recv, leftPointer));
+            } else {
+                Operand src = convExp(exp);
+                curBlock.append(new MemOp(MemOp.Type.STORE, src, leftPointer));
+            }
         }
     }
 
@@ -350,7 +365,7 @@ public class IrConverter {
     // exp
     private Operand convExp(ExpNode expNode) {
         if (expNode instanceof LValNode) {
-            return convLVal((LValNode) expNode);
+            return convLVal((LValNode) expNode, false);
         } else if (expNode instanceof NumNode) {
             return convNum((NumNode) expNode);
         } else if (expNode instanceof FuncCallNode) {
@@ -365,15 +380,38 @@ public class IrConverter {
         }
     }
 
-    private Operand convLVal(LValNode lValNode) {
+    private MidVar convLVal(LValNode lValNode, boolean assign) {
+        // assign为真代表LVal当作左值赋值
         String ident = lValNode.getIdent();
         Symbol symbol = curTab.findSym(ident);
         if (symbol.getRefType() == Symbol.RefType.VALUE) {
             return symbol;
         } else {
-            MidVar recv = new MidVar(MidVar.RefType.POINTER);
-            // TODO[1]: cond of array/pointer
-            return null;
+            int leftValDim = lValNode.getArrayIndexes().size();
+            int symbolDim = symbol.getDimension();
+            assert leftValDim <= symbolDim;
+            // cal offset
+            Operand offsetVal = new Imm(0);
+            for (int i = 0; i < leftValDim; i++) {
+                Operand indexOperand = convExp(lValNode.getArrayIndexes().get(i));
+                MidVar prod = new MidVar(Operand.RefType.VALUE);
+                MidVar newOffsetVal = new MidVar(Operand.RefType.VALUE);
+                Imm base = new Imm(symbol.getBase(i) * 4);
+                curBlock.append(new BinaryOp(BinaryOp.Type.MUL, indexOperand, base, prod));
+                curBlock.append(new BinaryOp(BinaryOp.Type.ADD, offsetVal, prod, newOffsetVal));
+                offsetVal = newOffsetVal;
+            }
+            // deal with pointer
+            MidVar pointer = new MidVar(Operand.RefType.POINTER);
+            curBlock.append(new Offset(symbol, offsetVal, pointer));
+            if (leftValDim < symbolDim || assign) {
+                // 作为实参地址, or用作左值赋值
+                return pointer;
+            } else {
+                MidVar loadValue = new MidVar(Operand.RefType.VALUE);
+                curBlock.append(new MemOp(MemOp.Type.LOAD, loadValue, pointer));
+                return loadValue;
+            }
         }
     }
 
@@ -432,7 +470,7 @@ public class IrConverter {
         return curTab.findSym(ident);
     }
 
-    private void putSymbolAndUpdateStack(Symbol symbol) {
+    private void fillSymbolTabAndUpdateStack(Symbol symbol) {
         curTab.putSym(symbol);                  // put current symbol tab.update/set stack size
         int symbolSize = symbol.getSize();
         int newStackSize = curTab.isGlobal() ? midCode.addStackSize(symbolSize) : curFunc.addStackSize(symbolSize);
