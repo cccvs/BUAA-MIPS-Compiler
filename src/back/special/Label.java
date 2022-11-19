@@ -13,6 +13,6 @@ public class Label extends MipsIns{
 
     @Override
     public String toString() {
-        return "\n\t" + label + ":";
+        return label + ":";
     }
 }

@@ -520,6 +520,7 @@ public class Parser {
                 next(TkType.NEQ);
             }
             leftExp = new BinaryExpNode(eqLink, leftExp, parseRelExp());
+            outStrings.add("<EqExp>");
         }
         return leftExp;
     }
