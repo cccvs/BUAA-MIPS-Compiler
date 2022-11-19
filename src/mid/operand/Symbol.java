@@ -107,12 +107,7 @@ public class Symbol extends MidVar {
 
     // mips part
     public List<Integer> getInitVal() {
-        int length = getSize() >> 2;
-        List<Integer> initList = new ArrayList<>();
-        for (int i = 0; i < length; i++) {
-            initList.add(values.isEmpty() ? 0 : values.get(i));
-        }
-        return initList;
+        return values;
     }
 
     // basic function

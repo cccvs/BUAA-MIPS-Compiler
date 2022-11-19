@@ -349,8 +349,13 @@ public class MipsTranslator {
         while (globalSyms.hasNext()) {
             Symbol symbol = globalSyms.next();
             List<Integer> initList = symbol.getInitVal();
-            String initStr = initList.stream().map(x -> Integer.toString(x)).reduce((x, y) -> x + " " + y).orElse("");
-            ps.println("\t" + symbol.getLabel() + ": .word " + initStr);
+            if (!initList.isEmpty()) {
+                String initStr = initList.stream().map(x -> Integer.toString(x)).reduce((x, y) -> x + " " + y).orElse("");
+                ps.println("\t" + symbol.getLabel() + ": .word " + initStr);
+            } else {
+                ps.println("\t" + symbol.getLabel() + ": .space " + symbol.getSize());
+            }
+
         }
         // constant str
         Iterator<String> strLabels = midCode.strLabelIter();
