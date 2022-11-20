@@ -336,6 +336,7 @@ public class MipsTranslator {
     private MidVar replaceAlgo() {
         return regBuffer.remove();
     }
+
     // output
     public void outputMips(PrintStream ps) {
         outputGlobal(ps);

@@ -86,26 +86,23 @@ public class IrConverter {
         } else if (!defNode.getInitValues().isEmpty()) {
             // 如果声明语句包含初始赋值
             if (symbol.getRefType() == Operand.RefType.VALUE) {
-                // get exp
+                // value part
                 ExpNode initExp = defNode.getInitValues().get(0);
-                Operand initOperand = convExp(initExp);
-                // mov
-                UnaryOp unaryOp = new UnaryOp(UnaryOp.Type.MOV, initOperand, symbol);   // 非全局常量初值可能不是常量表达式
-                curBlock.append(unaryOp);
+                Operand initOperand = convExp(initExp);     // 非全局常量初值可能不是常量表达式
+                curBlock.append(new UnaryOp(UnaryOp.Type.MOV, initOperand, symbol));
             } else {
+                // array part
                 assert symbol.getRefType() == Operand.RefType.ARRAY;
                 int size = symbol.getSize();    // has multiplied 4
                 for (int index = 0; index * 4 < size; ++index) {
                     // offset
                     MidVar pointer = new MidVar(Operand.RefType.POINTER);
-                    Offset calOffset = new Offset(symbol, new Imm(index * 4), pointer);
-                    curBlock.append(calOffset);
+                    curBlock.append(new Offset(symbol, new Imm(index * 4), pointer));
                     // get exp
                     ExpNode initExp = defNode.getInitValues().get(index);
                     Operand initOperand = convExp(initExp);
                     // store
-                    MemOp store = new MemOp(MemOp.Type.STORE, initOperand, pointer);
-                    curBlock.append(store);
+                    curBlock.append(new MemOp(MemOp.Type.STORE, initOperand, pointer));
                 }
             }
         }
@@ -442,8 +439,7 @@ public class IrConverter {
         Operand left = convExp(leftExp);
         Operand right = convExp(rightExp);
         MidVar dst = new MidVar(left.getRefType());
-        BinaryOp binaryOp = new BinaryOp(BinaryExpNode.typeMap(op), left, right, dst);
-        curBlock.append(binaryOp);
+        curBlock.append(new BinaryOp(BinaryExpNode.typeMap(op), left, right, dst));
         return dst;
     }
 
@@ -455,8 +451,7 @@ public class IrConverter {
             return src;
         } else {
             MidVar dst = new MidVar(MidVar.RefType.VALUE);
-            UnaryOp unaryOp = new UnaryOp(UnaryExpNode.typeMap(op), src, dst);
-            curBlock.append(unaryOp);
+            curBlock.append( new UnaryOp(UnaryExpNode.typeMap(op), src, dst));
             return dst;
         }
     }

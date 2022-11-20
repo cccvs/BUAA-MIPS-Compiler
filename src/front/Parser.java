@@ -395,17 +395,17 @@ public class Parser {
 
     private ExpNode parseUnaryExp() {
         // {UnaryOp} (PrimaryExp | Ident '(' [FuncRParams] ')')
-        // {UnaryOp}
         ExpNode retExp;
         if (isUnaryOp()) {
+            // {UnaryOp}
             TkType unaryOp = parseUnaryOp();
             ExpNode unaryExp = parseUnaryExp();
             retExp = new UnaryExpNode(unaryOp, unaryExp);
         } else {
-            // Ident '(' [FuncRParams] ')'
             if (pos + 1 < tokens.size() &&
                     tokens.get(pos).eqType(TkType.IDENFR) &&
                     tokens.get(pos + 1).eqType(TkType.LPARENT)) {
+                // Ident '(' [FuncRParams] ')'
                 FuncCallNode funcCall = new FuncCallNode(tokens.get(pos).getName());
                 next(TkType.IDENFR);
                 next(TkType.LPARENT);
@@ -414,9 +414,8 @@ public class Parser {
                 }
                 next(TkType.RPARENT);
                 retExp = funcCall;
-            }
-            // PrimaryExp -> '(' Exp ')' | LVal | Number
-            else {
+            } else {
+                // PrimaryExp -> '(' Exp ')' | LVal | Number
                 if (tokens.get(pos).eqType(TkType.INTCON)) {
                     retExp = parseNumber();
                 } else if (tokens.get(pos).eqType(TkType.LPARENT)) {
