@@ -1,4 +1,5 @@
 import back.MipsTranslator;
+import exception.ErrorTable;
 import exception.SysYError;
 import front.Parser;
 import front.ast.CompUnitNode;
@@ -18,17 +19,12 @@ import java.util.Scanner;
 import static util.Constant.*;
 
 public class SysYRunner {
-    private final List<SysYError> errorList = new ArrayList<>();
 
     public SysYRunner() throws FileNotFoundException {
-        try {
-            run();
-        } catch (SysYError error) {
-            errorList.add(error);
-        }
+        run();
     }
 
-    private void run() throws FileNotFoundException, SysYError {
+    private void run() throws FileNotFoundException{
         // read part
         InputStream inputStream = new FileInputStream(INPUT_FILE);
         Scanner in = new Scanner(inputStream);
@@ -46,7 +42,7 @@ public class SysYRunner {
         MidCode midCode = irConverter.getMidCode();
         midCode.outputMidCode(new PrintStream(MID_CODE));
         // error part
-        outputError(new PrintStream(ERROR));
+        ErrorTable.outputError(new PrintStream(ERROR));
         // mips part
         MipsTranslator mipsTranslator = new MipsTranslator(midCode);
         mipsTranslator.outputMips(new PrintStream(MIPS));
@@ -60,12 +56,5 @@ public class SysYRunner {
             sb.append('\n');
         }
         return sb.toString();
-    }
-
-    private void outputError(PrintStream ps) {
-        errorList.sort(Comparator.naturalOrder());
-        for (SysYError sysYError : errorList) {
-            ps.println(sysYError);
-        }
     }
 }

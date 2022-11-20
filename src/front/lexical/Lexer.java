@@ -4,6 +4,8 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import exception.ErrorTable;
+import exception.SysYError;
 import util.TkType;
 
 public class Lexer {
@@ -11,19 +13,20 @@ public class Lexer {
     private final int length;
 
     private int pos;
+    private int curLine;
     private String curToken;
     private final List<Token> tokens;
 
     public Lexer(String inputStr) {
         this.inputStr = inputStr;
         this.length = inputStr.length();
-
         this.pos = 0;
+        this.curLine = 1;
         this.curToken = "";
         this.tokens = new ArrayList<>();
     }
 
-    public void lex() {
+    public void lex(){
         while (pos < length) {
             skipSpace();
             if (pos >= length) {
@@ -56,8 +59,29 @@ public class Lexer {
             return;
         }
         while ("\n\r \t".indexOf(inputStr.charAt(pos)) != -1) {
+            if (inputStr.charAt(pos) == '\n') {
+                ++curLine;
+            }
             ++pos;
             if (pos >= length) {
+                return;
+            }
+        }
+    }
+
+    private void checkIllegalString(String str) {
+        for (int i = 0; i < str.length(); i++) {
+            char curChar = str.charAt(i);
+            if (!(curChar == 32 || curChar == 33 || curChar == '%' || (40 <= curChar && curChar <= 126))) {
+                ErrorTable.appendError(new SysYError(SysYError.ILLEGAL_STRING, curLine));
+                return;
+            }
+            if (curChar == '%' && (i >= str.length() - 1 || str.charAt(i + 1) != 'd')) {
+                ErrorTable.appendError(new SysYError(SysYError.ILLEGAL_STRING, curLine));
+                return;
+            }
+            if (curChar == '\\' && (i >= str.length() - 1 || str.charAt(i + 1) != 'n') ) {
+                ErrorTable.appendError(new SysYError(SysYError.ILLEGAL_STRING, curLine));
                 return;
             }
         }
@@ -70,16 +94,17 @@ public class Lexer {
             ++pos;
         }
         curToken = inputStr.substring(beginIndex, pos);
-        tokens.add(new Token(Token.KEYWORDS.getOrDefault(curToken, TkType.IDENFR), curToken));
+        tokens.add(new Token(Token.KEYWORDS.getOrDefault(curToken, TkType.IDENFR), curToken, curLine));
     }
 
+    @SuppressWarnings("checkstyle:LineLength")
     private void lexInt() {
         int beginIndex = pos++;
         while (Character.isDigit(inputStr.charAt(pos))) {
             ++pos;
         }
         curToken = inputStr.substring(beginIndex, pos);
-        tokens.add(new Token(Token.KEYWORDS.getOrDefault(curToken, TkType.INTCON), curToken));
+        tokens.add(new Token(Token.KEYWORDS.getOrDefault(curToken, TkType.INTCON), curToken, curLine));
     }
 
     private void lexStr() {
@@ -89,7 +114,8 @@ public class Lexer {
         }
         ++pos;
         curToken = inputStr.substring(beginIndex, pos);
-        tokens.add(new Token(Token.KEYWORDS.getOrDefault(curToken, TkType.STRCON), curToken));
+        checkIllegalString(curToken);
+        tokens.add(new Token(Token.KEYWORDS.getOrDefault(curToken, TkType.STRCON), curToken, curLine));
     }
 
     private void lexSingle() {
@@ -136,7 +162,7 @@ public class Lexer {
                 error();
         }
         curToken = String.valueOf(c);
-        tokens.add(new Token(tkType, curToken));
+        tokens.add(new Token(tkType, curToken, curLine));
         pos++;
     }
 
@@ -145,13 +171,13 @@ public class Lexer {
         String str = inputStr.substring(pos, pos + 2);
         if (c == '&') {
             if (str.equals("&&")) {
-                tokens.add(new Token(TkType.AND, str));
+                tokens.add(new Token(TkType.AND, str, curLine));
             } else {
                 error();
             }
         } else if (c == '|') {
             if (str.equals("||")) {
-                tokens.add(new Token(TkType.OR, str));
+                tokens.add(new Token(TkType.OR, str, curLine));
             } else {
                 error();
             }
@@ -165,37 +191,37 @@ public class Lexer {
         switch (c) {
             case '<':
                 if (str.equals("<=")) {
-                    tokens.add(new Token(TkType.LEQ, str));
+                    tokens.add(new Token(TkType.LEQ, str, curLine));
                     pos += 2;
                 } else {
-                    tokens.add(new Token(TkType.LSS, String.valueOf(c)));
+                    tokens.add(new Token(TkType.LSS, String.valueOf(c), curLine));
                     pos += 1;
                 }
                 break;
             case '>':
                 if (str.equals(">=")) {
-                    tokens.add(new Token(TkType.GEQ, str));
+                    tokens.add(new Token(TkType.GEQ, str, curLine));
                     pos += 2;
                 } else {
-                    tokens.add(new Token(TkType.GRE, String.valueOf(c)));
+                    tokens.add(new Token(TkType.GRE, String.valueOf(c), curLine));
                     pos += 1;
                 }
                 break;
             case '=':
                 if (str.equals("==")) {
-                    tokens.add(new Token(TkType.EQL, str));
+                    tokens.add(new Token(TkType.EQL, str, curLine));
                     pos += 2;
                 } else {
-                    tokens.add(new Token(TkType.ASSIGN, String.valueOf(c)));
+                    tokens.add(new Token(TkType.ASSIGN, String.valueOf(c), curLine));
                     pos += 1;
                 }
                 break;
             case '!':
                 if (str.equals("!=")) {
-                    tokens.add(new Token(TkType.NEQ, str));
+                    tokens.add(new Token(TkType.NEQ, str, curLine));
                     pos += 2;
                 } else {
-                    tokens.add(new Token(TkType.NOT, String.valueOf(c)));
+                    tokens.add(new Token(TkType.NOT, String.valueOf(c), curLine));
                     pos += 1;
                 }
                 break;
@@ -206,7 +232,7 @@ public class Lexer {
 
     private void lexDiv() {
         if (pos >= length - 1 || "/*".indexOf(inputStr.charAt(pos + 1)) == -1) {
-            tokens.add(new Token(TkType.DIV, "/"));
+            tokens.add(new Token(TkType.DIV, "/", curLine));
             ++pos;
         } else {
             ++pos;
@@ -241,5 +267,6 @@ public class Lexer {
     private void error() {
         ++pos;
         System.out.println("error in lexer!");
+        System.exit(2);
     }
 }

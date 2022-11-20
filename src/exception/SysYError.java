@@ -1,8 +1,9 @@
 package exception;
 
-public class SysYError extends Throwable implements Comparable<SysYError> {
-    public static final String ILLEGAL_TOKEN = "a";
-    public static final String REDEFINE_IDENT = "b";
+public class SysYError implements Comparable<SysYError> {
+    public static final String ILLEGAL_STRING = "a";
+    public static final String REDEFINED_IDENT = "b";
+    public static final String UNDEFINED_IDENT = "c";
 
     private final String type;
     private final int line;

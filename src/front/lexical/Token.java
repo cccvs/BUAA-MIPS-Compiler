@@ -22,10 +22,12 @@ public class Token {
 
     private final TkType tkType;
     private final String str;
+    private final int line;
 
-    public Token(TkType tkType, String str) {
+    public Token(TkType tkType, String str, int line) {
         this.tkType = tkType;
         this.str = str;
+        this.line = line;
     }
 
     public TkType getType() {
