@@ -59,7 +59,7 @@ public class Parser {
         }
     }
 
-    private void nextWithHandling(TkType type) {
+    private void nextWithHandler(TkType type) {
         try {
             next(type);
         } catch (ParserError e) {
@@ -67,11 +67,11 @@ public class Parser {
             assert pos > 0;
             int errorLine = tokens.get(pos - 1).getLine();
             if (expectType.equals(TkType.SEMICN)) {
-                ErrorTable.appendError(new SysYError(SysYError.MISSING_SEMICOLON, errorLine));
+                ErrorTable.append(new SysYError(SysYError.MISSING_SEMICOLON, errorLine));
             } else if (expectType.equals(TkType.RPARENT)) {
-                ErrorTable.appendError(new SysYError(SysYError.MISSING_RIGHT_PARENT, errorLine));
+                ErrorTable.append(new SysYError(SysYError.MISSING_RIGHT_PARENT, errorLine));
             } else if (expectType.equals(TkType.RBRACK)) {
-                ErrorTable.appendError(new SysYError(SysYError.MISSING_RIGHT_BRACKET, errorLine));
+                ErrorTable.append(new SysYError(SysYError.MISSING_RIGHT_BRACKET, errorLine));
             } else {
                 System.out.println("unexpected handling token");
                 System.exit(7);
@@ -124,7 +124,7 @@ public class Parser {
             next(TkType.COMMA);
             constDeclNode.addDefs(parseConstDef());
         }
-        nextWithHandling(TkType.SEMICN);
+        nextWithHandler(TkType.SEMICN);
         output.add("<ConstDecl>");
         return constDeclNode;
     }
@@ -136,7 +136,7 @@ public class Parser {
         while (tokens.get(pos).eqType(TkType.LBRACK)) {
             next(TkType.LBRACK);
             constDefNode.addDimension(parseConstExp());
-            nextWithHandling(TkType.RBRACK);
+            nextWithHandler(TkType.RBRACK);
         }
         next(TkType.ASSIGN);
         parseConstInitVal(constDefNode);
@@ -178,7 +178,7 @@ public class Parser {
             next(TkType.COMMA);
             varDeclNode.addDefs(parseVarDef());
         }
-        nextWithHandling(TkType.SEMICN);
+        nextWithHandler(TkType.SEMICN);
         output.add("<VarDecl>");
         return varDeclNode;
     }
@@ -190,7 +190,7 @@ public class Parser {
         while (tokens.get(pos).eqType(TkType.LBRACK)) {
             next(TkType.LBRACK);
             varDefNode.addDimension(parseConstExp());
-            nextWithHandling(TkType.RBRACK);
+            nextWithHandler(TkType.RBRACK);
         }
         if (tokens.get(pos).eqType(TkType.ASSIGN)) {
             next(TkType.ASSIGN);
@@ -229,7 +229,7 @@ public class Parser {
         if (tokens.get(pos).eqType(TkType.INTTK)) {
             parseFuncFParams(funcDefNode);
         }
-        nextWithHandling(TkType.RPARENT);
+        nextWithHandler(TkType.RPARENT);
         funcDefNode.setBlock(parseBlock());
         output.add("<FuncDef>");
         return funcDefNode;
@@ -240,7 +240,7 @@ public class Parser {
         next(TkType.INTTK);
         next(TkType.MAINTK);
         next(TkType.LPARENT);
-        nextWithHandling(TkType.RPARENT);
+        nextWithHandler(TkType.RPARENT);
         mainFuncDefNode.setBlock(parseBlock());
         output.add("<MainFuncDef>");
         return mainFuncDefNode;
@@ -272,12 +272,12 @@ public class Parser {
         FuncFParamNode funcFParamNode = new FuncFParamNode(tokens.get(pos - 1).getName());
         if (tokens.get(pos).eqType(TkType.LBRACK)) {
             next(TkType.LBRACK);
-            nextWithHandling(TkType.RBRACK);
+            nextWithHandler(TkType.RBRACK);
             funcFParamNode.setPointer(true);
             while (tokens.get(pos).eqType(TkType.LBRACK)) {
                 next(TkType.LBRACK);
                 funcFParamNode.addDimension(parseConstExp());
-                nextWithHandling(TkType.RBRACK);
+                nextWithHandler(TkType.RBRACK);
             }
         }
         output.add("<FuncFParam>");
@@ -316,7 +316,7 @@ public class Parser {
             next(TkType.IFTK);
             next(TkType.LPARENT);
             ExpNode cond = parseCond();
-            nextWithHandling(TkType.RPARENT);
+            nextWithHandler(TkType.RPARENT);
             StmtNode thenStmt = parseStmt();
             // new if
             BranchNode branchNode = new BranchNode(cond, thenStmt);
@@ -331,20 +331,20 @@ public class Parser {
             next(TkType.WHILETK);
             next(TkType.LPARENT);
             ExpNode cond = parseCond();
-            nextWithHandling(TkType.RPARENT);
+            nextWithHandler(TkType.RPARENT);
             StmtNode loopBody = parseStmt();
             retStmt = new LoopNode(cond, loopBody);
         }
         // 'break' ';'
         else if (tokens.get(pos).eqType(TkType.BREAKTK)) {
             next(TkType.BREAKTK);
-            nextWithHandling(TkType.SEMICN);
+            nextWithHandler(TkType.SEMICN);
             retStmt = new BreakNode();
         }
         // 'continue' ';'
         else if (tokens.get(pos).eqType(TkType.CONTINUETK)) {
             next(TkType.CONTINUETK);
-            nextWithHandling(TkType.SEMICN);
+            nextWithHandler(TkType.SEMICN);
             retStmt = new ContinueNode();
         }
         // 'return' [Exp] ';'
@@ -355,11 +355,12 @@ public class Parser {
             if (isExp()) {
                 returnNode.setRetVal(parseExp());
             }
-            nextWithHandling(TkType.SEMICN);
+            nextWithHandler(TkType.SEMICN);
             retStmt = returnNode;
         }
         // 'printf' '(' FormatString {',' Exp} ')' ';'
         else if (tokens.get(pos).eqType(TkType.PRINTFTK)) {
+            int printfTokenLine = tokens.get(pos).getLine(); // 'printf' line
             next(TkType.PRINTFTK);
             next(TkType.LPARENT);
             next(TkType.STRCON);
@@ -368,8 +369,9 @@ public class Parser {
                 next(TkType.COMMA);
                 printfNode.addParam(parseExp());
             }
-            nextWithHandling(TkType.RPARENT);
-            nextWithHandling(TkType.SEMICN);
+            printfNode.checkParamCount(printfTokenLine);
+            nextWithHandler(TkType.RPARENT);
+            nextWithHandler(TkType.SEMICN);
             retStmt = printfNode;
         }
         // LVal '=' Exp ';'
@@ -380,12 +382,12 @@ public class Parser {
             if (tokens.get(pos).eqType(TkType.GETINTTK)) {
                 next(TkType.GETINTTK);
                 next(TkType.LPARENT);
-                nextWithHandling(TkType.RPARENT);
+                nextWithHandler(TkType.RPARENT);
                 assignNode.setGetInt();
             } else {
                 assignNode.setExp(parseExp());
             }
-            nextWithHandling(TkType.SEMICN);
+            nextWithHandler(TkType.SEMICN);
             retStmt = assignNode;
         }
         // [Exp] ';'
@@ -396,7 +398,7 @@ public class Parser {
                 // 如果没有exp，Stmt返回空Block
                 retStmt = new BlockNode();
             }
-            nextWithHandling(TkType.SEMICN);
+            nextWithHandler(TkType.SEMICN);
         }
         output.add("<Stmt>");
         return retStmt;
@@ -422,7 +424,7 @@ public class Parser {
         while (tokens.get(pos).eqType(TkType.LBRACK)) {
             next(TkType.LBRACK);
             leftVal.addArrayIndex(parseExp());
-            nextWithHandling(TkType.RBRACK);
+            nextWithHandler(TkType.RBRACK);
         }
         output.add("<LVal>");
         return leftVal;
@@ -453,7 +455,7 @@ public class Parser {
                 if (isExp()) {
                     parseFuncRParams(funcCall);
                 }
-                nextWithHandling(TkType.RPARENT);
+                nextWithHandler(TkType.RPARENT);
                 retExp = funcCall;
             } else {
                 // PrimaryExp -> '(' Exp ')' | LVal | Number
@@ -462,7 +464,7 @@ public class Parser {
                 } else if (tokens.get(pos).eqType(TkType.LPARENT)) {
                     next(TkType.LPARENT);
                     retExp = parseExp();
-                    nextWithHandling(TkType.RPARENT);
+                    nextWithHandler(TkType.RPARENT);
                 } else {
                     retExp = parseLVal();
                 }

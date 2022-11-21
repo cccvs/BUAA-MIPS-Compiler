@@ -73,15 +73,15 @@ public class Lexer {
         for (int i = 0; i < str.length(); i++) {
             char curChar = str.charAt(i);
             if (!(curChar == 32 || curChar == 33 || curChar == '%' || (40 <= curChar && curChar <= 126))) {
-                ErrorTable.appendError(new SysYError(SysYError.ILLEGAL_STRING, curLine));
+                ErrorTable.append(new SysYError(SysYError.ILLEGAL_STRING, curLine));
                 return;
             }
             if (curChar == '%' && (i >= str.length() - 1 || str.charAt(i + 1) != 'd')) {
-                ErrorTable.appendError(new SysYError(SysYError.ILLEGAL_STRING, curLine));
+                ErrorTable.append(new SysYError(SysYError.ILLEGAL_STRING, curLine));
                 return;
             }
             if (curChar == '\\' && (i >= str.length() - 1 || str.charAt(i + 1) != 'n') ) {
-                ErrorTable.appendError(new SysYError(SysYError.ILLEGAL_STRING, curLine));
+                ErrorTable.append(new SysYError(SysYError.ILLEGAL_STRING, curLine));
                 return;
             }
         }
@@ -114,7 +114,7 @@ public class Lexer {
         }
         ++pos;
         curToken = inputStr.substring(beginIndex, pos);
-        checkIllegalString(curToken);
+        checkIllegalString(curToken.substring(1, curToken.length() - 1));
         tokens.add(new Token(Token.KEYWORDS.getOrDefault(curToken, TkType.STRCON), curToken, curLine));
     }
 

@@ -1,20 +1,22 @@
 package front.ast.stmt;
 
+import exception.ErrorTable;
+import exception.SysYError;
 import front.ast.exp.ExpNode;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 
 public class PrintfNode implements StmtNode {
-    private String formatStr;
-    private ArrayList<ExpNode> params;
+    private final String formatStr;
+    private final ArrayList<ExpNode> params;
 
     public PrintfNode(String formatStr) {
         this.formatStr = formatStr;
         this.params = new ArrayList<>();
     }
 
-    public boolean checkParam() {
+    public void checkParamCount(int checkLine) {
         int cnt = 0;
         int pos = 0;
         while (formatStr.indexOf("%d", pos) != -1) {
@@ -22,7 +24,9 @@ public class PrintfNode implements StmtNode {
             pos += 2;
             ++cnt;
         }
-        return cnt == params.size();
+        if (cnt != params.size()) {
+            ErrorTable.append(new SysYError(SysYError.MISMATCHING_PRINTF, checkLine));
+        }
     }
 
     // basic method

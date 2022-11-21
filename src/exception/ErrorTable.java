@@ -15,7 +15,7 @@ public class ErrorTable {
         }
     }
 
-    public static void appendError(SysYError error) {
+    public static void append(SysYError error) {
         errorList.add(error);
     }
 }

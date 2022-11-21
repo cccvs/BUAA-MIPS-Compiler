@@ -7,6 +7,7 @@ public class SysYError extends Exception implements Comparable<SysYError> {
     public static final String MISSING_SEMICOLON = "i";
     public static final String MISSING_RIGHT_PARENT = "j";
     public static final String MISSING_RIGHT_BRACKET = "k";
+    public static final String MISMATCHING_PRINTF = "l";
 
     private final String type;
     private final int line;
