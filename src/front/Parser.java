@@ -34,8 +34,8 @@ public class Parser {
     private int pos;
     private final List<String> output = new ArrayList<>();
     // for retrieve
-    private Integer recTokenPos = null;
-    private Integer recOutputPos = null;
+    private Stack<Integer> tokenPosRecord = new Stack<>();
+    private Stack<Integer> outputPosRecord = new Stack<>();
 
     public Parser(Lexer lexer) {
         this.tokens = lexer.getTokens();
@@ -80,14 +80,15 @@ public class Parser {
     }
 
     private void checkpoint() {
-        recTokenPos = pos;
-        recOutputPos = output.size();
+        tokenPosRecord.push(pos);
+        outputPosRecord.push(output.size());
     }
 
     private void retrieve() {
-        pos = recTokenPos;
-        if (output.size() > recOutputPos) {
-            output.subList(recOutputPos, output.size()).clear();
+        pos = tokenPosRecord.pop();
+        int outputPos = outputPosRecord.pop();
+        if (output.size() > outputPos) {
+            output.subList(outputPos, output.size()).clear();
         }
     }
 
@@ -225,7 +226,7 @@ public class Parser {
         FuncDefNode funcDefNode = new FuncDefNode(funcType, tokens.get(pos - 1).getName());
         next(TkType.LPARENT);
         // pre read an exp
-        if (isExp()) {
+        if (tokens.get(pos).eqType(TkType.INTTK)) {
             parseFuncFParams(funcDefNode);
         }
         nextWithHandling(TkType.RPARENT);
@@ -351,12 +352,8 @@ public class Parser {
             ReturnNode returnNode = new ReturnNode();
             next(TkType.RETURNTK);
             // pre read an exp
-            try {
-                checkpoint();
-                ExpNode exp = parseExp();
-                returnNode.setRetVal(exp);
-            } catch (ParserError e) {
-                retrieve();
+            if (isExp()) {
+                returnNode.setRetVal(parseExp());
             }
             nextWithHandling(TkType.SEMICN);
             retStmt = returnNode;
@@ -393,13 +390,10 @@ public class Parser {
         }
         // [Exp] ';'
         else {
-            // pre read an exp
-            try {
-                checkpoint();
+            if (isExp()) {
                 retStmt = parseExp();
-            } catch (ParserError e) {
+            } else {
                 // 如果没有exp，Stmt返回空Block
-                retrieve();
                 retStmt = new BlockNode();
             }
             nextWithHandling(TkType.SEMICN);
