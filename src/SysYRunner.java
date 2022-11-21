@@ -1,6 +1,6 @@
 import back.MipsTranslator;
 import exception.ErrorTable;
-import exception.SysYError;
+import exception.ParserError;
 import front.Parser;
 import front.ast.CompUnitNode;
 import front.lexical.Lexer;
@@ -11,20 +11,25 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.List;
 import java.util.Scanner;
 
-import static util.Constant.*;
-
 public class SysYRunner {
+    public static final String INPUT_FILE = "testfile.txt";
+    public static final String LEXER = "tokens.txt";
+    public static final String SYNTAX = "output.txt";
+    public static final String MID_CODE = "midcode.txt";
+    public static final String ERROR = "error.txt";
+    public static final String MIPS = "mips.txt";
 
     public SysYRunner() throws FileNotFoundException {
-        run();
+        try {
+            run();
+        } catch (ParserError e) {
+            e.printStackTrace();
+        }
     }
 
-    private void run() throws FileNotFoundException{
+    private void run() throws FileNotFoundException, ParserError {
         // read part
         InputStream inputStream = new FileInputStream(INPUT_FILE);
         Scanner in = new Scanner(inputStream);

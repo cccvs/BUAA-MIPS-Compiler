@@ -1,7 +1,7 @@
 package front.ast.exp;
 
 import mid.code.UnaryOp;
-import util.TkType;
+import front.TkType;
 
 import java.util.HashMap;
 

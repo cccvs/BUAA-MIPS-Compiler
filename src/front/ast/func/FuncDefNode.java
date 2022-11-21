@@ -1,7 +1,7 @@
 package front.ast.func;
 
 import front.ast.stmt.BlockNode;
-import util.TkType;
+import front.TkType;
 
 import java.util.ArrayList;
 import java.util.Iterator;

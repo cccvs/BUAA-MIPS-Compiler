@@ -1,7 +1,7 @@
 package mid.frame;
 
 import mid.operand.Symbol;
-import util.TkType;
+import front.TkType;
 
 import java.util.ArrayList;
 import java.util.Iterator;

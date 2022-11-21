@@ -15,9 +15,8 @@ import mid.operand.Imm;
 import mid.operand.Operand;
 import mid.operand.Symbol;
 import mid.operand.MidVar;
-import util.TkType;
+import front.TkType;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;

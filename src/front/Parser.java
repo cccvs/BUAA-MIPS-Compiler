@@ -1,5 +1,8 @@
 package front;
 
+import exception.ErrorTable;
+import exception.ParserError;
+import exception.SysYError;
 import front.ast.CompUnitNode;
 import front.ast.decl.DeclNode;
 import front.ast.decl.DefNode;
@@ -22,7 +25,6 @@ import front.ast.stmt.ReturnNode;
 import front.ast.stmt.StmtNode;
 import front.lexical.Lexer;
 import front.lexical.Token;
-import util.TkType;
 
 import java.io.PrintStream;
 import java.util.*;
@@ -30,7 +32,10 @@ import java.util.*;
 public class Parser {
     private final List<Token> tokens;
     private int pos;
-    private final List<String> outStrings = new ArrayList<>();
+    private final List<String> output = new ArrayList<>();
+    // for retrieve
+    private Integer recTokenPos = null;
+    private Integer recOutputPos = null;
 
     public Parser(Lexer lexer) {
         this.tokens = lexer.getTokens();
@@ -38,28 +43,62 @@ public class Parser {
     }
 
     public void outputSyntax(PrintStream ps) {
-        for (String outString : outStrings) {
+        for (String outString : output) {
             ps.println(outString);
         }
     }
 
-    private void next(TkType type) {
-        if (tokens.get(pos).eqType(type)) {
-            outStrings.add(tokens.get(pos).toString());
+    // error handling, enable retrieving
+    private void next(TkType type) throws ParserError {
+        Token curToken = tokens.get(pos);
+        if (curToken.eqType(type)) {
+            output.add(tokens.get(pos).toString());
             ++pos;
         } else {
-            error(type);
-            System.exit(2);
+            throw new ParserError(tokens.get(pos), type);
         }
     }
 
-    public CompUnitNode parseCompUnit() {
+    private void nextWithHandling(TkType type) {
+        try {
+            next(type);
+        } catch (ParserError e) {
+            TkType expectType = e.getExpectType();
+            assert pos > 0;
+            int errorLine = tokens.get(pos - 1).getLine();
+            if (expectType.equals(TkType.SEMICN)) {
+                ErrorTable.appendError(new SysYError(SysYError.MISSING_SEMICOLON, errorLine));
+            } else if (expectType.equals(TkType.RPARENT)) {
+                ErrorTable.appendError(new SysYError(SysYError.MISSING_RIGHT_PARENT, errorLine));
+            } else if (expectType.equals(TkType.RBRACK)) {
+                ErrorTable.appendError(new SysYError(SysYError.MISSING_RIGHT_BRACKET, errorLine));
+            } else {
+                System.out.println("unexpected handling token");
+                System.exit(7);
+            }
+        }
+    }
+
+    private void checkpoint() {
+        recTokenPos = pos;
+        recOutputPos = output.size();
+    }
+
+    private void retrieve() {
+        pos = recTokenPos;
+        if (output.size() > recOutputPos) {
+            output.subList(recOutputPos, output.size()).clear();
+        }
+    }
+
+    public CompUnitNode parseCompUnit() throws ParserError {
         CompUnitNode compUnitNode = new CompUnitNode();
         // CompUnit -> {Decl} {FuncDef} MainFuncDef
         // Decl -> ConstDecl | VarDecl
         while (isConstDecl() || isVarDecl()) {
             if (isConstDecl()) {
-                compUnitNode.addDecl(parseConstDecl());
+                compUnitNode.addDecl(
+                        parseConstDecl());
             } else {
                 compUnitNode.addDecl(parseVarDecl());
             }
@@ -69,12 +108,12 @@ public class Parser {
             compUnitNode.addFuncDef(parseFuncDef());
         }
         compUnitNode.setMainFuncDef(parseMainFuncDef());
-        outStrings.add("<CompUnit>");
+        output.add("<CompUnit>");
         return compUnitNode;
     }
 
     // 1 decl part
-    private DeclNode parseConstDecl() {
+    private DeclNode parseConstDecl() throws ParserError {
         DeclNode constDeclNode = new DeclNode(true);
         // ConstDecl -> 'const' BType ConstDef { ',' ConstDef } ';'
         next(TkType.CONSTTK);
@@ -84,27 +123,27 @@ public class Parser {
             next(TkType.COMMA);
             constDeclNode.addDefs(parseConstDef());
         }
-        next(TkType.SEMICN);
-        outStrings.add("<ConstDecl>");
+        nextWithHandling(TkType.SEMICN);
+        output.add("<ConstDecl>");
         return constDeclNode;
     }
 
-    private DefNode parseConstDef() {
+    private DefNode parseConstDef() throws ParserError {
         // ConstDef -> Ident { '[' ConstExp ']' } '=' ConstInitVal
         next(TkType.IDENFR);
         DefNode constDefNode = new DefNode(true, tokens.get(pos - 1).getName());
         while (tokens.get(pos).eqType(TkType.LBRACK)) {
             next(TkType.LBRACK);
             constDefNode.addDimension(parseConstExp());
-            next(TkType.RBRACK);
+            nextWithHandling(TkType.RBRACK);
         }
         next(TkType.ASSIGN);
         parseConstInitVal(constDefNode);
-        outStrings.add("<ConstDef>");
+        output.add("<ConstDef>");
         return constDefNode;
     }
 
-    private void parseConstInitVal(DefNode constDefNode) {
+    private void parseConstInitVal(DefNode constDefNode) throws ParserError {
         // ConstInitVal -> ConstExp | '{' [ ConstInitVal { ',' ConstInitVal } ] '}'
         if (!tokens.get(pos).eqType(TkType.LBRACE)) {
             constDefNode.addInitValues(parseConstExp());
@@ -119,17 +158,17 @@ public class Parser {
             }
             next(TkType.RBRACE);
         }
-        outStrings.add("<ConstInitVal>");
+        output.add("<ConstInitVal>");
     }
 
-    private ExpNode parseConstExp() {
+    private ExpNode parseConstExp() throws ParserError {
         // Ident here need to be constant! need to be refactored next time!
         ExpNode constExp = parseAddExp();
-        outStrings.add("<ConstExp>");
+        output.add("<ConstExp>");
         return constExp;
     }
 
-    private DeclNode parseVarDecl() {
+    private DeclNode parseVarDecl() throws ParserError {
         DeclNode varDeclNode = new DeclNode(false);
         // VarDecl -> BType VarDef { ',' VarDef } ';'
         next(TkType.INTTK);
@@ -138,29 +177,29 @@ public class Parser {
             next(TkType.COMMA);
             varDeclNode.addDefs(parseVarDef());
         }
-        next(TkType.SEMICN);
-        outStrings.add("<VarDecl>");
+        nextWithHandling(TkType.SEMICN);
+        output.add("<VarDecl>");
         return varDeclNode;
     }
 
-    private DefNode parseVarDef() {
+    private DefNode parseVarDef() throws ParserError {
         // VarDef -> Ident { '[' ConstExp ']' } ['=' InitVal]
         next(TkType.IDENFR);
         DefNode varDefNode = new DefNode(false, tokens.get(pos - 1).getName());
         while (tokens.get(pos).eqType(TkType.LBRACK)) {
             next(TkType.LBRACK);
             varDefNode.addDimension(parseConstExp());
-            next(TkType.RBRACK);
+            nextWithHandling(TkType.RBRACK);
         }
         if (tokens.get(pos).eqType(TkType.ASSIGN)) {
             next(TkType.ASSIGN);
             parseInitVal(varDefNode);
         }
-        outStrings.add("<VarDef>");
+        output.add("<VarDef>");
         return varDefNode;
     }
 
-    private void parseInitVal(DefNode varDefNode) {
+    private void parseInitVal(DefNode varDefNode) throws ParserError {
         // InitVal ->  Exp | '{' [ InitVal { ',' InitVal } ] '}'
         if (!tokens.get(pos).eqType(TkType.LBRACE)) {
             varDefNode.addInitValues(parseExp());
@@ -175,76 +214,77 @@ public class Parser {
             }
             next(TkType.RBRACE);
         }
-        outStrings.add("<InitVal>");
+        output.add("<InitVal>");
     }
 
     // 2 func part
-    private FuncDefNode parseFuncDef() {
+    private FuncDefNode parseFuncDef() throws ParserError {
         TkType funcType = parseFuncType();
         next(TkType.IDENFR);
         // define the function
         FuncDefNode funcDefNode = new FuncDefNode(funcType, tokens.get(pos - 1).getName());
         next(TkType.LPARENT);
-        if (!tokens.get(pos).eqType(TkType.RPARENT)) {
+        // pre read an exp
+        if (isExp()) {
             parseFuncFParams(funcDefNode);
         }
-        next(TkType.RPARENT);
+        nextWithHandling(TkType.RPARENT);
         funcDefNode.setBlock(parseBlock());
-        outStrings.add("<FuncDef>");
+        output.add("<FuncDef>");
         return funcDefNode;
     }
 
-    private FuncDefNode parseMainFuncDef() {
+    private FuncDefNode parseMainFuncDef() throws ParserError {
         FuncDefNode mainFuncDefNode = new FuncDefNode(TkType.INTTK, "main");
         next(TkType.INTTK);
         next(TkType.MAINTK);
         next(TkType.LPARENT);
-        next(TkType.RPARENT);
+        nextWithHandling(TkType.RPARENT);
         mainFuncDefNode.setBlock(parseBlock());
-        outStrings.add("<MainFuncDef>");
+        output.add("<MainFuncDef>");
         return mainFuncDefNode;
     }
 
-    private TkType parseFuncType() {
+    private TkType parseFuncType() throws ParserError {
         TkType type = tokens.get(pos).getType();
         if (type.equals(TkType.VOIDTK)) {
             next(TkType.VOIDTK);
         } else {
             next(TkType.INTTK);
         }
-        outStrings.add("<FuncType>");
+        output.add("<FuncType>");
         return type;
     }
 
-    private void parseFuncFParams(FuncDefNode funcDefNode) {
+    private void parseFuncFParams(FuncDefNode funcDefNode) throws ParserError {
         funcDefNode.addParam(parseFuncFParam());
         while (tokens.get(pos).eqType(TkType.COMMA)) {
             next(TkType.COMMA);
             funcDefNode.addParam(parseFuncFParam());
         }
-        outStrings.add("<FuncFParams>");
+        output.add("<FuncFParams>");
     }
 
-    private FuncFParamNode parseFuncFParam() {
+    private FuncFParamNode parseFuncFParam() throws ParserError {
         next(TkType.INTTK);
         next(TkType.IDENFR);
         FuncFParamNode funcFParamNode = new FuncFParamNode(tokens.get(pos - 1).getName());
         if (tokens.get(pos).eqType(TkType.LBRACK)) {
             next(TkType.LBRACK);
-            next(TkType.RBRACK);
+            nextWithHandling(TkType.RBRACK);
             funcFParamNode.setPointer(true);
             while (tokens.get(pos).eqType(TkType.LBRACK)) {
                 next(TkType.LBRACK);
                 funcFParamNode.addDimension(parseConstExp());
-                next(TkType.RBRACK);
+                nextWithHandling(TkType.RBRACK);
             }
         }
-        outStrings.add("<FuncFParam>");
+        output.add("<FuncFParam>");
         return funcFParamNode;
     }
 
     // 3 blk and stmt
-    private BlockNode parseBlock() {
+    private BlockNode parseBlock() throws ParserError {
         BlockNode blockNode = new BlockNode();
         next(TkType.LBRACE);
         while (!tokens.get(pos).eqType(TkType.RBRACE)) {
@@ -257,13 +297,13 @@ public class Parser {
             }
         }
         next(TkType.RBRACE);
-        outStrings.add("<Block>");
+        output.add("<Block>");
         return blockNode;
     }
 
     // may return null
     @SuppressWarnings("checkstyle:MethodLength")
-    private StmtNode parseStmt() {
+    private StmtNode parseStmt() throws ParserError {
         // default value for case Stmt -> ';'
         StmtNode retStmt;
         // Block
@@ -275,7 +315,7 @@ public class Parser {
             next(TkType.IFTK);
             next(TkType.LPARENT);
             ExpNode cond = parseCond();
-            next(TkType.RPARENT);
+            nextWithHandling(TkType.RPARENT);
             StmtNode thenStmt = parseStmt();
             // new if
             BranchNode branchNode = new BranchNode(cond, thenStmt);
@@ -290,30 +330,35 @@ public class Parser {
             next(TkType.WHILETK);
             next(TkType.LPARENT);
             ExpNode cond = parseCond();
-            next(TkType.RPARENT);
+            nextWithHandling(TkType.RPARENT);
             StmtNode loopBody = parseStmt();
             retStmt = new LoopNode(cond, loopBody);
         }
         // 'break' ';'
         else if (tokens.get(pos).eqType(TkType.BREAKTK)) {
             next(TkType.BREAKTK);
-            next(TkType.SEMICN);
+            nextWithHandling(TkType.SEMICN);
             retStmt = new BreakNode();
         }
         // 'continue' ';'
         else if (tokens.get(pos).eqType(TkType.CONTINUETK)) {
             next(TkType.CONTINUETK);
-            next(TkType.SEMICN);
+            nextWithHandling(TkType.SEMICN);
             retStmt = new ContinueNode();
         }
         // 'return' [Exp] ';'
         else if (tokens.get(pos).eqType(TkType.RETURNTK)) {
             ReturnNode returnNode = new ReturnNode();
             next(TkType.RETURNTK);
-            if (!tokens.get(pos).eqType(TkType.SEMICN)) {
-                returnNode.setRetVal(parseExp());
+            // pre read an exp
+            try {
+                checkpoint();
+                ExpNode exp = parseExp();
+                returnNode.setRetVal(exp);
+            } catch (ParserError e) {
+                retrieve();
             }
-            next(TkType.SEMICN);
+            nextWithHandling(TkType.SEMICN);
             retStmt = returnNode;
         }
         // 'printf' '(' FormatString {',' Exp} ')' ';'
@@ -326,74 +371,76 @@ public class Parser {
                 next(TkType.COMMA);
                 printfNode.addParam(parseExp());
             }
-            next(TkType.RPARENT);
-            next(TkType.SEMICN);
+            nextWithHandling(TkType.RPARENT);
+            nextWithHandling(TkType.SEMICN);
             retStmt = printfNode;
         }
         // LVal '=' Exp ';'
         // LVal '=' 'getint''('')'';'
-        // Exp -> LVal
-        // Ident '(' [FuncRParams] ')'
-        else if (isAssign()) {
+        else if (isAssignStmt()) {
             AssignNode assignNode = new AssignNode(parseLVal());
             next(TkType.ASSIGN);
             if (tokens.get(pos).eqType(TkType.GETINTTK)) {
                 next(TkType.GETINTTK);
                 next(TkType.LPARENT);
-                next(TkType.RPARENT);
+                nextWithHandling(TkType.RPARENT);
                 assignNode.setGetInt();
             } else {
                 assignNode.setExp(parseExp());
             }
-            next(TkType.SEMICN);
+            nextWithHandling(TkType.SEMICN);
             retStmt = assignNode;
         }
         // [Exp] ';'
         else {
-            if (!tokens.get(pos).eqType(TkType.SEMICN)) {
+            // pre read an exp
+            try {
+                checkpoint();
                 retStmt = parseExp();
-            } else {
+            } catch (ParserError e) {
+                // 如果没有exp，Stmt返回空Block
+                retrieve();
                 retStmt = new BlockNode();
             }
-            next(TkType.SEMICN);
+            nextWithHandling(TkType.SEMICN);
         }
-        outStrings.add("<Stmt>");
+        output.add("<Stmt>");
         return retStmt;
     }
 
     // 4 exp part
-    private ExpNode parseExp() {
+    private ExpNode parseExp() throws ParserError {
         ExpNode exp = parseAddExp();
-        outStrings.add("<Exp>");
+        output.add("<Exp>");
         return exp;
     }
 
-    private ExpNode parseCond() {
+    private ExpNode parseCond() throws ParserError {
         ExpNode cond = parseLOrExp();
-        outStrings.add("<Cond>");
+        output.add("<Cond>");
         return cond;
     }
 
-    private LValNode parseLVal() {
+    private LValNode parseLVal() throws ParserError {
         LValNode leftVal = new LValNode();
         next(TkType.IDENFR);
         leftVal.setIdent(tokens.get(pos - 1).getName());
         while (tokens.get(pos).eqType(TkType.LBRACK)) {
             next(TkType.LBRACK);
             leftVal.addArrayIndex(parseExp());
-            next(TkType.RBRACK);
+            nextWithHandling(TkType.RBRACK);
         }
-        outStrings.add("<LVal>");
+        output.add("<LVal>");
         return leftVal;
     }
 
-    private NumNode parseNumber() {
+    private NumNode parseNumber() throws ParserError {
         next(TkType.INTCON);
-        outStrings.add("<Number>");
+        output.add("<Number>");
         return new NumNode(Integer.parseInt(tokens.get(pos - 1).getName()));
     }
 
-    private ExpNode parseUnaryExp() {
+    private ExpNode parseUnaryExp() throws ParserError {
         // {UnaryOp} (PrimaryExp | Ident '(' [FuncRParams] ')')
         ExpNode retExp;
         if (isUnaryOp()) {
@@ -409,10 +456,10 @@ public class Parser {
                 FuncCallNode funcCall = new FuncCallNode(tokens.get(pos).getName());
                 next(TkType.IDENFR);
                 next(TkType.LPARENT);
-                if (!tokens.get(pos).eqType(TkType.RPARENT)) {
+                if (isExp()) {
                     parseFuncRParams(funcCall);
                 }
-                next(TkType.RPARENT);
+                nextWithHandling(TkType.RPARENT);
                 retExp = funcCall;
             } else {
                 // PrimaryExp -> '(' Exp ')' | LVal | Number
@@ -421,18 +468,18 @@ public class Parser {
                 } else if (tokens.get(pos).eqType(TkType.LPARENT)) {
                     next(TkType.LPARENT);
                     retExp = parseExp();
-                    next(TkType.RPARENT);
+                    nextWithHandling(TkType.RPARENT);
                 } else {
                     retExp = parseLVal();
                 }
-                outStrings.add("<PrimaryExp>");
+                output.add("<PrimaryExp>");
             }
         }
-        outStrings.add("<UnaryExp>");
+        output.add("<UnaryExp>");
         return retExp;
     }
 
-    private TkType parseUnaryOp() {
+    private TkType parseUnaryOp() throws ParserError {
         TkType type = tokens.get(pos).getType();
         if (type.equals(TkType.PLUS)) {
             next(TkType.PLUS);
@@ -441,22 +488,22 @@ public class Parser {
         } else {
             next(TkType.NOT);
         }
-        outStrings.add("<UnaryOp>");
+        output.add("<UnaryOp>");
         return type;
     }
 
-    private void parseFuncRParams(FuncCallNode funcCall) {
+    private void parseFuncRParams(FuncCallNode funcCall) throws ParserError {
         funcCall.addParam(parseExp());
         while (tokens.get(pos).eqType(TkType.COMMA)) {
             next(TkType.COMMA);
             funcCall.addParam(parseExp());
         }
-        outStrings.add("<FuncRParams>");
+        output.add("<FuncRParams>");
     }
 
-    private ExpNode parseMulExp() {
+    private ExpNode parseMulExp() throws ParserError {
         ExpNode leftExp = parseUnaryExp();
-        outStrings.add("<MulExp>");
+        output.add("<MulExp>");
         while (isMulLink()) {
             TkType mulLink = tokens.get(pos).getType();
             if (mulLink.equals(TkType.MULT)) {
@@ -467,14 +514,14 @@ public class Parser {
                 next(TkType.MOD);
             }
             leftExp = new BinaryExpNode(mulLink, leftExp, parseUnaryExp());
-            outStrings.add("<MulExp>");
+            output.add("<MulExp>");
         }
         return leftExp;
     }
 
-    private ExpNode parseAddExp() {
+    private ExpNode parseAddExp() throws ParserError {
         ExpNode leftExp = parseMulExp();
-        outStrings.add("<AddExp>");
+        output.add("<AddExp>");
         while (isAddLink()) {
             TkType addLink = tokens.get(pos).getType();
             if (addLink.equals(TkType.PLUS)) {
@@ -483,14 +530,14 @@ public class Parser {
                 next(TkType.MINU);
             }
             leftExp = new BinaryExpNode(addLink, leftExp, parseMulExp());
-            outStrings.add("<AddExp>");
+            output.add("<AddExp>");
         }
         return leftExp;
     }
 
-    private ExpNode parseRelExp() {
+    private ExpNode parseRelExp() throws ParserError {
         ExpNode leftExp = parseAddExp();
-        outStrings.add("<RelExp>");
+        output.add("<RelExp>");
         while (isRelLink()) {
             TkType relLink = tokens.get(pos).getType();
             if (tokens.get(pos).eqType(TkType.LSS)) {
@@ -503,14 +550,14 @@ public class Parser {
                 next(TkType.GEQ);
             }
             leftExp = new BinaryExpNode(relLink, leftExp, parseAddExp());
-            outStrings.add("<RelExp>");
+            output.add("<RelExp>");
         }
         return leftExp;
     }
 
-    private ExpNode parseEqExp() {
+    private ExpNode parseEqExp() throws ParserError {
         ExpNode leftExp = parseRelExp();
-        outStrings.add("<EqExp>");
+        output.add("<EqExp>");
         while (isEqLink()) {
             TkType eqLink = tokens.get(pos).getType();
             if (tokens.get(pos).eqType(TkType.EQL)) {
@@ -519,31 +566,31 @@ public class Parser {
                 next(TkType.NEQ);
             }
             leftExp = new BinaryExpNode(eqLink, leftExp, parseRelExp());
-            outStrings.add("<EqExp>");
+            output.add("<EqExp>");
         }
         return leftExp;
     }
 
-    private ExpNode parseLAndExp() {
+    private ExpNode parseLAndExp() throws ParserError {
         ExpNode leftExp = parseEqExp();
-        outStrings.add("<LAndExp>");
+        output.add("<LAndExp>");
         while (tokens.get(pos).eqType(TkType.AND)) {
             TkType andLink = tokens.get(pos).getType();
             next(TkType.AND);
             leftExp = new BinaryExpNode(andLink, leftExp, parseEqExp());
-            outStrings.add("<LAndExp>");
+            output.add("<LAndExp>");
         }
         return leftExp;
     }
 
-    private ExpNode parseLOrExp() {
+    private ExpNode parseLOrExp() throws ParserError {
         ExpNode leftExp = parseLAndExp();
-        outStrings.add("<LOrExp>");
+        output.add("<LOrExp>");
         while (tokens.get(pos).eqType(TkType.OR)) {
             TkType orLink = tokens.get(pos).getType();
             next(TkType.OR);
             leftExp = new BinaryExpNode(orLink, leftExp, parseLAndExp());
-            outStrings.add("<LOrExp>");
+            output.add("<LOrExp>");
         }
         return leftExp;
     }
@@ -595,27 +642,28 @@ public class Parser {
                 tokens.get(pos + 2).eqType(TkType.LPARENT);
     }
 
-    private boolean isAssign() {
-        int movPos = pos + 1;
-        if (!tokens.get(pos).eqType(TkType.IDENFR)) {
-            return false;
+    private boolean isAssignStmt() {
+        boolean isAssign = true;
+        checkpoint();
+        try {
+            parseLVal();
+            next(TkType.ASSIGN);
+        } catch (ParserError e) {
+            isAssign = false;
         }
-        while (!tokens.get(movPos).eqType(TkType.SEMICN) &&
-                !tokens.get(movPos).eqType(TkType.ASSIGN) &&
-                movPos < tokens.size()) {
-            ++movPos;
-        }
-        if (movPos >= tokens.size()) {
-            error(TkType.MAINTK);
-            return false;
-        } else {
-            return tokens.get(movPos).eqType(TkType.ASSIGN);
-        }
+        retrieve();
+        return isAssign;
     }
 
-    private void error(TkType type) {
-        System.out.println("error!");
-        System.out.println(pos);
-        System.out.println("expect " + type + " get " + tokens.get(pos).getType());
+    private boolean isExp() {
+        boolean isExp = true;
+        checkpoint();
+        try {
+            parseExp();
+        } catch (ParserError e) {
+            isExp = false;
+        }
+        retrieve();
+        return isExp;
     }
 }

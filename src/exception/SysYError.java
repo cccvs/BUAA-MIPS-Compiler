@@ -1,9 +1,12 @@
 package exception;
 
-public class SysYError implements Comparable<SysYError> {
+public class SysYError extends Exception implements Comparable<SysYError> {
     public static final String ILLEGAL_STRING = "a";
-    public static final String REDEFINED_IDENT = "b";
+    public static final String DUPLICATED_IDENT = "b";
     public static final String UNDEFINED_IDENT = "c";
+    public static final String MISSING_SEMICOLON = "i";
+    public static final String MISSING_RIGHT_PARENT = "j";
+    public static final String MISSING_RIGHT_BRACKET = "k";
 
     private final String type;
     private final int line;

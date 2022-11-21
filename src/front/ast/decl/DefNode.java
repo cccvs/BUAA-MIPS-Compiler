@@ -1,7 +1,7 @@
 package front.ast.decl;
 
 import front.ast.exp.ExpNode;
-import util.TkType;
+import front.TkType;
 
 import java.util.ArrayList;
 import java.util.List;

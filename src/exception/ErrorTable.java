@@ -10,8 +10,8 @@ public class ErrorTable {
 
     public static void outputError(PrintStream ps) {
         errorList.sort(Comparator.naturalOrder());
-        for (SysYError sysYError : errorList) {
-            ps.println(sysYError);
+        for (SysYError error : errorList) {
+            ps.println(error);
         }
     }
 

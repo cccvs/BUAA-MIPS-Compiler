@@ -1,4 +1,4 @@
-package util;
+package front;
 
 public enum TkType {
     // free choice of input

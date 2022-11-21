@@ -2,7 +2,7 @@ package front.lexical;
 
 import java.util.HashMap;
 
-import util.TkType;
+import front.TkType;
 
 public class Token {
     public static final HashMap<String, TkType> KEYWORDS = new HashMap<String, TkType>() {{
@@ -40,6 +40,10 @@ public class Token {
 
     public String getName() {
         return str;
+    }
+
+    public int getLine() {
+        return line;
     }
 
     @Override

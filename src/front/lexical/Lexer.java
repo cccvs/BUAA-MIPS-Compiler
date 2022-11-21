@@ -6,7 +6,7 @@ import java.util.List;
 
 import exception.ErrorTable;
 import exception.SysYError;
-import util.TkType;
+import front.TkType;
 
 public class Lexer {
     private final String inputStr;
