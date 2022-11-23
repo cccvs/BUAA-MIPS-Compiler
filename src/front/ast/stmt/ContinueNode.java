@@ -1,8 +1,15 @@
 package front.ast.stmt;
 
-public class ContinueNode implements StmtNode {
-    //private int line;
+import front.lexical.Token;
 
-    public ContinueNode() {
+public class ContinueNode implements StmtNode {
+    private final int line;
+
+    public ContinueNode(Token token) {
+        this.line = token.getLine();
+    }
+
+    public int getLine() {
+        return line;
     }
 }

@@ -53,8 +53,13 @@ public class IrConverter {
         // 将函数调用添加到funcTab中，可以应对a call b, b call a的情况
         Iterator<FuncDefNode> funcDefs = compUnitNode.getFuncIter();
         while (funcDefs.hasNext()) {
-            FuncDefNode funcDefNode = funcDefs.next();
-            midCode.putFunc(new FuncFrame(funcDefNode.getIdent(), funcDefNode.getFuncType()));
+            try {
+                FuncDefNode funcDefNode = funcDefs.next();
+                checkDupIdent(funcDefNode);
+                midCode.putFunc(new FuncFrame(funcDefNode.getIdent(), funcDefNode.getFuncType()));
+            } catch (SysYError error) {
+                ErrorTable.append(error);
+            }
         }
         FuncDefNode mainFunc = compUnitNode.getMainFuncDefNode();
         midCode.setMainFunc(new FuncFrame(mainFunc.getIdent(), mainFunc.getFuncType()));
@@ -78,70 +83,75 @@ public class IrConverter {
     }
 
     private void convDef(DefNode defNode) {
-        // check duplicated def
-        if (checkDupIdent(defNode.getIdent(), defNode.getIdentLine())) {
-            return;
-        }
-        // construct symbol
-        boolean isGlobal = curTab.isGlobal();
-        Symbol symbol = new Symbol(defNode, isGlobal, defNode.isConst());  // create new symbol
-        fillSymbolTabAndUpdateStack(symbol);
-        if (isGlobal) {
-            midCode.putGlobalSym(symbol);
-        } else if (!defNode.getInitValues().isEmpty()) {
-            // 如果声明语句包含初始赋值
-            if (symbol.getRefType() == Operand.RefType.VALUE) {
-                // value part
-                ExpNode initExp = defNode.getInitValues().get(0);
-                Operand initOperand = convExp(initExp);     // 非全局常量初值可能不是常量表达式
-                curBlock.append(new UnaryOp(UnaryOp.Type.MOV, initOperand, symbol));
-            } else {
-                // array part
-                assert symbol.getRefType() == Operand.RefType.ARRAY;
-                int size = symbol.getSize();    // has multiplied 4
-                for (int index = 0; index * 4 < size; ++index) {
-                    // offset
-                    MidVar pointer = new MidVar(Operand.RefType.POINTER);
-                    curBlock.append(new Offset(symbol, new Imm(index * 4), pointer));
-                    // get exp
-                    ExpNode initExp = defNode.getInitValues().get(index);
-                    Operand initOperand = convExp(initExp);
-                    // store
-                    curBlock.append(new MemOp(MemOp.Type.STORE, initOperand, pointer));
+        try {
+            // check duplicated def
+            checkDupIdent(defNode);
+            // construct symbol
+            boolean isGlobal = curTab.isGlobal();
+            Symbol symbol = new Symbol(defNode, isGlobal, defNode.isConst());  // create new symbol
+            fillSymbolTabAndUpdateStack(symbol);
+            if (isGlobal) {
+                midCode.putGlobalSym(symbol);
+            } else if (!defNode.getInitValues().isEmpty()) {
+                // 如果声明语句包含初始赋值
+                if (symbol.getRefType() == Operand.RefType.VALUE) {
+                    // value part
+                    ExpNode initExp = defNode.getInitValues().get(0);
+                    Operand initOperand = convExp(initExp);     // 非全局常量初值可能不是常量表达式
+                    curBlock.append(new UnaryOp(UnaryOp.Type.MOV, initOperand, symbol));
+                } else {
+                    // array part
+                    assert symbol.getRefType() == Operand.RefType.ARRAY;
+                    int size = symbol.getSize();    // has multiplied 4
+                    for (int index = 0; index * 4 < size; ++index) {
+                        // offset
+                        MidVar pointer = new MidVar(Operand.RefType.POINTER);
+                        curBlock.append(new Offset(symbol, new Imm(index * 4), pointer));
+                        // get exp
+                        ExpNode initExp = defNode.getInitValues().get(index);
+                        Operand initOperand = convExp(initExp);
+                        // store
+                        curBlock.append(new MemOp(MemOp.Type.STORE, initOperand, pointer));
+                    }
                 }
             }
+        } catch (SysYError error) {
+            ErrorTable.append(error);
         }
     }
 
     // func part
     private void convFunc(FuncDefNode funcDefNode, boolean isMain) {
-        // check duplicated func def
-        if (checkDupIdent(funcDefNode.getIdent(), funcDefNode.getIdentLine())) {
-            return;
-        }
-        curFunc = isMain ? midCode.getMainFunc() : midCode.getFunc(funcDefNode.getIdent());
-        // params part
-        Iterator<FuncFParamNode> paramIter = funcDefNode.paramIter();
-        while (paramIter.hasNext()) {
-            FuncFParamNode paramNode = paramIter.next();
-            if (curFunc.hasParamName(paramNode.getIdent())) {
-                // dup f param error
-                ErrorTable.append(new SysYError(SysYError.DUPLICATED_IDENT, paramNode.getLine()));
-            } else {
-                Symbol param = new Symbol(paramNode);
-                curFunc.addParam(param);
+        try {
+            // check duplicated func def
+            checkFuncEnd(funcDefNode);
+            curFunc = isMain ? midCode.getMainFunc() : midCode.getFunc(funcDefNode.getIdent());
+            // params part
+            Iterator<FuncFParamNode> paramIter = funcDefNode.paramIter();
+            while (paramIter.hasNext()) {
+                FuncFParamNode paramNode = paramIter.next();
+                if (curFunc.hasParamName(paramNode.getIdent())) {
+                    // dup f param error
+                    ErrorTable.append(new SysYError(SysYError.DUPLICATED_IDENT, paramNode.getLine()));
+                } else {
+                    Symbol param = new Symbol(paramNode);
+                    curFunc.addParam(param);
+                }
             }
+            // block and symTab part
+            updateBlock(new BasicBlock(BasicBlock.Type.func));
+            BlockNode block = funcDefNode.getBlock();
+            convBlock(block);
+            // append "return;" for void func
+            if (curFunc.getRetType().equals(FuncFrame.RetType.VOID)) {
+                curBlock.append(new Return());
+            }
+            curFunc = null;
+            curBlock = null;
+        } catch (SysYError error) {
+            ErrorTable.append(error);
         }
-        // block and symTab part
-        updateBlock(new BasicBlock(BasicBlock.Type.func));
-        BlockNode block = funcDefNode.getBlock();
-        convBlock(block);
-        // append "return;" for void func
-        if (curFunc.getRetType().equals(FuncFrame.RetType.VOID)) {
-            curBlock.append(new Return());
-        }
-        curFunc = null;
-        curBlock = null;
+
     }
 
     // stmt part
@@ -188,9 +198,9 @@ public class IrConverter {
         } else if (stmtNode instanceof LoopNode) {
             convLoop((LoopNode) stmtNode);
         } else if (stmtNode instanceof BreakNode) {
-            convBreak();
+            convBreak((BreakNode) stmtNode);
         } else if (stmtNode instanceof ContinueNode) {
-            convContinue();
+            convContinue((ContinueNode) stmtNode);
         } else {
             System.out.println("illegal file for hw1!");
             System.exit(5);
@@ -199,35 +209,33 @@ public class IrConverter {
 
     private void convAssign(AssignNode assignNode) {
         // error/declare part
-        LValNode leftVal = assignNode.getLeftVal();
-        ExpNode exp = assignNode.getExp();
-        Symbol leftSym;
         try {
-            leftSym = findLValIdent(leftVal);
+            LValNode leftVal = assignNode.getLeftVal();
+            ExpNode exp = assignNode.getExp();
+            Symbol leftSym = findLValIdent(leftVal, true);
+            // begin
+            assert !leftSym.getRefType().equals(Symbol.RefType.POINTER);
+            assert leftSym.getDimension() == leftVal.getIndexNum();
+            if (leftSym.getRefType().equals(Symbol.RefType.VALUE)) {
+                if (assignNode.isGetInt()) {    // e.g. a = getint();
+                    curBlock.append(new GetInt(leftSym));
+                } else {
+                    Operand src = convExp(exp);
+                    curBlock.append(new UnaryOp(UnaryOp.Type.MOV, src, leftSym));
+                }
+            } else {
+                MidVar leftPointer = convLVal(leftVal, true);
+                if (assignNode.isGetInt()) {    // e.g. a[3] = getint()
+                    MidVar recv = new MidVar(Operand.RefType.VALUE);
+                    curBlock.append(new GetInt(recv));
+                    curBlock.append(new MemOp(MemOp.Type.STORE, recv, leftPointer));
+                } else {
+                    Operand src = convExp(exp);
+                    curBlock.append(new MemOp(MemOp.Type.STORE, src, leftPointer));
+                }
+            }
         } catch (SysYError error) {
             ErrorTable.append(error);
-            return;
-        }
-        // begin
-        assert !leftSym.getRefType().equals(Symbol.RefType.POINTER);
-        assert leftSym.getDimension() == leftVal.getArrayIndexes().size();
-        if (leftSym.getRefType().equals(Symbol.RefType.VALUE)) {
-            if (assignNode.isGetInt()) {    // e.g. a = getint();
-                curBlock.append(new GetInt(leftSym));
-            } else {
-                Operand src = convExp(exp);
-                curBlock.append(new UnaryOp(UnaryOp.Type.MOV, src, leftSym));
-            }
-        } else {
-            MidVar leftPointer = convLVal(leftVal, true);
-            if (assignNode.isGetInt()) {    // e.g. a[3] = getint()
-                MidVar recv = new MidVar(Operand.RefType.VALUE);
-                curBlock.append(new GetInt(recv));
-                curBlock.append(new MemOp(MemOp.Type.STORE, recv, leftPointer));
-            } else {
-                Operand src = convExp(exp);
-                curBlock.append(new MemOp(MemOp.Type.STORE, src, leftPointer));
-            }
         }
     }
 
@@ -259,15 +267,17 @@ public class IrConverter {
     }
 
     private void convReturn(ReturnNode returnNode) {
-        ExpNode retVal = returnNode.getRetVal();
-        boolean voidRet = (retVal == null) && curFunc.getRetType().equals(FuncFrame.RetType.VOID);
-        boolean intRet = (retVal != null) && !curFunc.getRetType().equals(FuncFrame.RetType.VOID);
-        assert voidRet || intRet;
-        if (voidRet) {
-            curBlock.append(new Return());
-        } else {
-            Operand retOperand = convExp(retVal);
-            curBlock.append(new Return(retOperand));
+        try {
+            checkReturn(returnNode);
+            ExpNode retVal = returnNode.getRetVal();
+            if (retVal == null) {
+                curBlock.append(new Return());
+            } else {
+                Operand retOperand = convExp(retVal);
+                curBlock.append(new Return(retOperand));
+            }
+        } catch (SysYError error) {
+            ErrorTable.append(error);
         }
     }
 
@@ -328,14 +338,23 @@ public class IrConverter {
         updateBlock(loopEnd);
     }
 
-    private void convBreak() {
-        curBlock.append(new Jump(loopEndStack.peek()));
-        updateBlock(new BasicBlock(BasicBlock.Type.break_follow));
+    private void convBreak(BreakNode breakNode) {
+        if (!loopEndStack.isEmpty()) {
+            curBlock.append(new Jump(loopEndStack.peek()));
+            updateBlock(new BasicBlock(BasicBlock.Type.break_follow));
+        } else {
+            ErrorTable.append(new SysYError(SysYError.CTRL_OUTSIDE_LOOP, breakNode.getLine()));
+        }
+
     }
 
-    private void convContinue() {
-        curBlock.append(new Jump(loopBeginStack.peek()));
-        updateBlock(new BasicBlock(BasicBlock.Type.continue_follow));
+    private void convContinue(ContinueNode continueNode) {
+        if (!loopBeginStack.isEmpty()) {
+            curBlock.append(new Jump(loopBeginStack.peek()));
+            updateBlock(new BasicBlock(BasicBlock.Type.continue_follow));
+        } else {
+            ErrorTable.append(new SysYError(SysYError.CTRL_OUTSIDE_LOOP, continueNode.getLine()));
+        }
     }
 
     // short circuit evaluation part
@@ -398,42 +417,42 @@ public class IrConverter {
 
     private MidVar convLVal(LValNode lValNode, boolean assign) {
         // error/declare part
-        Symbol symbol;
         try {
-            symbol = findLValIdent(lValNode);
+            Symbol symbol = findLValIdent(lValNode, assign);
+            // assign为真代表LVal当作左值赋值
+            if (symbol.getRefType() == Symbol.RefType.VALUE) {
+                return symbol;
+            } else {
+                int leftValDim = lValNode.getIndexNum();
+                int symbolDim = symbol.getDimension();
+                assert leftValDim <= symbolDim;
+                // cal offset
+                Operand offsetVal = new Imm(0);
+                Iterator<ExpNode> indexExps = lValNode.iterIndexExp();
+                for (int i = 0; i < leftValDim; i++) {
+                    Operand indexOperand = convExp(indexExps.next());
+                    MidVar prod = new MidVar(Operand.RefType.VALUE);
+                    MidVar newOffsetVal = new MidVar(Operand.RefType.VALUE);
+                    Imm base = new Imm(symbol.getBase(i) * 4);
+                    curBlock.append(new BinaryOp(BinaryOp.Type.MUL, indexOperand, base, prod));
+                    curBlock.append(new BinaryOp(BinaryOp.Type.ADD, offsetVal, prod, newOffsetVal));
+                    offsetVal = newOffsetVal;
+                }
+                // deal with pointer
+                MidVar pointer = new MidVar(Operand.RefType.POINTER);
+                curBlock.append(new Offset(symbol, offsetVal, pointer));
+                if (leftValDim < symbolDim || assign) {
+                    // 作为实参地址, or用作左值赋值时
+                    return pointer;
+                } else {
+                    MidVar loadValue = new MidVar(Operand.RefType.VALUE);
+                    curBlock.append(new MemOp(MemOp.Type.LOAD, loadValue, pointer));
+                    return loadValue;
+                }
+            }
         } catch (SysYError error) {
             ErrorTable.append(error);
             return new MidVar(Operand.RefType.VALUE);
-        }
-        // assign为真代表LVal当作左值赋值
-        if (symbol.getRefType() == Symbol.RefType.VALUE) {
-            return symbol;
-        } else {
-            int leftValDim = lValNode.getArrayIndexes().size();
-            int symbolDim = symbol.getDimension();
-            assert leftValDim <= symbolDim;
-            // cal offset
-            Operand offsetVal = new Imm(0);
-            for (int i = 0; i < leftValDim; i++) {
-                Operand indexOperand = convExp(lValNode.getArrayIndexes().get(i));
-                MidVar prod = new MidVar(Operand.RefType.VALUE);
-                MidVar newOffsetVal = new MidVar(Operand.RefType.VALUE);
-                Imm base = new Imm(symbol.getBase(i) * 4);
-                curBlock.append(new BinaryOp(BinaryOp.Type.MUL, indexOperand, base, prod));
-                curBlock.append(new BinaryOp(BinaryOp.Type.ADD, offsetVal, prod, newOffsetVal));
-                offsetVal = newOffsetVal;
-            }
-            // deal with pointer
-            MidVar pointer = new MidVar(Operand.RefType.POINTER);
-            curBlock.append(new Offset(symbol, offsetVal, pointer));
-            if (leftValDim < symbolDim || assign) {
-                // 作为实参地址, or用作左值赋值
-                return pointer;
-            } else {
-                MidVar loadValue = new MidVar(Operand.RefType.VALUE);
-                curBlock.append(new MemOp(MemOp.Type.LOAD, loadValue, pointer));
-                return loadValue;
-            }
         }
     }
 
@@ -442,27 +461,26 @@ public class IrConverter {
     }
 
     private MidVar convFuncCall(FuncCallNode funcCallNode) {
-        // error/declare part
-        FuncFrame func;
         try {
-            func = findFuncIdent(funcCallNode);
+            FuncFrame func = findFuncIdent(funcCallNode);
+            // call part
+            MidVar recv = func.getRetType().equals(FuncFrame.RetType.INT) ? new MidVar(MidVar.RefType.VALUE) : null;
+            Call call = new Call(func, recv);
+            // params part
+            Iterator<ExpNode> realParams = funcCallNode.iterRealParam();
+            while (realParams.hasNext()) {
+                ExpNode param = realParams.next();
+                Operand op = convExp(param);
+                call.addParam(op);
+            }
+            checkFuncCall(funcCallNode, func);
+            // add and ret
+            curBlock.append(call);
+            return recv;    // may be null
         } catch (SysYError error) {
             ErrorTable.append(error);
             return new MidVar(Operand.RefType.VALUE);
         }
-        // call part
-        MidVar recv = func.getRetType().equals(FuncFrame.RetType.INT) ? new MidVar(MidVar.RefType.VALUE) : null;
-        Call call = new Call(func, recv);
-        // params part
-        Iterator<ExpNode> realParams = funcCallNode.iterParam();
-        while (realParams.hasNext()) {
-            ExpNode param = realParams.next();
-            Operand op = convExp(param);
-            call.addParam(op);
-        }
-        // add and ret
-        curBlock.append(call);
-        return recv;    // may be null
     }
 
     private MidVar convBinaryExp(BinaryExpNode binaryExpNode) {
@@ -508,19 +526,28 @@ public class IrConverter {
     }
 
     // check, return true if error
-    private boolean checkDupIdent(String ident, int line) {
-        boolean isGlobal = curTab.isGlobal();
-        if (isGlobal && midCode.getFunc(ident) != null || curTab.containSym(ident)) {
-            ErrorTable.append(new SysYError(SysYError.DUPLICATED_IDENT, line));
-            return true;
+    private void checkDupIdent(DefNode defNode) throws SysYError {
+        String ident = defNode.getIdent();
+        int line = defNode.getIdentLine();
+        if (curTab.isGlobal() && midCode.getFunc(ident) != null || curTab.containSym(ident)) {
+            throw new SysYError(SysYError.DUPLICATED_IDENT, line);
         }
-        return false;
     }
 
-    private Symbol findLValIdent(LValNode leftVal) throws SysYError {
+    private void checkDupIdent(FuncDefNode defNode) throws SysYError {
+        String ident = defNode.getIdent();
+        int line = defNode.getIdentLine();
+        if (curTab.isGlobal() && midCode.getFunc(ident) != null || curTab.containSym(ident)) {
+            throw new SysYError(SysYError.DUPLICATED_IDENT, line);
+        }
+    }
+
+    private Symbol findLValIdent(LValNode leftVal, boolean assign) throws SysYError {
         Symbol symbol = curTab.findSym(leftVal.getIdent());
         if (symbol == null) {
             throw new SysYError(SysYError.UNDEFINED_IDENT, leftVal.getIdentLine());
+        } else if (assign && symbol.isConst()) {
+            throw new SysYError(SysYError.MODIFIED_CONSTANT, leftVal.getIdentLine());
         } else {
             return symbol;
         }
@@ -533,6 +560,50 @@ public class IrConverter {
             throw new SysYError(SysYError.UNDEFINED_IDENT, funcCallNode.getIdentLine());
         } else {
             return func;
+        }
+    }
+
+    private void checkFuncCall(FuncCallNode funcCallNode, FuncFrame funcFrame) throws SysYError {
+        if (funcCallNode.realParamNum() != funcFrame.formatParamNum()) {
+            throw new SysYError(SysYError.MISMATCHED_PARAM_NUM, funcCallNode.getIdentLine());
+        }
+        Iterator<ExpNode> realParams = funcCallNode.iterRealParam();
+        Iterator<Symbol> formatParams = funcFrame.iterFormatParam();
+        while (realParams.hasNext()) {
+            ExpNode real = realParams.next();
+            Symbol format = formatParams.next();
+            // check void caller, e.g. f(a(), 1); [a is void func]
+            if (real instanceof FuncCallNode) {
+                String paramFuncIdent = ((FuncCallNode) real).getIdent();
+                FuncFrame paramFunc = midCode.getFunc(paramFuncIdent);
+                assert paramFunc != null;   // 因为在FuncFrame添加参数之后，因此不可能为null
+                if (paramFunc.getRetType().equals(FuncFrame.RetType.VOID)) {
+                    throw new SysYError(SysYError.MISMATCHED_PARAM_TYPE, funcCallNode.getIdentLine());
+                }
+            }
+            // check pointer dim
+            int realDim = real instanceof LValNode ? ((LValNode) real).getIndexNum() : 0;
+            int formatDim = format.getDimension();
+            if (realDim != formatDim) {
+                throw new SysYError(SysYError.MISMATCHED_PARAM_TYPE, funcCallNode.getIdentLine());
+            }
+        }
+    }
+
+    private void checkReturn(ReturnNode returnNode) throws SysYError {
+        ExpNode retVal = returnNode.getRetVal();
+        if (retVal != null && curFunc.getRetType().equals(FuncFrame.RetType.VOID)) {
+            throw new SysYError(SysYError.MISMATCHED_RETURN, returnNode.getLine());
+        }
+    }
+
+    private void checkFuncEnd(FuncDefNode funcDefNode) throws SysYError {
+        BlockNode funcBlock = funcDefNode.getBlock();
+        BlockItemNode lastItem = funcBlock.getLastItem();
+        if (funcDefNode.getFuncType().equals(TkType.INTTK)) {
+            if (!(lastItem instanceof ReturnNode) || ((ReturnNode) lastItem).getRetVal() == null) {
+                throw new SysYError(SysYError.MISSING_RETURN, funcBlock.getEndLine());
+            }
         }
     }
 }

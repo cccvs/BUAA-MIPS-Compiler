@@ -53,6 +53,10 @@ public class FuncFrame {
         return params.iterator();
     }
 
+    public int formatParamNum() {
+        return params.size();
+    }
+
     public void addParam(Symbol param) {
         params.add(param);
     }

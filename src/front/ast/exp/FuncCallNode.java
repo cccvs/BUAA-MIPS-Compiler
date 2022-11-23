@@ -20,6 +20,10 @@ public class FuncCallNode extends ExpNode {
         realParams.add(exp);
     }
 
+    public int realParamNum() {
+        return realParams.size();
+    }
+
     public String getIdent() {
         return ident;
     }
@@ -28,7 +32,7 @@ public class FuncCallNode extends ExpNode {
         return identLine;
     }
 
-    public Iterator<ExpNode> iterParam() {
+    public Iterator<ExpNode> iterRealParam() {
         return realParams.iterator();
     }
 }

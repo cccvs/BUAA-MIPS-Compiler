@@ -4,14 +4,27 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Stack;
 
 public class ErrorTable {
     private static final List<SysYError> errorList = new ArrayList<>();
+    private static final Stack<Integer> posStack = new Stack<>();
 
     public static void outputError(PrintStream ps) {
         errorList.sort(Comparator.naturalOrder());
         for (SysYError error : errorList) {
             ps.println(error);
+        }
+    }
+
+    public static void checkpoint() {
+        posStack.push(errorList.size());
+    }
+
+    public static void retrieve() {
+        int prePos = posStack.pop();
+        if (errorList.size() > prePos) {
+            errorList.subList(prePos, errorList.size()).clear();
         }
     }
 

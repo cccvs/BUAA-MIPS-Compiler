@@ -23,11 +23,11 @@ public class SysYRunner {
     public static final String ERROR = "error.txt";
     public static final String MIPS = "mips.txt";
     // boolean
-    public static final boolean OUTPUT_LEXER = true;
-    public static final boolean OUTPUT_SYNTAX = true;
-    public static final boolean OUTPUT_MID_CODE = true;
+    public static final boolean OUTPUT_LEXER = false;
+    public static final boolean OUTPUT_SYNTAX = false;
+    public static final boolean OUTPUT_MID_CODE = false;
     public static final boolean OUTPUT_ERROR = true;
-    public static final boolean OUTPUT_MIPS = true;
+    public static final boolean OUTPUT_MIPS = false;
 
     public SysYRunner() throws FileNotFoundException {
         try {

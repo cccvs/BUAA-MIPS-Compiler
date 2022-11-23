@@ -1,15 +1,15 @@
 package front.ast.stmt;
 
+import front.lexical.Token;
 import mid.frame.BasicBlock;
 
 public class BreakNode implements StmtNode {
-    //private int line;
-
-    // ir part
-    public void toIr(BasicBlock basicBlock) {
-
+    private final int line;
+    public BreakNode(Token token) {
+        this.line = token.getLine();
     }
 
-    public BreakNode() {
+    public int getLine() {
+        return line;
     }
 }

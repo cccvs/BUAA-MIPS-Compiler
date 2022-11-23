@@ -37,7 +37,7 @@ public class LValNode extends ExpNode {
         return arrayIndexes.iterator();
     }
 
-    public List<ExpNode> getArrayIndexes() {
-        return arrayIndexes;
+    public int getIndexNum() {
+        return arrayIndexes.size();
     }
 }

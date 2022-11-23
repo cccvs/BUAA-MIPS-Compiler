@@ -25,7 +25,7 @@ public class PrintfNode implements StmtNode {
             ++cnt;
         }
         if (cnt != params.size()) {
-            ErrorTable.append(new SysYError(SysYError.MISMATCHING_PRINTF, checkLine));
+            ErrorTable.append(new SysYError(SysYError.MISMATCHED_PRINTF, checkLine));
         }
     }
 

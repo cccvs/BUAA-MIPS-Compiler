@@ -82,6 +82,7 @@ public class Parser {
     private void checkpoint() {
         tokenPosRecord.push(pos);
         outputPosRecord.push(output.size());
+        ErrorTable.checkpoint();
     }
 
     private void retrieve() {
@@ -90,6 +91,7 @@ public class Parser {
         if (output.size() > outputPos) {
             output.subList(outputPos, output.size()).clear();
         }
+        ErrorTable.retrieve();
     }
 
     public CompUnitNode parseCompUnit() throws ParserError {
@@ -297,6 +299,7 @@ public class Parser {
                 blockNode.addItem(parseStmt());
             }
         }
+        blockNode.setEndLine(tokens.get(pos).getLine());
         next(TkType.RBRACE);
         output.add("<Block>");
         return blockNode;
@@ -339,17 +342,17 @@ public class Parser {
         else if (tokens.get(pos).eqType(TkType.BREAKTK)) {
             next(TkType.BREAKTK);
             nextWithHandler(TkType.SEMICN);
-            retStmt = new BreakNode();
+            retStmt = new BreakNode(tokens.get(pos - 2));
         }
         // 'continue' ';'
         else if (tokens.get(pos).eqType(TkType.CONTINUETK)) {
             next(TkType.CONTINUETK);
             nextWithHandler(TkType.SEMICN);
-            retStmt = new ContinueNode();
+            retStmt = new ContinueNode(tokens.get(pos - 2));
         }
         // 'return' [Exp] ';'
         else if (tokens.get(pos).eqType(TkType.RETURNTK)) {
-            ReturnNode returnNode = new ReturnNode();
+            ReturnNode returnNode = new ReturnNode(tokens.get(pos));
             next(TkType.RETURNTK);
             // pre read an exp
             if (isExp()) {
