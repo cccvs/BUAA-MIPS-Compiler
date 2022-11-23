@@ -1,11 +1,13 @@
 package mid.frame;
 
+import front.ast.func.FuncFParamNode;
 import mid.operand.Symbol;
 import front.TkType;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 public class FuncFrame {
     /*
@@ -53,6 +55,15 @@ public class FuncFrame {
 
     public void addParam(Symbol param) {
         params.add(param);
+    }
+
+    public boolean hasParamName(String ident) {
+        for (Symbol param : params) {
+            if (Objects.equals(param.getIdent(), ident)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     public void appendBlock(BasicBlock block) {

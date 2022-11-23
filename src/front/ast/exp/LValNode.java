@@ -1,44 +1,40 @@
 package front.ast.exp;
 
+import front.lexical.Token;
 import mid.IrConverter;
 import mid.operand.Symbol;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class LValNode extends ExpNode {
-    private String ident;
+    private final String ident;
+    private final int identLine;
     private final List<ExpNode> arrayIndexes;
 
-    public LValNode() {
-        ident = null;
+    public LValNode(Token leftValIdent) {
+        ident = leftValIdent.getName();
+        identLine = leftValIdent.getLine();
         arrayIndexes = new ArrayList<>();
-    }
-
-    public void setIdent(String ident) {
-        this.ident = ident;
     }
 
     public void addArrayIndex(ExpNode exp) {
         arrayIndexes.add(exp);
     }
 
-    // ir part
-    public Integer getConst() {
-        Symbol symbol = IrConverter.getGlobalSym(ident);
-        if (symbol.isConst()) {
-            return symbol.getConstVal(arrayIndexes.stream().map(ExpNode::getConst).collect(Collectors.toList()));
-        } else {
-            System.out.println("expect Const or Num, get Var!");
-            System.exit(3);
-            return null;
-        }
-    }
-
     // basic interface
     public String getIdent() {
         return ident;
+    }
+
+    public int getIdentLine() {
+        return identLine;
+    }
+
+    public Iterator<ExpNode> iterIndexExp() {
+        return arrayIndexes.iterator();
     }
 
     public List<ExpNode> getArrayIndexes() {

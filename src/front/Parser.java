@@ -34,8 +34,8 @@ public class Parser {
     private int pos;
     private final List<String> output = new ArrayList<>();
     // for retrieve
-    private Stack<Integer> tokenPosRecord = new Stack<>();
-    private Stack<Integer> outputPosRecord = new Stack<>();
+    private final Stack<Integer> tokenPosRecord = new Stack<>();
+    private final Stack<Integer> outputPosRecord = new Stack<>();
 
     public Parser(Lexer lexer) {
         this.tokens = lexer.getTokens();
@@ -132,7 +132,7 @@ public class Parser {
     private DefNode parseConstDef() throws ParserError {
         // ConstDef -> Ident { '[' ConstExp ']' } '=' ConstInitVal
         next(TkType.IDENFR);
-        DefNode constDefNode = new DefNode(true, tokens.get(pos - 1).getName());
+        DefNode constDefNode = new DefNode(true, tokens.get(pos - 1));
         while (tokens.get(pos).eqType(TkType.LBRACK)) {
             next(TkType.LBRACK);
             constDefNode.addDimension(parseConstExp());
@@ -186,7 +186,7 @@ public class Parser {
     private DefNode parseVarDef() throws ParserError {
         // VarDef -> Ident { '[' ConstExp ']' } ['=' InitVal]
         next(TkType.IDENFR);
-        DefNode varDefNode = new DefNode(false, tokens.get(pos - 1).getName());
+        DefNode varDefNode = new DefNode(false, tokens.get(pos - 1));
         while (tokens.get(pos).eqType(TkType.LBRACK)) {
             next(TkType.LBRACK);
             varDefNode.addDimension(parseConstExp());
@@ -223,7 +223,7 @@ public class Parser {
         TkType funcType = parseFuncType();
         next(TkType.IDENFR);
         // define the function
-        FuncDefNode funcDefNode = new FuncDefNode(funcType, tokens.get(pos - 1).getName());
+        FuncDefNode funcDefNode = new FuncDefNode(funcType, tokens.get(pos - 1));
         next(TkType.LPARENT);
         // pre read an exp
         if (tokens.get(pos).eqType(TkType.INTTK)) {
@@ -236,9 +236,9 @@ public class Parser {
     }
 
     private FuncDefNode parseMainFuncDef() throws ParserError {
-        FuncDefNode mainFuncDefNode = new FuncDefNode(TkType.INTTK, "main");
         next(TkType.INTTK);
         next(TkType.MAINTK);
+        FuncDefNode mainFuncDefNode = new FuncDefNode(TkType.INTTK, tokens.get(pos - 1));
         next(TkType.LPARENT);
         nextWithHandler(TkType.RPARENT);
         mainFuncDefNode.setBlock(parseBlock());
@@ -269,7 +269,7 @@ public class Parser {
     private FuncFParamNode parseFuncFParam() throws ParserError {
         next(TkType.INTTK);
         next(TkType.IDENFR);
-        FuncFParamNode funcFParamNode = new FuncFParamNode(tokens.get(pos - 1).getName());
+        FuncFParamNode funcFParamNode = new FuncFParamNode(tokens.get(pos - 1));
         if (tokens.get(pos).eqType(TkType.LBRACK)) {
             next(TkType.LBRACK);
             nextWithHandler(TkType.RBRACK);
@@ -418,9 +418,8 @@ public class Parser {
     }
 
     private LValNode parseLVal() throws ParserError {
-        LValNode leftVal = new LValNode();
         next(TkType.IDENFR);
-        leftVal.setIdent(tokens.get(pos - 1).getName());
+        LValNode leftVal = new LValNode(tokens.get(pos - 1));
         while (tokens.get(pos).eqType(TkType.LBRACK)) {
             next(TkType.LBRACK);
             leftVal.addArrayIndex(parseExp());
@@ -449,7 +448,7 @@ public class Parser {
                     tokens.get(pos).eqType(TkType.IDENFR) &&
                     tokens.get(pos + 1).eqType(TkType.LPARENT)) {
                 // Ident '(' [FuncRParams] ')'
-                FuncCallNode funcCall = new FuncCallNode(tokens.get(pos).getName());
+                FuncCallNode funcCall = new FuncCallNode(tokens.get(pos));
                 next(TkType.IDENFR);
                 next(TkType.LPARENT);
                 if (isExp()) {

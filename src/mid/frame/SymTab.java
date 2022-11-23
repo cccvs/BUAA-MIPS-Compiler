@@ -32,6 +32,10 @@ public class SymTab {
         }
     }
 
+    public boolean containSym(String symIdent) {
+        return symTab.containsKey(symIdent);
+    }
+
     // basic
     public void putSym(Symbol symbol) {
         symTab.put(symbol.getIdent(), symbol);

@@ -62,13 +62,6 @@ public class BinaryExpNode extends ExpNode {
         this.rightExp = rightExp;
     }
 
-    // ir part
-    @Override
-    public Integer getConst() {
-        BinaryCal binaryCal = opMap.get(op);
-        return binaryCal.cal(leftExp.getConst(), rightExp.getConst());
-    }
-
     public TkType getOp() {
         return op;
     }

@@ -3,6 +3,8 @@ package mid.operand;
 import front.ast.decl.DefNode;
 import front.ast.exp.ExpNode;
 import front.ast.func.FuncFParamNode;
+import mid.ConstUtil;
+import mid.IrConverter;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -35,11 +37,17 @@ public class Symbol extends MidVar {
         super(defNode);
         this.isConst = defNode.isConst();
         this.ident = defNode.getIdent();
-        this.dimensions = defNode.getDimensions().stream().map(ExpNode::getConst).collect(Collectors.toList());
+        this.dimensions = new ArrayList<>();
+        for (ExpNode dimensionExp : defNode.getDimensions()) {
+            this.dimensions.add(new ConstUtil(IrConverter.getCurTab()).calExp(dimensionExp));
+        }
         this.isGlobal = isGlobal;
         if (isGlobal || isConst) {
             // global var/const, local const
-            this.values = defNode.getInitValues().stream().map(ExpNode::getConst).collect(Collectors.toList());
+            this.values = new ArrayList<>();
+            for (ExpNode initExp : defNode.getInitValues()) {
+                this.values.add(new ConstUtil(IrConverter.getCurTab()).calExp(initExp));
+            }
         } else {
             // local var
             this.values = new ArrayList<>();    // need to be assigned?
@@ -53,8 +61,11 @@ public class Symbol extends MidVar {
         this.isConst = false;
         this.ident = param.getIdent();
         if (param.isPointer()) {
-            this.dimensions = param.getDimensions().stream().map(ExpNode::getConst).collect(Collectors.toList());
-            this.dimensions.add(0, null);   // fix dimensions
+            this.dimensions = new ArrayList<>();
+            this.dimensions.add(null);  // fix dimensions
+            for (ExpNode paramExp : param.getDimensions()) {
+                this.dimensions.add(new ConstUtil(IrConverter.getCurTab()).calExp(paramExp));
+            }
         } else {
             this.dimensions = new ArrayList<>();
         }
@@ -74,7 +85,6 @@ public class Symbol extends MidVar {
 
     public int getSize() {
         // if it's a pointer representing a fParam, terminate with error!
-        assert !(refType.equals(RefType.ARRAY) && dimensions.get(0) != null);
         if (refType.equals(RefType.ARRAY)) {
             return dimensions.stream().reduce((x, y) -> x * y).orElse(1) << 2;
         } else {

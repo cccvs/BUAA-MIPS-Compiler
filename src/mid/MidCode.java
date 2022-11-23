@@ -58,10 +58,6 @@ public class MidCode {
         globalSym.put(symbol.getIdent(), symbol);
     }
 
-    public Symbol getGlobalSym(String symName) {
-        return globalSym.getOrDefault(symName, null);
-    }
-
     public Iterator<Symbol> symIter() {
         return globalSym.values().iterator();
     }

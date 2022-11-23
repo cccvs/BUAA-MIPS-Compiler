@@ -1,17 +1,20 @@
 package front.ast.func;
 
 import front.ast.exp.ExpNode;
+import front.lexical.Token;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class FuncFParamNode {
-    private String ident;
+    private final String ident;
+    private final int identLine;
     private boolean isPointer;
     private final List<ExpNode> dimensions;  // 0 <= dimensions.size() <= 1
 
-    public FuncFParamNode(String ident) {
-        this.ident = ident;
+    public FuncFParamNode(Token identToken) {
+        this.ident = identToken.getName();
+        this.identLine = identToken.getLine();
         this.isPointer = false;
         this.dimensions = new ArrayList<>();
     }
@@ -27,6 +30,10 @@ public class FuncFParamNode {
 
     public String getIdent() {
         return ident;
+    }
+
+    public int getLine() {
+        return identLine;
     }
 
     public boolean isPointer() {

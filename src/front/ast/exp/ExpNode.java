@@ -3,7 +3,6 @@ package front.ast.exp;
 import front.ast.stmt.StmtNode;
 
 public abstract class ExpNode implements StmtNode {
-    public abstract Integer getConst();
 
     public boolean isOrBinary() {
         return (this instanceof BinaryExpNode) && ((BinaryExpNode) this).isOrLink();

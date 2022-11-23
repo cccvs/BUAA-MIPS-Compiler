@@ -28,13 +28,6 @@ public class UnaryExpNode extends ExpNode {
         this.exp = exp;
     }
 
-    // ir part
-    @Override
-    public Integer getConst() {
-        UnaryCal unaryCal = opMap.get(op);
-        return unaryCal.cal(exp.getConst());
-    }
-
     public TkType getOp() {
         return op;
     }

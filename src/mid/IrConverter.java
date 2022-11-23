@@ -1,5 +1,7 @@
 package mid;
 
+import exception.ErrorTable;
+import exception.SysYError;
 import front.ast.CompUnitNode;
 import front.ast.decl.DeclNode;
 import front.ast.decl.DefNode;
@@ -76,6 +78,10 @@ public class IrConverter {
     }
 
     private void convDef(DefNode defNode) {
+        // check duplicated def
+        if (checkDupIdent(defNode.getIdent(), defNode.getIdentLine())) {
+            return;
+        }
         // construct symbol
         boolean isGlobal = curTab.isGlobal();
         Symbol symbol = new Symbol(defNode, isGlobal, defNode.isConst());  // create new symbol
@@ -109,13 +115,22 @@ public class IrConverter {
 
     // func part
     private void convFunc(FuncDefNode funcDefNode, boolean isMain) {
+        // check duplicated func def
+        if (checkDupIdent(funcDefNode.getIdent(), funcDefNode.getIdentLine())) {
+            return;
+        }
         curFunc = isMain ? midCode.getMainFunc() : midCode.getFunc(funcDefNode.getIdent());
         // params part
         Iterator<FuncFParamNode> paramIter = funcDefNode.paramIter();
         while (paramIter.hasNext()) {
             FuncFParamNode paramNode = paramIter.next();
-            Symbol param = new Symbol(paramNode);
-            curFunc.addParam(param);
+            if (curFunc.hasParamName(paramNode.getIdent())) {
+                // dup f param error
+                ErrorTable.append(new SysYError(SysYError.DUPLICATED_IDENT, paramNode.getLine()));
+            } else {
+                Symbol param = new Symbol(paramNode);
+                curFunc.addParam(param);
+            }
         }
         // block and symTab part
         updateBlock(new BasicBlock(BasicBlock.Type.func));
@@ -183,9 +198,17 @@ public class IrConverter {
     }
 
     private void convAssign(AssignNode assignNode) {
+        // error/declare part
         LValNode leftVal = assignNode.getLeftVal();
         ExpNode exp = assignNode.getExp();
-        Symbol leftSym = curTab.findSym(leftVal.getIdent());
+        Symbol leftSym;
+        try {
+            leftSym = findLValIdent(leftVal);
+        } catch (SysYError error) {
+            ErrorTable.append(error);
+            return;
+        }
+        // begin
         assert !leftSym.getRefType().equals(Symbol.RefType.POINTER);
         assert leftSym.getDimension() == leftVal.getArrayIndexes().size();
         if (leftSym.getRefType().equals(Symbol.RefType.VALUE)) {
@@ -355,7 +378,7 @@ public class IrConverter {
         curBlock.append(new Jump(labelFalse));
     }
 
-    // exp
+    // exp part
     private Operand convExp(ExpNode expNode) {
         if (expNode instanceof LValNode) {
             return convLVal((LValNode) expNode, false);
@@ -374,9 +397,15 @@ public class IrConverter {
     }
 
     private MidVar convLVal(LValNode lValNode, boolean assign) {
+        // error/declare part
+        Symbol symbol;
+        try {
+            symbol = findLValIdent(lValNode);
+        } catch (SysYError error) {
+            ErrorTable.append(error);
+            return new MidVar(Operand.RefType.VALUE);
+        }
         // assign为真代表LVal当作左值赋值
-        String ident = lValNode.getIdent();
-        Symbol symbol = curTab.findSym(ident);
         if (symbol.getRefType() == Symbol.RefType.VALUE) {
             return symbol;
         } else {
@@ -409,12 +438,18 @@ public class IrConverter {
     }
 
     private Imm convNum(NumNode numNode) {
-        return new Imm(numNode.getConst());
+        return new Imm(numNode.getVal());
     }
 
     private MidVar convFuncCall(FuncCallNode funcCallNode) {
-        String ident = funcCallNode.getIdent();
-        FuncFrame func = midCode.getFunc(ident);
+        // error/declare part
+        FuncFrame func;
+        try {
+            func = findFuncIdent(funcCallNode);
+        } catch (SysYError error) {
+            ErrorTable.append(error);
+            return new MidVar(Operand.RefType.VALUE);
+        }
         // call part
         MidVar recv = func.getRetType().equals(FuncFrame.RetType.INT) ? new MidVar(MidVar.RefType.VALUE) : null;
         Call call = new Call(func, recv);
@@ -450,17 +485,12 @@ public class IrConverter {
             return src;
         } else {
             MidVar dst = new MidVar(MidVar.RefType.VALUE);
-            curBlock.append( new UnaryOp(UnaryExpNode.typeMap(op), src, dst));
+            curBlock.append(new UnaryOp(UnaryExpNode.typeMap(op), src, dst));
             return dst;
         }
     }
 
     // util
-    public static Symbol getGlobalSym(String ident) {
-        assert curTab.isGlobal();
-        return curTab.findSym(ident);
-    }
-
     private void fillSymbolTabAndUpdateStack(Symbol symbol) {
         curTab.putSym(symbol);                  // put current symbol tab.update/set stack size
         int symbolSize = symbol.getSize();
@@ -471,5 +501,38 @@ public class IrConverter {
     private void updateBlock(BasicBlock basicBlock) {
         curBlock = basicBlock;
         curFunc.appendBlock(curBlock);
+    }
+
+    public static SymTab getCurTab() {
+        return curTab;
+    }
+
+    // check, return true if error
+    private boolean checkDupIdent(String ident, int line) {
+        boolean isGlobal = curTab.isGlobal();
+        if (isGlobal && midCode.getFunc(ident) != null || curTab.containSym(ident)) {
+            ErrorTable.append(new SysYError(SysYError.DUPLICATED_IDENT, line));
+            return true;
+        }
+        return false;
+    }
+
+    private Symbol findLValIdent(LValNode leftVal) throws SysYError {
+        Symbol symbol = curTab.findSym(leftVal.getIdent());
+        if (symbol == null) {
+            throw new SysYError(SysYError.UNDEFINED_IDENT, leftVal.getIdentLine());
+        } else {
+            return symbol;
+        }
+    }
+
+    private FuncFrame findFuncIdent(FuncCallNode funcCallNode) throws SysYError {
+        String ident = funcCallNode.getIdent();
+        FuncFrame func = midCode.getFunc(ident);
+        if (func == null) {
+            throw new SysYError(SysYError.UNDEFINED_IDENT, funcCallNode.getIdentLine());
+        } else {
+            return func;
+        }
     }
 }

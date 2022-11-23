@@ -10,9 +10,9 @@ public class Offset implements BasicIns{
 
     public Offset(MidVar base, Operand offsetVal, MidVar dst) {
         assert dst.getRefType().equals(Operand.RefType.POINTER);
-        assert base.getRefType().equals(Operand.RefType.VALUE);
-        assert offsetVal.getRefType().equals(Operand.RefType.ARRAY)
-                || offsetVal.getRefType().equals(Operand.RefType.POINTER);
+        assert offsetVal.getRefType().equals(Operand.RefType.VALUE);
+        assert base.getRefType().equals(Operand.RefType.ARRAY)
+                || base.getRefType().equals(Operand.RefType.POINTER);
         this.dst = dst;
         this.base = base;
         this.offsetVal = offsetVal;

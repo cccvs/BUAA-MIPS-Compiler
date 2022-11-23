@@ -18,4 +18,10 @@ public class ErrorTable {
     public static void append(SysYError error) {
         errorList.add(error);
     }
+
+    public static void throwError() throws SysYError {
+        if (!errorList.isEmpty()) {
+            throw errorList.get(0);
+        }
+    }
 }

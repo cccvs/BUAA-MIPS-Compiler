@@ -1,6 +1,7 @@
 import back.MipsTranslator;
 import exception.ErrorTable;
 import exception.ParserError;
+import exception.SysYError;
 import front.Parser;
 import front.ast.CompUnitNode;
 import front.lexical.Lexer;
@@ -14,22 +15,31 @@ import java.io.PrintStream;
 import java.util.Scanner;
 
 public class SysYRunner {
+    // io file
     public static final String INPUT_FILE = "testfile.txt";
     public static final String LEXER = "tokens.txt";
     public static final String SYNTAX = "output.txt";
     public static final String MID_CODE = "midcode.txt";
     public static final String ERROR = "error.txt";
     public static final String MIPS = "mips.txt";
+    // boolean
+    public static final boolean OUTPUT_LEXER = true;
+    public static final boolean OUTPUT_SYNTAX = true;
+    public static final boolean OUTPUT_MID_CODE = true;
+    public static final boolean OUTPUT_ERROR = true;
+    public static final boolean OUTPUT_MIPS = true;
 
     public SysYRunner() throws FileNotFoundException {
         try {
             run();
-        } catch (ParserError e) {
-            e.printStackTrace();
+        } catch (ParserError pe) {
+            pe.printStackTrace();
+        } catch (SysYError ignored) {
+            // do nothing, just terminate
         }
     }
 
-    private void run() throws FileNotFoundException, ParserError {
+    private void run() throws FileNotFoundException, ParserError, SysYError {
         // read part
         InputStream inputStream = new FileInputStream(INPUT_FILE);
         Scanner in = new Scanner(inputStream);
@@ -37,20 +47,31 @@ public class SysYRunner {
         // front.lexical part
         Lexer lexer = new Lexer(inputStr);
         lexer.lex();
-        lexer.outputTokens(new PrintStream(LEXER));
+        if (OUTPUT_LEXER) {
+            lexer.outputTokens(new PrintStream(LEXER));
+        }
         // parse part
         Parser parser = new Parser(lexer);
         CompUnitNode compUnit = parser.parseCompUnit();
-        parser.outputSyntax(new PrintStream(SYNTAX));
-        // intermediate part
+        if (OUTPUT_SYNTAX) {
+            parser.outputSyntax(new PrintStream(SYNTAX));
+        }
+        // ir/error part
         IrConverter irConverter = new IrConverter(compUnit);
+        if (OUTPUT_ERROR) {
+            ErrorTable.outputError(new PrintStream(ERROR));
+        }
+        ErrorTable.throwError();    // terminate if error
+        // middle code output
         MidCode midCode = irConverter.getMidCode();
-        midCode.outputMidCode(new PrintStream(MID_CODE));
-        // error part
-        ErrorTable.outputError(new PrintStream(ERROR));
+        if (OUTPUT_MID_CODE) {
+            midCode.outputMidCode(new PrintStream(MID_CODE));
+        }
         // mips part
         MipsTranslator mipsTranslator = new MipsTranslator(midCode);
-        mipsTranslator.outputMips(new PrintStream(MIPS));
+        if (OUTPUT_MIPS) {
+            mipsTranslator.outputMips(new PrintStream(MIPS));
+        }
     }
 
     private String readAll(Scanner in) {

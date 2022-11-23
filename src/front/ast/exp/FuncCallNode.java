@@ -1,14 +1,18 @@
 package front.ast.exp;
 
+import front.lexical.Token;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 
 public class FuncCallNode extends ExpNode {
     private final String ident;
+    private final int identLine;
     private final ArrayList<ExpNode> realParams;
 
-    public FuncCallNode(String ident) {
-        this.ident = ident;
+    public FuncCallNode(Token token) {
+        this.ident = token.getName();
+        this.identLine = token.getLine();
         this.realParams = new ArrayList<>();
     }
 
@@ -16,15 +20,12 @@ public class FuncCallNode extends ExpNode {
         realParams.add(exp);
     }
 
-    @Override
-    public Integer getConst() {
-        System.out.println(ident);
-        System.exit(4);
-        return 0;
-    }
-
     public String getIdent() {
         return ident;
+    }
+
+    public int getIdentLine() {
+        return identLine;
     }
 
     public Iterator<ExpNode> iterParam() {
