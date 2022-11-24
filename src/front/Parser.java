@@ -363,16 +363,15 @@ public class Parser {
         }
         // 'printf' '(' FormatString {',' Exp} ')' ';'
         else if (tokens.get(pos).eqType(TkType.PRINTFTK)) {
-            int printfTokenLine = tokens.get(pos).getLine(); // 'printf' line
+            int printfLine = tokens.get(pos).getLine();
             next(TkType.PRINTFTK);
             next(TkType.LPARENT);
             next(TkType.STRCON);
-            PrintfNode printfNode = new PrintfNode(tokens.get(pos - 1).getName());
+            PrintfNode printfNode = new PrintfNode(tokens.get(pos - 1).getName(), printfLine);
             while (tokens.get(pos).eqType(TkType.COMMA)) {
                 next(TkType.COMMA);
                 printfNode.addParam(parseExp());
             }
-            printfNode.checkParamCount(printfTokenLine);
             nextWithHandler(TkType.RPARENT);
             nextWithHandler(TkType.SEMICN);
             retStmt = printfNode;

@@ -53,13 +53,14 @@ public class IrConverter {
         // 将函数调用添加到funcTab中，可以应对a call b, b call a的情况
         Iterator<FuncDefNode> funcDefs = compUnitNode.getFuncIter();
         while (funcDefs.hasNext()) {
+            FuncDefNode funcDefNode = funcDefs.next();
             try {
-                FuncDefNode funcDefNode = funcDefs.next();
+                // 需要在加入func前检查，而putFunc过程必须执行，否则与全局变量重名时会触发null pointer
                 checkDupIdent(funcDefNode);
-                midCode.putFunc(new FuncFrame(funcDefNode.getIdent(), funcDefNode.getFuncType()));
             } catch (SysYError error) {
                 ErrorTable.append(error);
             }
+            midCode.putFunc(new FuncFrame(funcDefNode.getIdent(), funcDefNode.getFuncType()));
         }
         FuncDefNode mainFunc = compUnitNode.getMainFuncDefNode();
         midCode.setMainFunc(new FuncFrame(mainFunc.getIdent(), mainFunc.getFuncType()));
@@ -124,8 +125,8 @@ public class IrConverter {
     private void convFunc(FuncDefNode funcDefNode, boolean isMain) {
         try {
             // check duplicated func def
-            checkFuncEnd(funcDefNode);
             curFunc = isMain ? midCode.getMainFunc() : midCode.getFunc(funcDefNode.getIdent());
+            checkFuncEnd(funcDefNode);
             // params part
             Iterator<FuncFParamNode> paramIter = funcDefNode.paramIter();
             while (paramIter.hasNext()) {
@@ -151,7 +152,6 @@ public class IrConverter {
         } catch (SysYError error) {
             ErrorTable.append(error);
         }
-
     }
 
     // stmt part
@@ -240,29 +240,34 @@ public class IrConverter {
     }
 
     private void convPrintf(PrintfNode printfNode) {
-        int pos = 0;
-        String formatStr = printfNode.getFormatStr();
-        Iterator<ExpNode> params = printfNode.iterParam();
-        List<BasicIns> printBuffer = new ArrayList<>();
-        while (formatStr.indexOf("%d", pos) != -1) {
-            int beginPos = pos;
-            pos = formatStr.indexOf("%d", pos);
-            if (beginPos < pos) {
-                String label = midCode.genStrLabel(formatStr.substring(beginPos, pos));
+        try {
+            int pos = 0;
+            printfNode.checkParamCount();
+            String formatStr = printfNode.getFormatStr();
+            Iterator<ExpNode> params = printfNode.iterParam();
+            List<BasicIns> printBuffer = new ArrayList<>();
+            while (formatStr.indexOf("%d", pos) != -1) {
+                int beginPos = pos;
+                pos = formatStr.indexOf("%d", pos);
+                if (beginPos < pos) {
+                    String label = midCode.genStrLabel(formatStr.substring(beginPos, pos));
+                    printBuffer.add(new PrintStr(label));
+                }
+                ExpNode param = params.next();
+                Operand operand = convExp(param);
+                printBuffer.add(new PrintInt(operand));
+                pos += 2;
+            }
+            if (pos < formatStr.length()) {
+                String label = midCode.genStrLabel(formatStr.substring(pos));
                 printBuffer.add(new PrintStr(label));
             }
-            ExpNode param = params.next();
-            Operand operand = convExp(param);
-            printBuffer.add(new PrintInt(operand));
-            pos += 2;
-        }
-        if (pos < formatStr.length()) {
-            String label = midCode.genStrLabel(formatStr.substring(pos));
-            printBuffer.add(new PrintStr(label));
-        }
-        // print buffer
-        for (BasicIns printIns : printBuffer) {
-            curBlock.append(printIns);
+            // print buffer
+            for (BasicIns printIns : printBuffer) {
+                curBlock.append(printIns);
+            }
+        } catch (SysYError error) {
+            ErrorTable.append(error);
         }
     }
 
@@ -582,9 +587,21 @@ public class IrConverter {
                 }
             }
             // check pointer dim
-            int realDim = real instanceof LValNode ? ((LValNode) real).getIndexNum() : 0;
             int formatDim = format.getDimension();
-            if (realDim != formatDim) {
+            if (real instanceof LValNode) {
+                LValNode leftVal = (LValNode) real;
+                Symbol leftSym = curTab.findSym(leftVal.getIdent());
+                int indexDim = leftVal.getIndexNum();
+                int symDim = leftSym.getDimension();
+                if (symDim - indexDim != formatDim) {
+                    throw new SysYError(SysYError.MISMATCHED_PARAM_TYPE, funcCallNode.getIdentLine());
+                }
+                for (int i = 1; i < formatDim; i++) {
+                    if (format.getDimIndex(i) != leftSym.getDimIndex(i + indexDim)) {
+                        throw new SysYError(SysYError.MISMATCHED_PARAM_TYPE, funcCallNode.getIdentLine());
+                    }
+                }
+            } else if (formatDim != 0) {
                 throw new SysYError(SysYError.MISMATCHED_PARAM_TYPE, funcCallNode.getIdentLine());
             }
         }

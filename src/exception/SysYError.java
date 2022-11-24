@@ -25,7 +25,11 @@ public class SysYError extends Exception implements Comparable<SysYError> {
 
     @Override
     public int compareTo(SysYError o) {
-        return this.line < o.line ? -1 : 1;
+        if (this.line != o.line) {
+            return this.line < o.line ? -1 : 1;
+        } else {
+            return this.type.compareTo(o.type);
+        }
     }
 
     @Override

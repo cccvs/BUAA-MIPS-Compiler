@@ -103,6 +103,11 @@ public class Symbol extends MidVar {
         return prod;
     }
 
+    public int getDimIndex(int dimIndex) {
+        assert 0 <= dimIndex && dimIndex < dimensions.size();
+        return dimensions.get(dimIndex);
+    }
+
     @Override
     public String toString() {
         String typeStr = refType.name().substring(0, 1).toLowerCase();

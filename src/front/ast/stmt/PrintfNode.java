@@ -3,20 +3,23 @@ package front.ast.stmt;
 import exception.ErrorTable;
 import exception.SysYError;
 import front.ast.exp.ExpNode;
+import front.lexical.Token;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 
 public class PrintfNode implements StmtNode {
     private final String formatStr;
+    private final int printfLine;
     private final ArrayList<ExpNode> params;
 
-    public PrintfNode(String formatStr) {
+    public PrintfNode(String formatStr, int printfLine) {
         this.formatStr = formatStr;
+        this.printfLine = printfLine;
         this.params = new ArrayList<>();
     }
 
-    public void checkParamCount(int checkLine) {
+    public void checkParamCount() throws SysYError {
         int cnt = 0;
         int pos = 0;
         while (formatStr.indexOf("%d", pos) != -1) {
@@ -25,7 +28,7 @@ public class PrintfNode implements StmtNode {
             ++cnt;
         }
         if (cnt != params.size()) {
-            ErrorTable.append(new SysYError(SysYError.MISMATCHED_PRINTF, checkLine));
+            throw new SysYError(SysYError.MISMATCHED_PRINTF, printfLine);
         }
     }
 
@@ -36,6 +39,10 @@ public class PrintfNode implements StmtNode {
 
     public String getFormatStr() {
         return formatStr.substring(1, formatStr.length() - 1);
+    }
+
+    public int getPrintfLine() {
+        return printfLine;
     }
 
     public Iterator<ExpNode> iterParam() {
