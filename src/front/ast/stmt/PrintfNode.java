@@ -41,10 +41,6 @@ public class PrintfNode implements StmtNode {
         return formatStr.substring(1, formatStr.length() - 1);
     }
 
-    public int getPrintfLine() {
-        return printfLine;
-    }
-
     public Iterator<ExpNode> iterParam() {
         return params.iterator();
     }

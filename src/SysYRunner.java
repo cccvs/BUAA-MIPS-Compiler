@@ -1,5 +1,6 @@
 import back.MipsTranslator;
 import exception.ErrorTable;
+import exception.LexerError;
 import exception.ParserError;
 import exception.SysYError;
 import front.Parser;
@@ -25,21 +26,21 @@ public class SysYRunner {
     // boolean
     public static final boolean OUTPUT_LEXER = false;
     public static final boolean OUTPUT_SYNTAX = false;
-    public static final boolean OUTPUT_MID_CODE = false;
+    public static final boolean OUTPUT_MID_CODE = true;
     public static final boolean OUTPUT_ERROR = true;
-    public static final boolean OUTPUT_MIPS = false;
+    public static final boolean OUTPUT_MIPS = true;
 
     public SysYRunner() throws FileNotFoundException {
         try {
             run();
-        } catch (ParserError pe) {
-            pe.printStackTrace();
+        } catch (LexerError | ParserError error) {
+            error.printStackTrace();
         } catch (SysYError ignored) {
             // do nothing, just terminate
         }
     }
 
-    private void run() throws FileNotFoundException, ParserError, SysYError {
+    private void run() throws FileNotFoundException, LexerError, ParserError, SysYError {
         // read part
         InputStream inputStream = new FileInputStream(INPUT_FILE);
         Scanner in = new Scanner(inputStream);

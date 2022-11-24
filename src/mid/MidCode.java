@@ -34,7 +34,9 @@ public class MidCode {
     public int addStackSize(int size) {
         globalStackSize += size;
         return globalStackSize;
-    }public void putFunc(FuncFrame funcFrame) {
+    }
+
+    public void putFunc(FuncFrame funcFrame) {
         funcTab.put(funcFrame.getIdent(), funcFrame);
     }
 

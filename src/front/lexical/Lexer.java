@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import exception.ErrorTable;
+import exception.LexerError;
 import exception.SysYError;
 import front.TkType;
 
@@ -26,7 +27,7 @@ public class Lexer {
         this.tokens = new ArrayList<>();
     }
 
-    public void lex(){
+    public void lex() throws LexerError {
         while (pos < length) {
             skipSpace();
             if (pos >= length) {
@@ -59,10 +60,7 @@ public class Lexer {
             return;
         }
         while ("\n\r \t".indexOf(inputStr.charAt(pos)) != -1) {
-            if (inputStr.charAt(pos) == '\n') {
-                ++curLine;
-            }
-            ++pos;
+            next();
             if (pos >= length) {
                 return;
             }
@@ -80,7 +78,7 @@ public class Lexer {
                 ErrorTable.append(new SysYError(SysYError.ILLEGAL_STRING, curLine));
                 return;
             }
-            if (curChar == '\\' && (i >= str.length() - 1 || str.charAt(i + 1) != 'n') ) {
+            if (curChar == '\\' && (i >= str.length() - 1 || str.charAt(i + 1) != 'n')) {
                 ErrorTable.append(new SysYError(SysYError.ILLEGAL_STRING, curLine));
                 return;
             }
@@ -88,37 +86,39 @@ public class Lexer {
     }
 
     private void lexIdentifier() {
-        int beginIndex = pos++;
+        int beginIndex = pos;
+        next();
         while (Character.isLetter(inputStr.charAt(pos)) ||
                 Character.isDigit(inputStr.charAt(pos)) || inputStr.charAt(pos) == '_') {
-            ++pos;
+            next();
         }
         curToken = inputStr.substring(beginIndex, pos);
         tokens.add(new Token(Token.KEYWORDS.getOrDefault(curToken, TkType.IDENFR), curToken, curLine));
     }
 
-    @SuppressWarnings("checkstyle:LineLength")
     private void lexInt() {
-        int beginIndex = pos++;
+        int beginIndex = pos;
+        next();
         while (Character.isDigit(inputStr.charAt(pos))) {
-            ++pos;
+            next();
         }
         curToken = inputStr.substring(beginIndex, pos);
         tokens.add(new Token(Token.KEYWORDS.getOrDefault(curToken, TkType.INTCON), curToken, curLine));
     }
 
     private void lexStr() {
-        int beginIndex = pos++;
+        int beginIndex = pos;
+        next();
         while (inputStr.charAt(pos) != '\"') {
-            ++pos;
+            next();
         }
-        ++pos;
+        next();
         curToken = inputStr.substring(beginIndex, pos);
         checkIllegalString(curToken.substring(1, curToken.length() - 1));
         tokens.add(new Token(Token.KEYWORDS.getOrDefault(curToken, TkType.STRCON), curToken, curLine));
     }
 
-    private void lexSingle() {
+    private void lexSingle() throws LexerError {
         char c = inputStr.charAt(pos);
         TkType tkType = null;
         switch (c) {
@@ -166,7 +166,7 @@ public class Lexer {
         pos++;
     }
 
-    private void lexDouble() {
+    private void lexDouble() throws LexerError {
         char c = inputStr.charAt(pos);
         String str = inputStr.substring(pos, pos + 2);
         if (c == '&') {
@@ -185,7 +185,7 @@ public class Lexer {
         pos += 2;
     }
 
-    private void lexMix() {
+    private void lexMix() throws LexerError {
         char c = inputStr.charAt(pos);
         String str = inputStr.substring(pos, pos + 2);
         switch (c) {
@@ -230,26 +230,26 @@ public class Lexer {
         }
     }
 
-    private void lexDiv() {
+    private void lexDiv() throws LexerError {
         if (pos >= length - 1 || "/*".indexOf(inputStr.charAt(pos + 1)) == -1) {
             tokens.add(new Token(TkType.DIV, "/", curLine));
-            ++pos;
+            next();
         } else {
-            ++pos;
+            next();
             if (inputStr.charAt(pos) == '/') {
                 while (inputStr.charAt(pos) != '\n' && inputStr.charAt(pos) != '\r') {
-                    ++pos;
+                    next();
                 }
-                ++pos;
+                next();
             } else if (inputStr.charAt(pos) == '*') {
                 do {
-                    ++pos;
+                    next();
                     if (pos >= length - 1) {
                         error();
-                        return;
                     }
                 } while (!inputStr.startsWith("*/", pos));
-                pos += 2;
+                next();
+                next();
             }
         }
     }
@@ -264,9 +264,14 @@ public class Lexer {
         }
     }
 
-    private void error() {
+    public void next() {
+        if (inputStr.charAt(pos) == '\n' || inputStr.charAt(pos) == '\r') {
+            ++curLine;
+        }
         ++pos;
-        System.out.println("error in lexer!");
-        System.exit(2);
+    }
+
+    private void error() throws LexerError {
+        throw new LexerError(curLine, inputStr.charAt(pos));
     }
 }

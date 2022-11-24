@@ -61,6 +61,7 @@ public class IrConverter {
                 ErrorTable.append(error);
             }
             midCode.putFunc(new FuncFrame(funcDefNode.getIdent(), funcDefNode.getFuncType()));
+            ;
         }
         FuncDefNode mainFunc = compUnitNode.getMainFuncDefNode();
         midCode.setMainFunc(new FuncFrame(mainFunc.getIdent(), mainFunc.getFuncType()));
@@ -84,8 +85,8 @@ public class IrConverter {
     }
 
     private void convDef(DefNode defNode) {
+        // check duplicated def
         try {
-            // check duplicated def
             checkDupIdent(defNode);
             // construct symbol
             boolean isGlobal = curTab.isGlobal();
@@ -123,10 +124,10 @@ public class IrConverter {
 
     // func part
     private void convFunc(FuncDefNode funcDefNode, boolean isMain) {
+        // check duplicated func def
         try {
-            // check duplicated func def
-            curFunc = isMain ? midCode.getMainFunc() : midCode.getFunc(funcDefNode.getIdent());
             checkFuncEnd(funcDefNode);
+            curFunc = isMain ? midCode.getMainFunc() : midCode.getFunc(funcDefNode.getIdent());
             // params part
             Iterator<FuncFParamNode> paramIter = funcDefNode.paramIter();
             while (paramIter.hasNext()) {
@@ -212,10 +213,8 @@ public class IrConverter {
         try {
             LValNode leftVal = assignNode.getLeftVal();
             ExpNode exp = assignNode.getExp();
-            Symbol leftSym = findLValIdent(leftVal, true);
+            MidVar leftSym = findLValIdent(leftVal, true);
             // begin
-            assert !leftSym.getRefType().equals(Symbol.RefType.POINTER);
-            assert leftSym.getDimension() == leftVal.getIndexNum();
             if (leftSym.getRefType().equals(Symbol.RefType.VALUE)) {
                 if (assignNode.isGetInt()) {    // e.g. a = getint();
                     curBlock.append(new GetInt(leftSym));
@@ -241,8 +240,8 @@ public class IrConverter {
 
     private void convPrintf(PrintfNode printfNode) {
         try {
-            int pos = 0;
             printfNode.checkParamCount();
+            int pos = 0;
             String formatStr = printfNode.getFormatStr();
             Iterator<ExpNode> params = printfNode.iterParam();
             List<BasicIns> printBuffer = new ArrayList<>();
@@ -269,20 +268,21 @@ public class IrConverter {
         } catch (SysYError error) {
             ErrorTable.append(error);
         }
+
     }
 
     private void convReturn(ReturnNode returnNode) {
         try {
             checkReturn(returnNode);
-            ExpNode retVal = returnNode.getRetVal();
-            if (retVal == null) {
-                curBlock.append(new Return());
-            } else {
-                Operand retOperand = convExp(retVal);
-                curBlock.append(new Return(retOperand));
-            }
         } catch (SysYError error) {
             ErrorTable.append(error);
+        }
+        ExpNode retVal = returnNode.getRetVal();
+        if (retVal == null) {
+            curBlock.append(new Return());
+        } else {
+            Operand retOperand = convExp(retVal);
+            curBlock.append(new Return(retOperand));
         }
     }
 
