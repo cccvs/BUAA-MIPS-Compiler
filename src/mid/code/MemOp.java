@@ -4,7 +4,10 @@ import mid.operand.MidVar;
 import mid.operand.Operand;
 import mid.operand.Symbol;
 
-public class MemOp implements BasicIns{
+import java.util.HashSet;
+import java.util.Set;
+
+public class MemOp implements BasicIns {
     // Originate from Assign, Def/Decl, Exp(LVal)
     public enum Type {
         LOAD,
@@ -22,11 +25,6 @@ public class MemOp implements BasicIns{
         this.pointer = pointer;
     }
 
-    @Override
-    public String toString() {
-        return "\t" + op.name() + " " + value + ", " + pointer;
-    }
-
     public Type getOp() {
         return op;
     }
@@ -37,5 +35,27 @@ public class MemOp implements BasicIns{
 
     public Operand getValue() {
         return value;
+    }
+
+    @Override
+    public String toString() {
+        return "\t" + op.name() + " " + value + ", " + pointer;
+    }
+
+    @Override
+    public Set<MidVar> leftSet() {
+        return new HashSet<>();
+    }
+
+    @Override
+    public Set<MidVar> rightSet() {
+        Set<MidVar> rightSet = new HashSet<>();
+        if (value instanceof MidVar) {
+            rightSet.add((MidVar) value);
+        }
+        if (pointer != null) {
+            rightSet.add(pointer);
+        }
+        return rightSet;
     }
 }

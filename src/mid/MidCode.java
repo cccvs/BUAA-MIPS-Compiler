@@ -16,7 +16,7 @@ public class MidCode {
 
     // generator
     private static int strCnt = 0;
-    private static int IdCnt = 0;
+    private static int idCnt = 0;
     private int globalStackSize = 0;
 
     public MidCode() {
@@ -27,7 +27,7 @@ public class MidCode {
 
     // tag id generator
     public static int genId() {
-        return IdCnt++;
+        return idCnt++;
     }
 
     // basic

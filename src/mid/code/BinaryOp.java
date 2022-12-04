@@ -3,7 +3,10 @@ package mid.code;
 import mid.operand.Operand;
 import mid.operand.MidVar;
 
-public class BinaryOp implements BasicIns{
+import java.util.HashSet;
+import java.util.Set;
+
+public class BinaryOp implements BasicIns {
     public enum Type {
         ADD, SUB, MUL, DIV, MOD, SGE, SGT, SLE, SLT, SEQ, SNE, AND, OR
     }
@@ -22,11 +25,6 @@ public class BinaryOp implements BasicIns{
         this.dst = dst;
     }
 
-    @Override
-    public String toString() {
-        return "\t" + op.name() + " " + dst + ", " + src1 + ", " + src2;
-    }
-
     public Type getOp() {
         return op;
     }
@@ -41,5 +39,31 @@ public class BinaryOp implements BasicIns{
 
     public MidVar getDst() {
         return dst;
+    }
+
+    @Override
+    public String toString() {
+        return "\t" + op.name() + " " + dst + ", " + src1 + ", " + src2;
+    }
+
+    @Override
+    public Set<MidVar> leftSet() {
+        Set<MidVar> leftSet = new HashSet<>();
+        if (dst != null) {
+            leftSet.add(dst);
+        }
+        return leftSet;
+    }
+
+    @Override
+    public Set<MidVar> rightSet() {
+        Set<MidVar> rightSet = new HashSet<>();
+        if (src1 instanceof MidVar) {
+            rightSet.add((MidVar) src1);
+        }
+        if (src1 instanceof MidVar) {
+            rightSet.add((MidVar) src2);
+        }
+        return rightSet;
     }
 }

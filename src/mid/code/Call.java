@@ -4,15 +4,13 @@ import mid.frame.FuncFrame;
 import mid.operand.Operand;
 import mid.operand.MidVar;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class Call implements BasicIns{
     // Originate from FuncCall
-    private FuncFrame func;
-    private List<Operand> params;
-    private MidVar ret;     // null if void
+    private final FuncFrame func;
+    private final List<Operand> params;
+    private final MidVar ret;     // null if void
 
     public Call(FuncFrame func, MidVar ret) {
         this.func = func;
@@ -47,5 +45,21 @@ public class Call implements BasicIns{
             sb.append(ret);
         }
         return sb.toString();
+    }
+
+    @Override
+    public Set<MidVar> leftSet() {
+        return new HashSet<>();
+    }
+
+    @Override
+    public Set<MidVar> rightSet() {
+        Set<MidVar> rightSet = new HashSet<>();
+        for (Operand param : params) {
+            if (param instanceof MidVar) {
+                rightSet.add((MidVar) param);
+            }
+        }
+        return rightSet;
     }
 }

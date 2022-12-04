@@ -2,10 +2,10 @@ package mid.frame;
 
 import mid.MidCode;
 import mid.code.BasicIns;
+import mid.code.Return;
+import mid.operand.MidVar;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class BasicBlock {
     public enum Type {
@@ -20,6 +20,14 @@ public class BasicBlock {
     private final Integer id;
     private final Type type;
     private final List<BasicIns> insList = new ArrayList<>();
+
+    // optimize
+    private final List<BasicBlock> preBlocks = new ArrayList<>();
+    private final List<BasicBlock> subBlocks = new ArrayList<>();
+    private final Set<MidVar> liveGen = new HashSet<>();
+    private final Set<MidVar> liveKill = new HashSet<>();
+    private final Set<MidVar> liveIn = new HashSet<>();
+    private final Set<MidVar> liveOut = new HashSet<>();
 
     public BasicBlock(Type type) {
         this.id = MidCode.genId();
@@ -36,6 +44,35 @@ public class BasicBlock {
 
     public Iterator<BasicIns> iterIns() {
         return insList.iterator();
+    }
+
+    public BasicIns getLastIns() {
+        return insList.isEmpty() ? null : insList.get(insList.size() - 1);
+    }
+
+    public void linkNext(BasicBlock next) {
+        subBlocks.add(next);
+        next.preBlocks.add(this);
+    }
+    // optimize
+
+    public void calGenKill() {
+        liveGen.clear();
+        liveKill.clear();
+        for (BasicIns basicIns : insList) {
+
+        }
+    }
+
+    public void clearReturnFollows() {
+        for (int i = 0; i < insList.size(); i++) {
+            if (insList.get(i) instanceof Return) {
+                if (insList.size() > i + 1) {
+                    insList.subList(i + 1, insList.size()).clear();
+                    return;
+                }
+            }
+        }
     }
 
     @Override

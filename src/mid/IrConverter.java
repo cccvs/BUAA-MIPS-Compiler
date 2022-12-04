@@ -363,43 +363,42 @@ public class IrConverter {
     }
 
     // short circuit evaluation part
-    private void convOrExp(ExpNode exp, BasicBlock labelTrue, BasicBlock labelFalse) {
+    private void convOrExp(ExpNode exp, BasicBlock blockTrue, BasicBlock blockFalse) {
         if (exp.isOrBinary()) {
             BasicBlock labelOr = new BasicBlock(BasicBlock.Type.or);
             BinaryExpNode orExp = (BinaryExpNode) exp;
             ExpNode left = orExp.getLeftExp();
             ExpNode right = orExp.getRightExp();
             // left
-            convOrExp(left, labelTrue, labelOr);         // 左递归, 右边不可能为OrExp
+            convOrExp(left, blockTrue, labelOr);         // 左递归, 右边不可能为OrExp
             // right
             updateBlock(labelOr);
-            convAndExp(right, labelTrue, labelFalse);    // 左递归, OrExp向右上扩展
+            convAndExp(right, blockTrue, blockFalse);    // 左递归, OrExp向右上扩展
         } else {
-            convAndExp(exp, labelTrue, labelFalse);
+            convAndExp(exp, blockTrue, blockFalse);
         }
     }
 
-    private void convAndExp(ExpNode exp, BasicBlock labelTrue, BasicBlock labelFalse) {
+    private void convAndExp(ExpNode exp, BasicBlock blockTrue, BasicBlock blockFalse) {
         if (exp.isAndBinary()) {
             BasicBlock labelAnd = new BasicBlock(BasicBlock.Type.and);
             BinaryExpNode andExp = (BinaryExpNode) exp;
             ExpNode left = andExp.getLeftExp();
             ExpNode right = andExp.getRightExp();
             // left
-            convAndExp(left, labelAnd, labelFalse);      // 左递归, 右边不可能为AndExp
+            convAndExp(left, labelAnd, blockFalse);      // 左递归, 右边不可能为AndExp
             // right
             updateBlock(labelAnd);
-            convEqExp(right, labelTrue, labelFalse);     // 左递归, AndExp向右上扩展
+            convEqExp(right, blockTrue, blockFalse);     // 左递归, AndExp向右上扩展
         } else {
-            convEqExp(exp, labelTrue, labelFalse);
+            convEqExp(exp, blockTrue, blockFalse);
         }
     }
 
-    private void convEqExp(ExpNode exp, BasicBlock labelTrue, BasicBlock labelFalse) {
+    private void convEqExp(ExpNode exp, BasicBlock blockTrue, BasicBlock blockFalse) {
         // TODO[14]: 后续窥孔优化[slt, bez]指令序列，以及[j label, label:]指令序列
         Operand value = convExp(exp);
-        curBlock.append(new Branch(Branch.Type.BNEZ, value, labelTrue));
-        curBlock.append(new Jump(labelFalse));
+        curBlock.append(new Branch(Branch.Type.BNEZ, value, blockTrue, blockFalse));
     }
 
     // exp part
@@ -530,7 +529,7 @@ public class IrConverter {
         return curTab;
     }
 
-    // check, return true if error
+    // check
     private void checkDupIdent(DefNode defNode) throws SysYError {
         String ident = defNode.getIdent();
         int line = defNode.getIdentLine();

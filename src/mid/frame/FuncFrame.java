@@ -1,13 +1,13 @@
 package mid.frame;
 
-import front.ast.func.FuncFParamNode;
+import mid.code.BasicIns;
+import mid.code.Branch;
+import mid.code.Jump;
+import mid.code.Return;
 import mid.operand.Symbol;
 import front.TkType;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 public class FuncFrame {
     /*
@@ -17,12 +17,16 @@ public class FuncFrame {
     public enum RetType {
         INT, VOID
     }
+
     // basic information
     private final String ident;
     private final RetType retType;
     private final List<Symbol> params;
     private final List<BasicBlock> bodyBlocks;
     private int stackSize = 0;
+
+    // optimize
+    private final Set<BasicBlock> endBlocks = new HashSet<>();
 
     public FuncFrame(String ident, TkType tkType) {
         this.ident = ident;
@@ -77,6 +81,33 @@ public class FuncFrame {
     // TODO[13]: abandoned in the future
     public String getLabel() {
         return "f_" + ident;
+    }
+
+    // optimize
+    public void buildFlowGraph() {
+        for (int i = 0; i < bodyBlocks.size(); i++) {
+            BasicBlock block = bodyBlocks.get(i);
+            block.clearReturnFollows();
+            BasicIns lastIns = block.getLastIns();
+            if (lastIns instanceof Jump) {
+                block.linkNext(((Jump) lastIns).getTargetBlock());
+            } else if (lastIns instanceof Branch) {
+                block.linkNext(((Branch) lastIns).getBlockTrue());
+                block.linkNext(((Branch) lastIns).getBlockFalse());
+            } else if (lastIns instanceof Return) {
+                endBlocks.add(block);
+            } else {
+                if (i + 1 < bodyBlocks.size()) {
+                    block.linkNext(bodyBlocks.get(i + 1));
+                } else {
+                    endBlocks.add(block);
+                }
+            }
+        }
+    }
+
+    public void livenessAnalysis() {
+
     }
 
     @Override

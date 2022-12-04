@@ -29,6 +29,7 @@ public class SysYRunner {
     public static final boolean OUTPUT_MID_CODE = true;
     public static final boolean OUTPUT_ERROR = true;
     public static final boolean OUTPUT_MIPS = true;
+    public static final boolean OPTIMIZE = true;
 
     public SysYRunner() throws FileNotFoundException {
         try {

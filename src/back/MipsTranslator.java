@@ -187,14 +187,16 @@ public class MipsTranslator {
     private void transBranch(Branch branch) {
         mipsInsList.add(new Comment(branch.toString()));
         Operand cond = branch.getCond();
-        String label = branch.getLabel();
+        String labelTrue = branch.getBlockTrue().getLabel();
+        String labelFalse = branch.getBlockFalse().getLabel();
         //if (branch.getType().equals(Branch.Type.BNEZ))
         loadRegHelper(cond, Reg.A0);
-        mipsInsList.add(new Bnez(Reg.A0, label));
+        mipsInsList.add(new Bnez(Reg.A0, labelTrue));
+        mipsInsList.add(new J(labelFalse));
     }
 
     private void transJump(Jump jump) {
-        mipsInsList.add(new J(jump.getLabel()));
+        mipsInsList.add(new J(jump.getTargetBlock().getLabel()));
     }
 
     private void transMemOp(MemOp memOp) {
