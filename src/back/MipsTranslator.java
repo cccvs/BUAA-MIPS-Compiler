@@ -9,6 +9,7 @@ import mid.MidCode;
 import mid.code.*;
 import mid.frame.BasicBlock;
 import mid.frame.FuncFrame;
+import mid.frame.MidLabel;
 import mid.operand.Imm;
 import mid.operand.Operand;
 import mid.operand.Symbol;
@@ -48,16 +49,7 @@ public class MipsTranslator {
     private void transFunc(FuncFrame func) {
         mipsInsList.add(new Label("\n" + func.getLabel()));
         stackSize = func.addStackSize(0);   // 相当于getStackSize
-        Iterator<BasicBlock> blocks = func.iterBody();
-        while (blocks.hasNext()) {
-            BasicBlock basicBlock = blocks.next();
-            transBlock(basicBlock);
-        }
-    }
-
-    private void transBlock(BasicBlock basicBlock) {
-        mipsInsList.add(new Label(basicBlock.getLabel()));
-        Iterator<BasicIns> insIter = basicBlock.iterIns();
+        Iterator<BasicIns> insIter = func.iterIns();
         while (insIter.hasNext()) {
             BasicIns basicIns = insIter.next();
             transIns(basicIns);
@@ -65,8 +57,8 @@ public class MipsTranslator {
     }
 
     private void transIns(BasicIns basicIns) {
-        if (basicIns instanceof BasicBlock) {
-            transBlock((BasicBlock) basicIns);
+        if (basicIns instanceof MidLabel) {
+            transMidLabel((MidLabel) basicIns);
         } else if (basicIns instanceof BinaryOp) {
             transBinaryOp((BinaryOp) basicIns);
         } else if (basicIns instanceof UnaryOp) {
@@ -93,6 +85,10 @@ public class MipsTranslator {
             System.out.println("illegal basic ins!");
             System.exit(8);
         }
+    }
+
+    private void transMidLabel(MidLabel midLabel) {
+        mipsInsList.add(new Label(midLabel.getLabel()));
     }
 
     // stack ver, a1-a1(4-6)used to calculate

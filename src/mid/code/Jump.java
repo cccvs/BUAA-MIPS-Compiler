@@ -1,25 +1,26 @@
 package mid.code;
 
 import mid.frame.BasicBlock;
+import mid.frame.MidLabel;
 import mid.operand.MidVar;
 
 import java.util.HashSet;
 import java.util.Set;
 
 public class Jump implements BasicIns{
-    private final BasicBlock basicBlock;
+    private final MidLabel midLabel;
 
-    public Jump(BasicBlock basicBlock) {
-        this.basicBlock = basicBlock;
+    public Jump(MidLabel midLabel) {
+        this.midLabel = midLabel;
     }
 
-    public BasicBlock getTargetBlock() {
-        return basicBlock;
+    public MidLabel getTargetBlock() {
+        return midLabel;
     }
 
     @Override
     public String toString() {
-        return "\tJUMP " + basicBlock.getLabel();
+        return "\tJUMP " + midLabel.getLabel();
     }
 
     @Override

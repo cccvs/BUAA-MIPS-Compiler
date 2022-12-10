@@ -10,7 +10,7 @@ import front.ast.func.FuncDefNode;
 import front.ast.func.FuncFParamNode;
 import front.ast.stmt.*;
 import mid.code.*;
-import mid.frame.BasicBlock;
+import mid.frame.MidLabel;
 import mid.frame.FuncFrame;
 import mid.frame.SymTab;
 import mid.operand.Imm;
@@ -30,10 +30,9 @@ public class IrConverter {
     // current info
     private static SymTab curTab = new SymTab();    // 初始化为全局符号表
     private static FuncFrame curFunc = null;
-    private static BasicBlock curBlock = null;      // 对curBlock更新统一调用updateBlock()方法
 
-    private final Stack<BasicBlock> loopBeginStack = new Stack<>();
-    private final Stack<BasicBlock> loopEndStack = new Stack<>();
+    private final Stack<MidLabel> loopBeginStack = new Stack<>();
+    private final Stack<MidLabel> loopEndStack = new Stack<>();
 
     public IrConverter(CompUnitNode compUnitNode) {
         convCompUnit(compUnitNode);
@@ -61,7 +60,6 @@ public class IrConverter {
                 ErrorTable.append(error);
             }
             midCode.putFunc(new FuncFrame(funcDefNode.getIdent(), funcDefNode.getFuncType()));
-            ;
         }
         FuncDefNode mainFunc = compUnitNode.getMainFuncDefNode();
         midCode.setMainFunc(new FuncFrame(mainFunc.getIdent(), mainFunc.getFuncType()));
@@ -100,7 +98,7 @@ public class IrConverter {
                     // value part
                     ExpNode initExp = defNode.getInitValues().get(0);
                     Operand initOperand = convExp(initExp);     // 非全局常量初值可能不是常量表达式
-                    curBlock.append(new UnaryOp(UnaryOp.Type.MOV, initOperand, symbol));
+                    curFunc.append(new UnaryOp(UnaryOp.Type.MOV, initOperand, symbol));
                 } else {
                     // array part
                     assert symbol.getRefType() == Operand.RefType.ARRAY;
@@ -108,12 +106,12 @@ public class IrConverter {
                     for (int index = 0; index * 4 < size; ++index) {
                         // offset
                         MidVar pointer = new MidVar(Operand.RefType.POINTER);
-                        curBlock.append(new Offset(symbol, new Imm(index * 4), pointer));
+                        curFunc.append(new Offset(symbol, new Imm(index * 4), pointer));
                         // get exp
                         ExpNode initExp = defNode.getInitValues().get(index);
                         Operand initOperand = convExp(initExp);
                         // store
-                        curBlock.append(new MemOp(MemOp.Type.STORE, initOperand, pointer));
+                        curFunc.append(new MemOp(MemOp.Type.STORE, initOperand, pointer));
                     }
                 }
             }
@@ -141,15 +139,14 @@ public class IrConverter {
                 }
             }
             // block and symTab part
-            updateBlock(new BasicBlock(BasicBlock.Type.func));
+            curFunc.append(new MidLabel(MidLabel.Type.func));
             BlockNode block = funcDefNode.getBlock();
             convBlock(block);
             // append "return;" for void func
             if (curFunc.getRetType().equals(FuncFrame.RetType.VOID)) {
-                curBlock.append(new Return());
+                curFunc.append(new Return());
             }
             curFunc = null;
-            curBlock = null;
         } catch (SysYError error) {
             ErrorTable.append(error);
         }
@@ -217,20 +214,20 @@ public class IrConverter {
             // begin
             if (leftSym.getRefType().equals(Symbol.RefType.VALUE)) {
                 if (assignNode.isGetInt()) {    // e.g. a = getint();
-                    curBlock.append(new GetInt(leftSym));
+                    curFunc.append(new GetInt(leftSym));
                 } else {
                     Operand src = convExp(exp);
-                    curBlock.append(new UnaryOp(UnaryOp.Type.MOV, src, leftSym));
+                    curFunc.append(new UnaryOp(UnaryOp.Type.MOV, src, leftSym));
                 }
             } else {
                 MidVar leftPointer = convLVal(leftVal, true);
                 if (assignNode.isGetInt()) {    // e.g. a[3] = getint()
                     MidVar recv = new MidVar(Operand.RefType.VALUE);
-                    curBlock.append(new GetInt(recv));
-                    curBlock.append(new MemOp(MemOp.Type.STORE, recv, leftPointer));
+                    curFunc.append(new GetInt(recv));
+                    curFunc.append(new MemOp(MemOp.Type.STORE, recv, leftPointer));
                 } else {
                     Operand src = convExp(exp);
-                    curBlock.append(new MemOp(MemOp.Type.STORE, src, leftPointer));
+                    curFunc.append(new MemOp(MemOp.Type.STORE, src, leftPointer));
                 }
             }
         } catch (SysYError error) {
@@ -263,12 +260,11 @@ public class IrConverter {
             }
             // print buffer
             for (BasicIns printIns : printBuffer) {
-                curBlock.append(printIns);
+                curFunc.append(printIns);
             }
         } catch (SysYError error) {
             ErrorTable.append(error);
         }
-
     }
 
     private void convReturn(ReturnNode returnNode) {
@@ -279,126 +275,125 @@ public class IrConverter {
         }
         ExpNode retVal = returnNode.getRetVal();
         if (retVal == null) {
-            curBlock.append(new Return());
+            curFunc.append(new Return());
         } else {
             Operand retOperand = convExp(retVal);
-            curBlock.append(new Return(retOperand));
+            curFunc.append(new Return(retOperand));
         }
     }
 
     private void convBranch(BranchNode branchNode) {
         ExpNode cond = branchNode.getCond();
         StmtNode thenBody = branchNode.getThenStmt();
-        BasicBlock branchThen = new BasicBlock(BasicBlock.Type.branch_then);
-        BasicBlock branchEnd = new BasicBlock(BasicBlock.Type.branch_end);
+        MidLabel branchThen = new MidLabel(MidLabel.Type.branch_then);
+        MidLabel branchEnd = new MidLabel(MidLabel.Type.branch_end);
         if (branchNode.hasElse()) {
             StmtNode elseBody = branchNode.getElseStmt();
-            BasicBlock branchElse = new BasicBlock(BasicBlock.Type.branch_else);
+            MidLabel branchElse = new MidLabel(MidLabel.Type.branch_else);
             // exp part
             convOrExp(cond, branchThen, branchElse);
             // then part
-            updateBlock(branchThen);
+            curFunc.append(branchThen);
             curTab = new SymTab(curTab);
             convStmt(thenBody);
-            curBlock.append(new Jump(branchEnd));
+            curFunc.append(new Jump(branchEnd));
             curTab = curTab.prev();
             // else part
-            updateBlock(branchElse);
+            curFunc.append(branchElse);
             curTab = new SymTab(curTab);
             convStmt(elseBody);
         } else {
             // exp part
             convOrExp(cond, branchThen, branchEnd);
             // then part
-            updateBlock(branchThen);
+            curFunc.append(branchThen);
             curTab = new SymTab(curTab);
             convStmt(thenBody);
-            curBlock.append(new Jump(branchEnd));
+            curFunc.append(new Jump(branchEnd));
         }
         // end part
         curTab = curTab.prev();     // 统一回到上一级符号表
-        updateBlock(branchEnd);
+        curFunc.append(branchEnd);
     }
 
     private void convLoop(LoopNode loopNode) {
         ExpNode cond = loopNode.getCond();
         StmtNode body = loopNode.getBody();
-        BasicBlock loopBegin = new BasicBlock(BasicBlock.Type.loop_begin);
-        BasicBlock loopBody = new BasicBlock(BasicBlock.Type.loop_body);
-        BasicBlock loopEnd = new BasicBlock(BasicBlock.Type.loop_end);
+        MidLabel loopBegin = new MidLabel(MidLabel.Type.loop_begin);
+        MidLabel loopBody = new MidLabel(MidLabel.Type.loop_body);
+        MidLabel loopEnd = new MidLabel(MidLabel.Type.loop_end);
         // exp part
-        updateBlock(loopBegin);
+        curFunc.append(loopBegin);
         convOrExp(cond, loopBody, loopEnd);
         // body part
-        updateBlock(loopBody);
+        curFunc.append(loopBody);
         curTab = new SymTab(curTab);    // 更新符号表
         loopBeginStack.push(loopBegin); // continue
         loopEndStack.push(loopEnd);     // break
         convStmt(body);                 // convert loop body
         loopBeginStack.pop();           // continue
         loopEndStack.pop();             // break
-        curBlock.append(new Jump(loopBegin));
+        curFunc.append(new Jump(loopBegin));
         curTab = curTab.prev();         // 回到上一级符号表
         // end part
-        updateBlock(loopEnd);
+        curFunc.append(loopEnd);
     }
 
     private void convBreak(BreakNode breakNode) {
         if (!loopEndStack.isEmpty()) {
-            curBlock.append(new Jump(loopEndStack.peek()));
-            updateBlock(new BasicBlock(BasicBlock.Type.break_follow));
+            curFunc.append(new Jump(loopEndStack.peek()));
+            curFunc.append(new MidLabel(MidLabel.Type.break_follow));
         } else {
             ErrorTable.append(new SysYError(SysYError.CTRL_OUTSIDE_LOOP, breakNode.getLine()));
         }
-
     }
 
     private void convContinue(ContinueNode continueNode) {
         if (!loopBeginStack.isEmpty()) {
-            curBlock.append(new Jump(loopBeginStack.peek()));
-            updateBlock(new BasicBlock(BasicBlock.Type.continue_follow));
+            curFunc.append(new Jump(loopBeginStack.peek()));
+            curFunc.append(new MidLabel(MidLabel.Type.continue_follow));
         } else {
             ErrorTable.append(new SysYError(SysYError.CTRL_OUTSIDE_LOOP, continueNode.getLine()));
         }
     }
 
     // short circuit evaluation part
-    private void convOrExp(ExpNode exp, BasicBlock blockTrue, BasicBlock blockFalse) {
+    private void convOrExp(ExpNode exp, MidLabel labelTrue, MidLabel labelFalse) {
         if (exp.isOrBinary()) {
-            BasicBlock labelOr = new BasicBlock(BasicBlock.Type.or);
+            MidLabel labelOr = new MidLabel(MidLabel.Type.or);
             BinaryExpNode orExp = (BinaryExpNode) exp;
             ExpNode left = orExp.getLeftExp();
             ExpNode right = orExp.getRightExp();
             // left
-            convOrExp(left, blockTrue, labelOr);         // 左递归, 右边不可能为OrExp
+            convOrExp(left, labelTrue, labelOr);         // 左递归, 右边不可能为OrExp
             // right
-            updateBlock(labelOr);
-            convAndExp(right, blockTrue, blockFalse);    // 左递归, OrExp向右上扩展
+            curFunc.append(labelOr);
+            convAndExp(right, labelTrue, labelFalse);    // 左递归, OrExp向右上扩展
         } else {
-            convAndExp(exp, blockTrue, blockFalse);
+            convAndExp(exp, labelTrue, labelFalse);
         }
     }
 
-    private void convAndExp(ExpNode exp, BasicBlock blockTrue, BasicBlock blockFalse) {
+    private void convAndExp(ExpNode exp, MidLabel labelTrue, MidLabel labelFalse) {
         if (exp.isAndBinary()) {
-            BasicBlock labelAnd = new BasicBlock(BasicBlock.Type.and);
+            MidLabel labelAnd = new MidLabel(MidLabel.Type.and);
             BinaryExpNode andExp = (BinaryExpNode) exp;
             ExpNode left = andExp.getLeftExp();
             ExpNode right = andExp.getRightExp();
             // left
-            convAndExp(left, labelAnd, blockFalse);      // 左递归, 右边不可能为AndExp
+            convAndExp(left, labelAnd, labelFalse);      // 左递归, 右边不可能为AndExp
             // right
-            updateBlock(labelAnd);
-            convEqExp(right, blockTrue, blockFalse);     // 左递归, AndExp向右上扩展
+            curFunc.append(labelAnd);
+            convEqExp(right, labelTrue, labelFalse);     // 左递归, AndExp向右上扩展
         } else {
-            convEqExp(exp, blockTrue, blockFalse);
+            convEqExp(exp, labelTrue, labelFalse);
         }
     }
 
-    private void convEqExp(ExpNode exp, BasicBlock blockTrue, BasicBlock blockFalse) {
+    private void convEqExp(ExpNode exp, MidLabel labelTrue, MidLabel labelFalse) {
         // TODO[14]: 后续窥孔优化[slt, bez]指令序列，以及[j label, label:]指令序列
         Operand value = convExp(exp);
-        curBlock.append(new Branch(Branch.Type.BNEZ, value, blockTrue, blockFalse));
+        curFunc.append(new Branch(Branch.Type.BNEZ, value, labelTrue, labelFalse));
     }
 
     // exp part
@@ -438,19 +433,19 @@ public class IrConverter {
                     MidVar prod = new MidVar(Operand.RefType.VALUE);
                     MidVar newOffsetVal = new MidVar(Operand.RefType.VALUE);
                     Imm base = new Imm(symbol.getBase(i) * 4);
-                    curBlock.append(new BinaryOp(BinaryOp.Type.MUL, indexOperand, base, prod));
-                    curBlock.append(new BinaryOp(BinaryOp.Type.ADD, offsetVal, prod, newOffsetVal));
+                    curFunc.append(new BinaryOp(BinaryOp.Type.MUL, indexOperand, base, prod));
+                    curFunc.append(new BinaryOp(BinaryOp.Type.ADD, offsetVal, prod, newOffsetVal));
                     offsetVal = newOffsetVal;
                 }
                 // deal with pointer
                 MidVar pointer = new MidVar(Operand.RefType.POINTER);
-                curBlock.append(new Offset(symbol, offsetVal, pointer));
+                curFunc.append(new Offset(symbol, offsetVal, pointer));
                 if (leftValDim < symbolDim || assign) {
                     // 作为实参地址, or用作左值赋值时
                     return pointer;
                 } else {
                     MidVar loadValue = new MidVar(Operand.RefType.VALUE);
-                    curBlock.append(new MemOp(MemOp.Type.LOAD, loadValue, pointer));
+                    curFunc.append(new MemOp(MemOp.Type.LOAD, loadValue, pointer));
                     return loadValue;
                 }
             }
@@ -479,7 +474,7 @@ public class IrConverter {
             }
             checkFuncCall(funcCallNode, func);
             // add and ret
-            curBlock.append(call);
+            curFunc.append(call);
             return recv;    // may be null
         } catch (SysYError error) {
             ErrorTable.append(error);
@@ -495,7 +490,7 @@ public class IrConverter {
         Operand left = convExp(leftExp);
         Operand right = convExp(rightExp);
         MidVar dst = new MidVar(left.getRefType());
-        curBlock.append(new BinaryOp(BinaryExpNode.typeMap(op), left, right, dst));
+        curFunc.append(new BinaryOp(BinaryExpNode.typeMap(op), left, right, dst));
         return dst;
     }
 
@@ -507,7 +502,7 @@ public class IrConverter {
             return src;
         } else {
             MidVar dst = new MidVar(MidVar.RefType.VALUE);
-            curBlock.append(new UnaryOp(UnaryExpNode.typeMap(op), src, dst));
+            curFunc.append(new UnaryOp(UnaryExpNode.typeMap(op), src, dst));
             return dst;
         }
     }
@@ -518,11 +513,6 @@ public class IrConverter {
         int symbolSize = symbol.getSize();
         int newStackSize = curTab.isGlobal() ? midCode.addStackSize(symbolSize) : curFunc.addStackSize(symbolSize);
         symbol.updateStackOffset(newStackSize);
-    }
-
-    private void updateBlock(BasicBlock basicBlock) {
-        curBlock = basicBlock;
-        curFunc.appendBlock(curBlock);
     }
 
     public static SymTab getCurTab() {

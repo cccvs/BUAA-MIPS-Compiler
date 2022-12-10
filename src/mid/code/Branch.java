@@ -1,6 +1,7 @@
 package mid.code;
 
 import mid.frame.BasicBlock;
+import mid.frame.MidLabel;
 import mid.operand.MidVar;
 import mid.operand.Operand;
 
@@ -17,10 +18,10 @@ public class Branch implements BasicIns{
 
     private final Type type;
     private final Operand cond;
-    private final BasicBlock blockTrue;
-    private final BasicBlock blockFalse;
+    private final MidLabel blockTrue;
+    private final MidLabel blockFalse;
 
-    public Branch(Type type, Operand cond, BasicBlock trueBlock, BasicBlock blockFalse) {
+    public Branch(Type type, Operand cond, MidLabel trueBlock, MidLabel blockFalse) {
         this.type = type;
         this.cond = cond;
         this.blockTrue = trueBlock;
@@ -31,11 +32,11 @@ public class Branch implements BasicIns{
         return type;
     }
 
-    public BasicBlock getBlockTrue() {
+    public MidLabel getBlockTrue() {
         return blockTrue;
     }
 
-    public BasicBlock getBlockFalse() {
+    public MidLabel getBlockFalse() {
         return blockFalse;
     }
 

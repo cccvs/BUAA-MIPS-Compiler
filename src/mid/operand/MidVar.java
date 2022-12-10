@@ -4,6 +4,8 @@ import front.ast.decl.DefNode;
 import front.ast.func.FuncFParamNode;
 import mid.MidCode;
 
+import java.util.Objects;
+
 public class MidVar implements Operand {
     protected final Integer id;
     protected Integer stackOffset = null;
@@ -43,6 +45,22 @@ public class MidVar implements Operand {
     @Override
     public Operand.RefType getRefType() {
         return refType;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, refType);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj instanceof MidVar) {
+            return Objects.equals(id, ((MidVar) obj).id);
+        }
+        return false;
     }
 
     @Override

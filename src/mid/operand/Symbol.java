@@ -95,7 +95,7 @@ public class Symbol extends MidVar {
     // with mult 4
     public int getBase(int dimIndex) {
         assert 0 <= dimIndex && dimIndex < dimensions.size();
-        assert refType.equals(RefType.ARRAY);
+        assert refType.equals(RefType.ARRAY) || refType.equals(RefType.POINTER);
         int prod = 1;
         for (int j = dimensions.size() - 1; j > dimIndex; --j) {
             prod *= dimensions.get(j);

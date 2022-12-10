@@ -1,9 +1,6 @@
 package mid.frame;
 
 import mid.code.BasicIns;
-import mid.code.Branch;
-import mid.code.Jump;
-import mid.code.Return;
 import mid.operand.Symbol;
 import front.TkType;
 
@@ -22,17 +19,14 @@ public class FuncFrame {
     private final String ident;
     private final RetType retType;
     private final List<Symbol> params;
-    private final List<BasicBlock> bodyBlocks;
+    private final List<BasicIns> insList;
     private int stackSize = 0;
-
-    // optimize
-    private final Set<BasicBlock> endBlocks = new HashSet<>();
 
     public FuncFrame(String ident, TkType tkType) {
         this.ident = ident;
         this.retType = tkType.equals(TkType.VOIDTK) ? RetType.VOID : RetType.INT;
         this.params = new ArrayList<>();
-        this.bodyBlocks = new ArrayList<>();
+        this.insList = new ArrayList<>();
     }
 
     public int addStackSize(int size) {
@@ -45,8 +39,8 @@ public class FuncFrame {
         return ident;
     }
 
-    public Iterator<BasicBlock> iterBody() {
-        return bodyBlocks.iterator();
+    public Iterator<BasicIns> iterIns() {
+        return insList.iterator();
     }
 
     public RetType getRetType() {
@@ -74,8 +68,8 @@ public class FuncFrame {
         return false;
     }
 
-    public void appendBlock(BasicBlock block) {
-        this.bodyBlocks.add(block);
+    public void append(BasicIns basicIns) {
+        this.insList.add(basicIns);
     }
 
     // TODO[13]: abandoned in the future
@@ -84,31 +78,31 @@ public class FuncFrame {
     }
 
     // optimize
-    public void buildFlowGraph() {
-        for (int i = 0; i < bodyBlocks.size(); i++) {
-            BasicBlock block = bodyBlocks.get(i);
-            block.clearReturnFollows();
-            BasicIns lastIns = block.getLastIns();
-            if (lastIns instanceof Jump) {
-                block.linkNext(((Jump) lastIns).getTargetBlock());
-            } else if (lastIns instanceof Branch) {
-                block.linkNext(((Branch) lastIns).getBlockTrue());
-                block.linkNext(((Branch) lastIns).getBlockFalse());
-            } else if (lastIns instanceof Return) {
-                endBlocks.add(block);
-            } else {
-                if (i + 1 < bodyBlocks.size()) {
-                    block.linkNext(bodyBlocks.get(i + 1));
-                } else {
-                    endBlocks.add(block);
-                }
-            }
-        }
-    }
-
-    public void livenessAnalysis() {
-
-    }
+//    public void buildFlowGraph() {
+//        for (int i = 0; i < bodyBlocks.size(); i++) {
+//            BasicBlock block = bodyBlocks.get(i);
+//            block.clearReturnFollows();
+//            BasicIns lastIns = block.getLastIns();
+//            if (lastIns instanceof Jump) {
+//                block.linkNext(((Jump) lastIns).getTargetBlock());
+//            } else if (lastIns instanceof Branch) {
+//                block.linkNext(((Branch) lastIns).getBlockTrue());
+//                block.linkNext(((Branch) lastIns).getBlockFalse());
+//            } else if (lastIns instanceof Return) {
+//                endBlocks.add(block);
+//            } else {
+//                if (i + 1 < bodyBlocks.size()) {
+//                    block.linkNext(bodyBlocks.get(i + 1));
+//                } else {
+//                    endBlocks.add(block);
+//                }
+//            }
+//        }
+//    }
+//
+//    public void livenessAnalysis() {
+//
+//    }
 
     @Override
     public String toString() {
@@ -116,6 +110,6 @@ public class FuncFrame {
         return "# Function " + ident + "[stack size: 0x" +
                 Integer.toHexString(stackSize) + "]\n" +
                 getLabel() + ":\n" +
-                bodyBlocks.stream().map(BasicBlock::toString).reduce((x, y) -> x + y).orElse("");
+                insList.stream().map(BasicIns::toString).reduce((x, y) -> x + "\n" + y).orElse("") + "\n";
     }
 }

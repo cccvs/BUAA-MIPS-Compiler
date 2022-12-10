@@ -46,45 +46,45 @@ public class BasicBlock {
         return insList.iterator();
     }
 
-    public BasicIns getLastIns() {
-        return insList.isEmpty() ? null : insList.get(insList.size() - 1);
-    }
-
-    public void linkNext(BasicBlock next) {
-        subBlocks.add(next);
-        next.preBlocks.add(this);
-    }
-
-    // reg alloc
-    public void pushDefUse() {
-        liveDef.clear();
-        liveUse.clear();
-        for (BasicIns basicIns : insList) {
-            Set<MidVar> leftSet = basicIns.leftSet();
-            Set<MidVar> rightSet = basicIns.rightSet();
-            for (MidVar midVar : rightSet) {
-                if (!liveDef.contains(midVar)) {
-                    liveUse.add(midVar);
-                }
-            }
-            for (MidVar midVar : leftSet) {
-                if (!liveUse.contains(midVar)) {
-                    liveDef.add(midVar);
-                }
-            }
-        }
-    }
-
-    public void clearReturnFollows() {
-        for (int i = 0; i < insList.size(); i++) {
-            if (insList.get(i) instanceof Return) {
-                if (insList.size() > i + 1) {
-                    insList.subList(i + 1, insList.size()).clear();
-                    return;
-                }
-            }
-        }
-    }
+//    public BasicIns getLastIns() {
+//        return insList.isEmpty() ? null : insList.get(insList.size() - 1);
+//    }
+//
+//    public void linkNext(BasicBlock next) {
+//        subBlocks.add(next);
+//        next.preBlocks.add(this);
+//    }
+//
+//    // reg alloc
+//    public void pushDefUse() {
+//        liveDef.clear();
+//        liveUse.clear();
+//        for (BasicIns basicIns : insList) {
+//            Set<MidVar> leftSet = basicIns.leftSet();
+//            Set<MidVar> rightSet = basicIns.rightSet();
+//            for (MidVar midVar : rightSet) {
+//                if (!liveDef.contains(midVar)) {
+//                    liveUse.add(midVar);
+//                }
+//            }
+//            for (MidVar midVar : leftSet) {
+//                if (!liveUse.contains(midVar)) {
+//                    liveDef.add(midVar);
+//                }
+//            }
+//        }
+//    }
+//
+//    public void clearReturnFollows() {
+//        for (int i = 0; i < insList.size(); i++) {
+//            if (insList.get(i) instanceof Return) {
+//                if (insList.size() > i + 1) {
+//                    insList.subList(i + 1, insList.size()).clear();
+//                    return;
+//                }
+//            }
+//        }
+//    }
 
     @Override
     public String toString() {
