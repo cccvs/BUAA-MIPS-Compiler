@@ -24,8 +24,8 @@ public class BasicBlock {
     // optimize
     private final List<BasicBlock> preBlocks = new ArrayList<>();
     private final List<BasicBlock> subBlocks = new ArrayList<>();
-    private final Set<MidVar> liveGen = new HashSet<>();
-    private final Set<MidVar> liveKill = new HashSet<>();
+    private final Set<MidVar> liveDef = new HashSet<>();
+    private final Set<MidVar> liveUse = new HashSet<>();
     private final Set<MidVar> liveIn = new HashSet<>();
     private final Set<MidVar> liveOut = new HashSet<>();
 
@@ -54,13 +54,24 @@ public class BasicBlock {
         subBlocks.add(next);
         next.preBlocks.add(this);
     }
-    // optimize
 
-    public void calGenKill() {
-        liveGen.clear();
-        liveKill.clear();
+    // reg alloc
+    public void pushDefUse() {
+        liveDef.clear();
+        liveUse.clear();
         for (BasicIns basicIns : insList) {
-
+            Set<MidVar> leftSet = basicIns.leftSet();
+            Set<MidVar> rightSet = basicIns.rightSet();
+            for (MidVar midVar : rightSet) {
+                if (!liveDef.contains(midVar)) {
+                    liveUse.add(midVar);
+                }
+            }
+            for (MidVar midVar : leftSet) {
+                if (!liveUse.contains(midVar)) {
+                    liveDef.add(midVar);
+                }
+            }
         }
     }
 
