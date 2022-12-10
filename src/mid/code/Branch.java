@@ -1,6 +1,5 @@
 package mid.code;
 
-import mid.frame.BasicBlock;
 import mid.frame.MidLabel;
 import mid.operand.MidVar;
 import mid.operand.Operand;
@@ -18,26 +17,26 @@ public class Branch implements BasicIns{
 
     private final Type type;
     private final Operand cond;
-    private final MidLabel blockTrue;
-    private final MidLabel blockFalse;
+    private final MidLabel labelTrue;
+    private final MidLabel labelFalse;
 
-    public Branch(Type type, Operand cond, MidLabel trueBlock, MidLabel blockFalse) {
+    public Branch(Type type, Operand cond, MidLabel labelTrue, MidLabel labelFalse) {
         this.type = type;
         this.cond = cond;
-        this.blockTrue = trueBlock;
-        this.blockFalse = blockFalse;
+        this.labelTrue = labelTrue;
+        this.labelFalse = labelFalse;
     }
 
     public Type getType() {
         return type;
     }
 
-    public MidLabel getBlockTrue() {
-        return blockTrue;
+    public MidLabel getLabelTrue() {
+        return labelTrue;
     }
 
-    public MidLabel getBlockFalse() {
-        return blockFalse;
+    public MidLabel getLabelFalse() {
+        return labelFalse;
     }
 
     public Operand getCond() {
@@ -47,7 +46,7 @@ public class Branch implements BasicIns{
     @Override
     public String toString() {
         return "\t" + type.name() + " " + cond.toString() + " " +
-                blockTrue.getLabel() + ", " + blockFalse.getLabel();
+                labelTrue.getLabel() + ", " + labelFalse.getLabel();
     }
 
     @Override

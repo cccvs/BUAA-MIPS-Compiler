@@ -7,7 +7,6 @@ import back.special.MipsIns;
 import back.special.Syscall;
 import mid.MidCode;
 import mid.code.*;
-import mid.frame.BasicBlock;
 import mid.frame.FuncFrame;
 import mid.frame.MidLabel;
 import mid.operand.Imm;
@@ -19,8 +18,6 @@ import java.io.PrintStream;
 import java.util.*;
 
 public class MipsTranslator {
-    private final RegAllocator regAllocator = new RegAllocator();
-
     // info
     private final MidCode midCode;
     private final List<MipsIns> mipsInsList = new ArrayList<>();
@@ -183,8 +180,8 @@ public class MipsTranslator {
     private void transBranch(Branch branch) {
         mipsInsList.add(new Comment(branch.toString()));
         Operand cond = branch.getCond();
-        String labelTrue = branch.getBlockTrue().getLabel();
-        String labelFalse = branch.getBlockFalse().getLabel();
+        String labelTrue = branch.getLabelTrue().getLabel();
+        String labelFalse = branch.getLabelFalse().getLabel();
         //if (branch.getType().equals(Branch.Type.BNEZ))
         loadRegHelper(cond, Reg.A0);
         mipsInsList.add(new Bnez(Reg.A0, labelTrue));
@@ -192,7 +189,7 @@ public class MipsTranslator {
     }
 
     private void transJump(Jump jump) {
-        mipsInsList.add(new J(jump.getTargetBlock().getLabel()));
+        mipsInsList.add(new J(jump.getTargetLabel().getLabel()));
     }
 
     private void transMemOp(MemOp memOp) {
@@ -315,21 +312,21 @@ public class MipsTranslator {
         }
     }
 
-    private void allocReg(MidVar operand, boolean isSrc) {
-        if (regAllocator.getReg(operand) == null) {
-            if (!regAllocator.hasFreeReg()) {
-                MidVar replaced = replaceAlgo();
-                allocStack(replaced);       // 如果已经分配栈，则不操作
-                mipsInsList.add(new Sw(regAllocator.getReg(replaced), -replaced.getOffset(), Reg.SP));
-                regAllocator.freeReg(replaced);
-            }
-            regAllocator.allocReg(operand);
-            regBuffer.add(operand);
-            if (isSrc) {
-                mipsInsList.add(new Lw(regAllocator.getReg(operand), -operand.getOffset(), Reg.SP));
-            }
-        }
-    }
+//    private void allocReg(MidVar operand, boolean isSrc) {
+//        if (regAllocator.getReg(operand) == null) {
+//            if (!regAllocator.hasFreeReg()) {
+//                MidVar replaced = replaceAlgo();
+//                allocStack(replaced);       // 如果已经分配栈，则不操作
+//                mipsInsList.add(new Sw(regAllocator.getReg(replaced), -replaced.getOffset(), Reg.SP));
+//                regAllocator.freeReg(replaced);
+//            }
+//            regAllocator.allocReg(operand);
+//            regBuffer.add(operand);
+//            if (isSrc) {
+//                mipsInsList.add(new Lw(regAllocator.getReg(operand), -operand.getOffset(), Reg.SP));
+//            }
+//        }
+//    }
 
     private MidVar replaceAlgo() {
         return regBuffer.remove();

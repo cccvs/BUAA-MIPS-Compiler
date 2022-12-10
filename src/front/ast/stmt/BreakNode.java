@@ -1,7 +1,6 @@
 package front.ast.stmt;
 
 import front.lexical.Token;
-import mid.frame.BasicBlock;
 
 public class BreakNode implements StmtNode {
     private final int line;

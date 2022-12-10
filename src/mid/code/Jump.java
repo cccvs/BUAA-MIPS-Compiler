@@ -1,6 +1,5 @@
 package mid.code;
 
-import mid.frame.BasicBlock;
 import mid.frame.MidLabel;
 import mid.operand.MidVar;
 
@@ -14,7 +13,7 @@ public class Jump implements BasicIns{
         this.midLabel = midLabel;
     }
 
-    public MidLabel getTargetBlock() {
+    public MidLabel getTargetLabel() {
         return midLabel;
     }
 

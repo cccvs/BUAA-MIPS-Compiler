@@ -77,32 +77,7 @@ public class FuncFrame {
         return "f_" + ident;
     }
 
-    // optimize
-//    public void buildFlowGraph() {
-//        for (int i = 0; i < bodyBlocks.size(); i++) {
-//            BasicBlock block = bodyBlocks.get(i);
-//            block.clearReturnFollows();
-//            BasicIns lastIns = block.getLastIns();
-//            if (lastIns instanceof Jump) {
-//                block.linkNext(((Jump) lastIns).getTargetBlock());
-//            } else if (lastIns instanceof Branch) {
-//                block.linkNext(((Branch) lastIns).getBlockTrue());
-//                block.linkNext(((Branch) lastIns).getBlockFalse());
-//            } else if (lastIns instanceof Return) {
-//                endBlocks.add(block);
-//            } else {
-//                if (i + 1 < bodyBlocks.size()) {
-//                    block.linkNext(bodyBlocks.get(i + 1));
-//                } else {
-//                    endBlocks.add(block);
-//                }
-//            }
-//        }
-//    }
-//
-//    public void livenessAnalysis() {
-//
-//    }
+
 
     @Override
     public String toString() {
