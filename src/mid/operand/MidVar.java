@@ -8,8 +8,9 @@ import java.util.Objects;
 
 public class MidVar implements Operand {
     protected final Integer id;
-    protected Integer stackOffset = null;
     protected final RefType refType;
+    protected Integer stackOffset = null;
+    protected Integer reg = null;
 
     public MidVar(RefType refType) {
         assert refType.equals(RefType.VALUE) || refType.equals(RefType.POINTER);
@@ -20,7 +21,6 @@ public class MidVar implements Operand {
     protected MidVar(DefNode defNode) {
         this.id = MidCode.genId();
         this.refType = (defNode.getDimensions().size() > 0) ? RefType.ARRAY : RefType.VALUE;
-        this.stackOffset = null;
     }
 
     protected MidVar(FuncFParamNode param) {
@@ -36,6 +36,14 @@ public class MidVar implements Operand {
 
     public Integer getOffset() {
         return stackOffset;
+    }
+
+    public Integer getReg() {
+        return reg;
+    }
+
+    public void setReg(Integer reg) {
+        this.reg = reg;
     }
 
     public Integer getId() {

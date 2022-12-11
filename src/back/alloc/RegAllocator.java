@@ -1,11 +1,13 @@
 package back.alloc;
 
+import back.ins.Sw;
 import mid.code.BasicIns;
 import mid.code.Branch;
 import mid.code.Jump;
 import mid.code.Return;
 import mid.frame.FuncFrame;
 import mid.frame.MidLabel;
+import mid.operand.MidVar;
 
 import java.util.*;
 
@@ -16,10 +18,14 @@ public class RegAllocator {
 
 
     private final List<BasicBlock> blockList = new LinkedList<>();
-    private final HashMap<String, BasicBlock> labelToBlock = new HashMap<>();
-    private BasicBlock curBlock;
-    private final Set<BasicBlock> endBlockSet = new HashSet<>();
+    private final List<LiveInterval> intervalList = new ArrayList<>();
+    private final Map<String, BasicBlock> labelToBlock = new HashMap<>();
+    private final Set<MidVar> liveVars = new HashSet<>();
+    private final Set<Integer> freeRegs =new HashSet<>
+            (Arrays.asList(8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25));
+    private final Map<Integer, Integer> liveRegs = new HashMap<>();
 
+    private BasicBlock curBlock;
 
     public RegAllocator(FuncFrame funcFrame) {
         readFuncInfo(funcFrame);
@@ -27,6 +33,7 @@ public class RegAllocator {
         buildFlowGraph();
         buildDefUse();
         livenessAnalysis();
+        buildIntervals();
     }
 
     // 1
@@ -82,13 +89,9 @@ public class RegAllocator {
             } else if (lastIns instanceof Branch) {
                 block.linkNext(labelToBlock.get(((Branch) lastIns).getLabelTrue().getLabel()));
                 block.linkNext(labelToBlock.get(((Branch) lastIns).getLabelFalse().getLabel()));
-            } else if (lastIns instanceof Return) {
-                endBlockSet.add(block);
-            } else {
+            } else if (!(lastIns instanceof Return)) {
                 if (i + 1 < blockList.size()) {
                     block.linkNext(blockList.get(i + 1));
-                } else {
-                    endBlockSet.add(block);
                 }
             }
         }
@@ -102,7 +105,7 @@ public class RegAllocator {
     }
 
     // 5
-    public void livenessAnalysis() {
+    private void livenessAnalysis() {
         boolean change = true;
         while (change) {
             change = false;
@@ -113,4 +116,19 @@ public class RegAllocator {
     }
 
     // 6
+    private void buildIntervals() {
+        HashMap<MidVar, LiveInterval> varToInterval = new HashMap<>();
+        for (int i = blockList.size() - 1; i >= 0; --i) {
+            blockList.get(i).buildIntervals(varToInterval);
+        }
+        intervalList.addAll(varToInterval.values());
+        intervalList.sort(Comparator.naturalOrder());
+    }
+
+    // 7
+    private void walkIntervals() {
+        for (LiveInterval interval : intervalList) {
+            int curPos = interval.lower();
+        }
+    }
 }

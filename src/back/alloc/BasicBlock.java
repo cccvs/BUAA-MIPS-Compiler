@@ -35,10 +35,6 @@ public class BasicBlock {
         return insList.isEmpty();
     }
 
-    public Set<MidVar> getLiveIn() {
-        return liveIn;
-    }
-
     // ops
     public void clearReturnFollows() {
         for (int i = 0; i < insList.size(); i++) {
@@ -86,5 +82,24 @@ public class BasicBlock {
         liveIn.removeAll(liveDef);
         liveIn.addAll(liveUse);
         return liveOut.size() > preOutSize || liveIn.size() > preInSize;
+    }
+
+    public void buildIntervals(Map<MidVar, LiveInterval> varToInterval) {
+        int blockUpper = insList.get(insList.size() - 1).getPos() + 1;
+        int blockLower = insList.get(0).getPos();
+        Set<MidVar> liveSet = new HashSet<>(liveOut);
+        for (int i = insList.size() - 1; i >= 0; --i) {
+            SerialIns serialIns = insList.get(i);
+            int pos = serialIns.getPos();
+            liveSet.addAll(serialIns.rightSet());
+            for (MidVar midVar : liveSet) {
+                if (!varToInterval.containsKey(midVar)) {
+                    varToInterval.put(midVar, new LiveInterval(midVar));
+                }
+                LiveInterval interval = varToInterval.get(midVar);
+                interval.addPair(pos, pos + 1);
+            }
+            liveSet.removeAll(serialIns.leftSet());
+        }
     }
 }
