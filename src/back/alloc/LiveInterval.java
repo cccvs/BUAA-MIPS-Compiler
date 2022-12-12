@@ -3,6 +3,7 @@ package back.alloc;
 import mid.operand.MidVar;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -13,6 +14,10 @@ public class LiveInterval implements Comparable<LiveInterval> {
     public LiveInterval(MidVar midVar) {
         this.pairs = new LinkedList<>();
         this.midVar = midVar;
+    }
+
+    public MidVar getMidVar() {
+        return midVar;
     }
 
     // 从大到小的顺序添加区间，每次加在区间开头
@@ -27,23 +32,10 @@ public class LiveInterval implements Comparable<LiveInterval> {
     }
 
     public boolean intersect(LiveInterval other) {
-        List<IntPair> mergeList = new ArrayList<>();
         // cal merge list
-        for (int i = 0, j = 0; i + j < this.pairs.size() + other.pairs.size(); ) {
-            if (i >= this.pairs.size()) {
-                mergeList.add(other.pairs.get(j++));
-            } else if (j >= other.pairs.size()) {
-                mergeList.add(this.pairs.get(i++));
-            } else if (this.pairs.get(i).getLower() > other.pairs.get(j).getLower()) {
-                mergeList.add(other.pairs.get(j++));
-            } else if (this.pairs.get(i).getLower() < other.pairs.get(j).getLower()) {
-                mergeList.add(this.pairs.get(i++));
-            } else if (this.pairs.get(i).getUpper() > other.pairs.get(j).getUpper()) {
-                mergeList.add(other.pairs.get(j++));
-            } else {
-                mergeList.add(this.pairs.get(i++));
-            }
-        }
+        List<IntPair> mergeList = new ArrayList<>(pairs);
+        mergeList.addAll(other.pairs);
+        mergeList.sort(Comparator.naturalOrder());
         // intersect
         for (int i = 0; i < mergeList.size(); i++) {
             if (i > 0 && mergeList.get(i - 1).getUpper() >= mergeList.get(i).getLower()) {

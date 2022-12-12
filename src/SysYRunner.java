@@ -49,31 +49,21 @@ public class SysYRunner {
         // front.lexical part
         Lexer lexer = new Lexer(inputStr);
         lexer.lex();
-        if (OUTPUT_LEXER) {
-            lexer.outputTokens(new PrintStream(LEXER));
-        }
+        lexer.outputTokens(new PrintStream(LEXER), OUTPUT_LEXER);
         // parse part
         Parser parser = new Parser(lexer);
         CompUnitNode compUnit = parser.parseCompUnit();
-        if (OUTPUT_SYNTAX) {
-            parser.outputSyntax(new PrintStream(SYNTAX));
-        }
+        parser.outputSyntax(new PrintStream(SYNTAX), OUTPUT_SYNTAX);
         // ir/error part
         IrConverter irConverter = new IrConverter(compUnit);
-        if (OUTPUT_ERROR) {
-            ErrorTable.outputError(new PrintStream(ERROR));
-        }
+        ErrorTable.outputError(new PrintStream(ERROR), OUTPUT_ERROR);
         ErrorTable.throwError();    // terminate if error
         // middle code output
         MidCode midCode = irConverter.getMidCode();
-        if (OUTPUT_MID_CODE) {
-            midCode.outputMidCode(new PrintStream(MID_CODE));
-        }
+        midCode.outputMidCode(new PrintStream(MID_CODE), OUTPUT_MID_CODE);
         // mips part
         MipsTranslator mipsTranslator = new MipsTranslator(midCode);
-        if (OUTPUT_MIPS) {
-            mipsTranslator.outputMips(new PrintStream(MIPS));
-        }
+        mipsTranslator.outputMips(new PrintStream(MIPS), OUTPUT_MIPS);
     }
 
     private String readAll(Scanner in) {

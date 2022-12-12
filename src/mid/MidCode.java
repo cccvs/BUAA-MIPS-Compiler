@@ -80,7 +80,10 @@ public class MidCode {
     }
 
     // output
-    public void outputMidCode(PrintStream ps) {
+    public void outputMidCode(PrintStream ps, boolean execute) {
+        if (!execute) {
+            return;
+        }
         // Global value
         ps.println("# Global Value:");
         for (Symbol symbol : globalSym.values()) {

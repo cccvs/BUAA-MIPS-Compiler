@@ -61,7 +61,7 @@ public class BinaryOp implements BasicIns {
         if (src1 instanceof MidVar) {
             rightSet.add((MidVar) src1);
         }
-        if (src1 instanceof MidVar) {
+        if (src2 instanceof MidVar) {
             rightSet.add((MidVar) src2);
         }
         return rightSet;

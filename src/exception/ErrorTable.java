@@ -10,7 +10,10 @@ public class ErrorTable {
     private static final List<SysYError> errorList = new ArrayList<>();
     private static final Stack<Integer> posStack = new Stack<>();
 
-    public static void outputError(PrintStream ps) {
+    public static void outputError(PrintStream ps, boolean execute) {
+        if (!execute) {
+            return;
+        }
         errorList.sort(Comparator.naturalOrder());
         for (SysYError error : errorList) {
             ps.println(error);

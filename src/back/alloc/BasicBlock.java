@@ -1,6 +1,7 @@
 package back.alloc;
 
 import mid.code.BasicIns;
+import mid.code.Call;
 import mid.code.Return;
 import mid.operand.MidVar;
 
@@ -89,9 +90,16 @@ public class BasicBlock {
         int blockLower = insList.get(0).getPos();
         Set<MidVar> liveSet = new HashSet<>(liveOut);
         for (int i = insList.size() - 1; i >= 0; --i) {
+            // update user var
             SerialIns serialIns = insList.get(i);
             int pos = serialIns.getPos();
             liveSet.addAll(serialIns.rightSet());
+            // 记录函数调用时当前的活跃变量，函数调用时用于保存寄存器
+            BasicIns basicIns = serialIns.getIns();
+            if (basicIns instanceof Call) {
+                ((Call) basicIns).addLiveVars(liveSet);
+            }
+            // append intervals
             for (MidVar midVar : liveSet) {
                 if (!varToInterval.containsKey(midVar)) {
                     varToInterval.put(midVar, new LiveInterval(midVar));
@@ -99,6 +107,7 @@ public class BasicBlock {
                 LiveInterval interval = varToInterval.get(midVar);
                 interval.addPair(pos, pos + 1);
             }
+            // remove def var
             liveSet.removeAll(serialIns.leftSet());
         }
     }

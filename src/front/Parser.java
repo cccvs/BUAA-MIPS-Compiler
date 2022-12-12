@@ -42,7 +42,10 @@ public class Parser {
         this.pos = 0;
     }
 
-    public void outputSyntax(PrintStream ps) {
+    public void outputSyntax(PrintStream ps, boolean execute) {
+        if (!execute) {
+            return;
+        }
         for (String outString : output) {
             ps.println(outString);
         }

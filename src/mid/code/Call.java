@@ -12,6 +12,8 @@ public class Call implements BasicIns{
     private final List<Operand> params;
     private final MidVar ret;     // null if void
 
+    private final Set<MidVar> liveSet = new HashSet<>();
+
     public Call(FuncFrame func, MidVar ret) {
         this.func = func;
         this.params = new ArrayList<>();
@@ -32,6 +34,21 @@ public class Call implements BasicIns{
 
     public MidVar getRet() {
         return ret;
+    }
+
+    public void addLiveVars(Set<MidVar> set) {
+        liveSet.addAll(set);
+    }
+
+    public Set<Integer> getLiveRegs() {
+        Set<Integer> liveRegs = new HashSet<>();
+        for (MidVar midVar : liveSet) {
+            Integer reg = midVar.getReg();
+            if (reg != null) {
+                liveRegs.add(reg);
+            }
+        }
+        return liveRegs;
     }
 
     @Override

@@ -1,5 +1,6 @@
 package back;
 
+import back.alloc.RegAllocator;
 import back.ins.*;
 import back.special.Comment;
 import back.special.Label;
@@ -25,7 +26,6 @@ public class MipsTranslator {
     // current
     private boolean isMain = false;     // 标记当前函数是否为main函数，特殊处理return
     private Integer stackSize = null;
-    private final Queue<MidVar> regBuffer = new LinkedList<>();
 
     public MipsTranslator(MidCode midCode) {
         this.midCode = midCode;
@@ -44,6 +44,7 @@ public class MipsTranslator {
     }
 
     private void transFunc(FuncFrame func) {
+        new RegAllocator(func); // 分配寄存器
         mipsInsList.add(new Label("\n" + func.getLabel()));
         stackSize = func.addStackSize(0);   // 相当于getStackSize
         Iterator<BasicIns> insIter = func.iterIns();
@@ -312,28 +313,11 @@ public class MipsTranslator {
         }
     }
 
-//    private void allocReg(MidVar operand, boolean isSrc) {
-//        if (regAllocator.getReg(operand) == null) {
-//            if (!regAllocator.hasFreeReg()) {
-//                MidVar replaced = replaceAlgo();
-//                allocStack(replaced);       // 如果已经分配栈，则不操作
-//                mipsInsList.add(new Sw(regAllocator.getReg(replaced), -replaced.getOffset(), Reg.SP));
-//                regAllocator.freeReg(replaced);
-//            }
-//            regAllocator.allocReg(operand);
-//            regBuffer.add(operand);
-//            if (isSrc) {
-//                mipsInsList.add(new Lw(regAllocator.getReg(operand), -operand.getOffset(), Reg.SP));
-//            }
-//        }
-//    }
-
-    private MidVar replaceAlgo() {
-        return regBuffer.remove();
-    }
-
     // output
-    public void outputMips(PrintStream ps) {
+    public void outputMips(PrintStream ps, boolean execute) {
+        if (!execute) {
+            return;
+        }
         outputGlobal(ps);
         outputIns(ps);
     }

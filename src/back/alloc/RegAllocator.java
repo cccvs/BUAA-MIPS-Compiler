@@ -1,6 +1,5 @@
 package back.alloc;
 
-import back.ins.Sw;
 import mid.code.BasicIns;
 import mid.code.Branch;
 import mid.code.Jump;
@@ -16,14 +15,16 @@ public class RegAllocator {
     private final HashSet<Integer> allocatableRegs = new HashSet<>
             (Arrays.asList(8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25));
 
-
+    // mid code
     private final List<BasicBlock> blockList = new LinkedList<>();
     private final List<LiveInterval> intervalList = new ArrayList<>();
     private final Map<String, BasicBlock> labelToBlock = new HashMap<>();
-    private final Set<MidVar> liveVars = new HashSet<>();
-    private final Set<Integer> freeRegs =new HashSet<>
-            (Arrays.asList(8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25));
-    private final Map<Integer, Integer> liveRegs = new HashMap<>();
+
+    // regs
+    private final Set<LiveInterval> liveIntervalSet = new HashSet<>();
+    private final Map<Integer, Integer> liveRegs = new HashMap<>();     // key: 寄存器编号, value: 现存次数
+    private final Set<Integer> freeRegs = new LinkedHashSet<>(allocatableRegs);
+    private final Set<MidVar> spilledVarSet = new HashSet<>();
 
     private BasicBlock curBlock;
 
@@ -34,6 +35,7 @@ public class RegAllocator {
         buildDefUse();
         livenessAnalysis();
         buildIntervals();
+        walkIntervals();
     }
 
     // 1
@@ -47,7 +49,7 @@ public class RegAllocator {
             if (basicIns instanceof MidLabel || cnt == 0) {
                 updateBlock();
                 if (basicIns instanceof MidLabel) {
-                    labelToBlock.put(((MidLabel) blockList).getLabel(), curBlock);
+                    labelToBlock.put(((MidLabel) basicIns).getLabel(), curBlock);
                 }
             }
             // append
@@ -127,8 +129,70 @@ public class RegAllocator {
 
     // 7
     private void walkIntervals() {
-        for (LiveInterval interval : intervalList) {
-            int curPos = interval.lower();
+        for (LiveInterval newInterval : intervalList) {
+            int curPos = newInterval.lower();
+            Set<LiveInterval> liveIntervalMeta = new HashSet<>(liveIntervalSet);
+            for (LiveInterval live : liveIntervalMeta) {
+                if (curPos > live.upper()) {
+                    removeInterval(live);
+                }
+            }
+            pushInterval(newInterval);
         }
+    }
+
+    private Integer allocRegForInterval(LiveInterval allocInterval) {
+        Set<Integer> remainRegs = new HashSet<>(allocatableRegs);
+        for (LiveInterval liveInterval : liveIntervalSet) {
+            if (allocInterval.intersect(liveInterval)) {
+                remainRegs.remove(liveInterval.getMidVar().getReg());
+            }
+        }
+        if (!remainRegs.isEmpty()) {
+            return remainRegs.iterator().next();
+        } else if (!freeRegs.isEmpty()) {
+            Iterator<Integer> regIter = freeRegs.iterator();
+            int latestReg = regIter.next();
+            while (regIter.hasNext()) {
+                latestReg = regIter.next();
+            }
+            return latestReg;
+        } else {
+            return null;
+        }
+    }
+
+    private void pushInterval(LiveInterval newInterval) {
+        Integer allocReg = allocRegForInterval(newInterval);
+        if (allocReg == null) {
+            // alloc failed
+            spilledVarSet.add(newInterval.getMidVar());
+            return;
+        }
+        // free/live regs
+        if (liveRegs.containsKey(allocReg)) {
+            int regCount = liveRegs.get(allocReg);
+            liveRegs.put(allocReg, regCount + 1);
+        } else {
+            liveRegs.put(allocReg, 1);
+            freeRegs.remove(allocReg);
+        }
+        // interval and mid var
+        newInterval.getMidVar().allocReg(allocReg);
+        liveIntervalSet.add(newInterval);
+    }
+
+    private void removeInterval(LiveInterval removeInterval) {
+        int freeReg = removeInterval.getMidVar().getReg();
+        int regCount = liveRegs.get(freeReg);
+        // live/free regs
+        if (regCount > 1) {
+            liveRegs.put(freeReg, regCount - 1);
+        } else {
+            liveRegs.remove(freeReg);
+            freeRegs.add(freeReg);
+        }
+        // interval
+        liveIntervalSet.remove(removeInterval);
     }
 }

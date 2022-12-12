@@ -42,7 +42,8 @@ public class MidVar implements Operand {
         return reg;
     }
 
-    public void setReg(Integer reg) {
+    public void allocReg(Integer reg) {
+        assert this.reg == null;
         this.reg = reg;
     }
 

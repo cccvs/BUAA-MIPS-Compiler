@@ -258,7 +258,10 @@ public class Lexer {
         return tokens;
     }
 
-    public void outputTokens(PrintStream ps) {
+    public void outputTokens(PrintStream ps, boolean execute) {
+        if (!execute) {
+            return;
+        }
         for (Token token : tokens) {
             ps.println(token);
         }
