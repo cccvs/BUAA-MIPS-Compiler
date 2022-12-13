@@ -19,6 +19,9 @@ import java.io.PrintStream;
 import java.util.*;
 
 public class MipsTranslator {
+    public static final int TMP_R1 = Reg.V1;
+    public static final int TMP_R2 = Reg.FP;
+
     // info
     private final MidCode midCode;
     private final List<MipsIns> mipsInsList = new ArrayList<>();
@@ -96,10 +99,17 @@ public class MipsTranslator {
         Operand src1 = binaryOp.getSrc1();
         Operand src2 = binaryOp.getSrc2();
         MidVar dst = binaryOp.getDst();
-        loadRegHelper(src1, Reg.A2);
-        loadRegHelper(src2, Reg.A3);
-        BinaryInsHelper(op, Reg.A1, Reg.A2, Reg.A3);
-        storeRegHelper(dst, Reg.A1);
+        if (src1 instanceof Imm && src2 instanceof Imm) {
+            binaryImmImmHelper(op, dst, ((Imm) src1).getVal(), ((Imm) src2).getVal());
+        } else if (src1 instanceof MidVar && src2 instanceof Imm) {
+            binaryVarImmHelper(op, dst, (MidVar) src1, ((Imm) src2).getVal());
+        } else if (src1 instanceof Imm && src2 instanceof MidVar) {
+            binaryImmVarHelper(op, dst, ((Imm) src1).getVal(), (MidVar) src2);
+        } else if (src1 instanceof MidVar && src2 instanceof MidVar) {
+            binaryVarVarHelper(op, dst, (MidVar) src1, (MidVar) src2);
+        } else {
+            throw new AssertionError("operand type error");
+        }
     }
 
     private void transUnaryOp(UnaryOp unaryOp) {
@@ -107,13 +117,18 @@ public class MipsTranslator {
         UnaryOp.Type op = unaryOp.getOp();
         Operand src = unaryOp.getSrc();
         MidVar dst = unaryOp.getDst();
-        loadRegHelper(src, Reg.A2);
-        UnaryInsHelper(op, Reg.A1, Reg.A2);
-        storeRegHelper(dst, Reg.A1);
+        if (src instanceof Imm) {
+            unaryImmHelper(op, dst, ((Imm) src).getVal());
+        } else if (src instanceof MidVar) {
+            unaryVarHelper(op, dst, (MidVar) src);
+        } else {
+            throw new AssertionError("operand type error");
+        }
     }
 
     private void transCall(Call call) {
-        int movSize = stackSize + 4;
+        Set<Integer> reserveSet = call.getLiveRegs();
+        int movSize = stackSize + 4 + 4 * reserveSet.size();
         mipsInsList.add(new Comment(call.toString()));
         // store param
         FuncFrame func = call.getFunc();
@@ -123,15 +138,25 @@ public class MipsTranslator {
             Operand realParam = realParams.next();
             Symbol formatParam = formatParams.next();
             loadRegHelper(realParam, Reg.A1);
-            mipsInsList.add(new Sw(Reg.A1, -movSize-formatParam.getOffset(), Reg.SP));
+            mipsInsList.add(new Sw(Reg.A1, -movSize - formatParam.getOffset(), Reg.SP));
         }
         // save current reg
+        int bias = 4;
+        for (Integer liveReg : call.getLiveRegs()) {
+            mipsInsList.add(new Sw(liveReg, -movSize + bias, Reg.SP));
+            bias += 4;
+        }
         mipsInsList.add(new Sw(Reg.RA, -movSize, Reg.SP));
         mipsInsList.add(new Addi(Reg.SP, Reg.SP, -movSize));  // $ra stackSize + 4// jump and link
         mipsInsList.add(new Jal(func.getLabel()));
         // recover
         mipsInsList.add(new Addi(Reg.SP, Reg.SP, movSize));  // $ra stackSize + 4
         mipsInsList.add(new Lw(Reg.RA, -movSize, Reg.SP));
+        bias = 4;
+        for (Integer liveReg : call.getLiveRegs()) {
+            mipsInsList.add(new Sw(liveReg, -movSize + bias, Reg.SP));
+            bias += 4;
+        }
         // recv ret val, 必须在恢复现场之后, 否则store时sp不对
         MidVar retVal = call.getRet();
         if (retVal != null) {
@@ -144,13 +169,17 @@ public class MipsTranslator {
         MidVar var = getInt.getVar();
         mipsInsList.add(new Addi(Reg.V0, Reg.ZERO, 5));
         mipsInsList.add(new Syscall());
-        storeRegHelper(var, Reg.V0);
+        if (var.getReg() != null) {
+            mipsInsList.add(new Add(var.getReg(), Reg.ZERO, Reg.V0));
+        } else {
+            storeRegHelper(var, Reg.V0);
+        }
     }
 
     private void transPrintInt(PrintInt printInt) {
         mipsInsList.add(new Comment(printInt.toString()));
         Operand src = printInt.getSrc();
-        loadRegHelper(src, Reg.A0);
+        loadRegHelper(src, Reg.V0);
         mipsInsList.add(new Addi(Reg.V0, Reg.ZERO, 1));
         mipsInsList.add(new Syscall());
     }
@@ -184,8 +213,8 @@ public class MipsTranslator {
         String labelTrue = branch.getLabelTrue().getLabel();
         String labelFalse = branch.getLabelFalse().getLabel();
         //if (branch.getType().equals(Branch.Type.BNEZ))
-        loadRegHelper(cond, Reg.A0);
-        mipsInsList.add(new Bnez(Reg.A0, labelTrue));
+        loadRegHelper(cond, TMP_R1);
+        mipsInsList.add(new Bnez(TMP_R1, labelTrue));
         mipsInsList.add(new J(labelFalse));
     }
 
@@ -198,15 +227,15 @@ public class MipsTranslator {
         MidVar pointer = memOp.getPointer();
         Operand value = memOp.getValue();
         MemOp.Type type = memOp.getOp();
-        loadRegHelper(pointer, Reg.A1);
+        loadRegHelper(pointer, TMP_R1);
         if (type.equals(MemOp.Type.LOAD)) {
             assert value instanceof MidVar;
             allocStack((MidVar) value); // load 可能初次赋值
-            mipsInsList.add(new Lw(Reg.A2, 0, Reg.A1));
-            storeRegHelper((MidVar) value, Reg.A2);
+            mipsInsList.add(new Lw(TMP_R2, 0, TMP_R1));
+            storeRegHelper((MidVar) value, TMP_R2);
         } else {
-            loadRegHelper(value, Reg.A2);
-            mipsInsList.add(new Sw(Reg.A2, 0, Reg.A1));
+            loadRegHelper(value, TMP_R2);
+            mipsInsList.add(new Sw(TMP_R2, 0, TMP_R1));
         }
     }
 
@@ -218,93 +247,267 @@ public class MipsTranslator {
         if (base.getRefType().equals(Operand.RefType.ARRAY)) {
             assert base instanceof Symbol;
             Symbol symBase = (Symbol) base;
-            loadRegHelper(offsetVal, Reg.A2);
+            loadRegHelper(offsetVal, TMP_R2);
             if (symBase.isGlobal()) {
-                mipsInsList.add(new La(Reg.A1, symBase.getLabel(), Reg.A2));
+                mipsInsList.add(new La(TMP_R1, symBase.getLabel(), TMP_R2));
             } else {
-                mipsInsList.add(new Addi(Reg.A1, Reg.SP, -symBase.getOffset()));
-                mipsInsList.add(new Add(Reg.A1, Reg.A1, Reg.A2));
+                mipsInsList.add(new Addi(TMP_R1, Reg.SP, -symBase.getOffset()));
+                mipsInsList.add(new Add(TMP_R1, TMP_R1, TMP_R2));
             }
         } else {
-            loadRegHelper(base, Reg.A2);
-            loadRegHelper(offsetVal, Reg.A3);
-            mipsInsList.add(new Add(Reg.A1, Reg.A2, Reg.A3));
+            loadRegHelper(base, TMP_R2);
+            loadRegHelper(offsetVal, TMP_R1);
+            mipsInsList.add(new Add(TMP_R1, TMP_R2, TMP_R1));
         }
-        storeRegHelper(dst, Reg.A1);
+        storeRegHelper(dst, TMP_R1);
     }
 
     // util
     private void loadRegHelper(Operand operand, int reg) {
+        // reg <- operand
+        if (operand instanceof Symbol && ((Symbol) operand).isGlobal()) {
+            Symbol symbol = (Symbol) operand;
+            mipsInsList.add(new Lw(reg, symbol.getLabel()));
+            return;
+        }
         if (operand instanceof Imm) {
-            mipsInsList.add(new Addi(reg, Reg.ZERO,((Imm) operand).getVal()));
-        } else {
+            mipsInsList.add(new Addi(reg, Reg.ZERO, ((Imm) operand).getVal()));
+        } else if (operand instanceof MidVar) {
             MidVar midVar = (MidVar) operand;
-            assert midVar.getOffset() != null;
-            if (midVar instanceof Symbol && ((Symbol) midVar).isGlobal()) {
-                Symbol symbol = (Symbol) midVar;
-                mipsInsList.add(new Lw(reg, symbol.getLabel()));
+            if (midVar.getReg() != null) {
+                mipsInsList.add(new Add(reg, Reg.ZERO, midVar.getReg()));
             } else {
+                assert midVar.getOffset() != null;
                 mipsInsList.add(new Lw(reg, -midVar.getOffset(), Reg.SP));
             }
+        } else {
+            throw new AssertionError("operand type error");
         }
+
     }
 
     private void storeRegHelper(MidVar midVar, int reg) {
-        if (midVar.getOffset() == null) {
-            allocStack(midVar);
-        }
+        // midvar <- reg
         if (midVar instanceof Symbol && ((Symbol) midVar).isGlobal()) {
             Symbol symbol = (Symbol) midVar;
             mipsInsList.add(new Sw(reg, symbol.getLabel()));
         } else {
-            mipsInsList.add(new Sw(reg, -midVar.getOffset(), Reg.SP));
+            if (midVar.getReg() != null) {
+                mipsInsList.add(new Add(midVar.getReg(), Reg.ZERO, reg));
+            } else {
+                if (midVar.getOffset() == null) {
+                    allocStack(midVar);
+                }
+                mipsInsList.add(new Sw(reg, -midVar.getOffset(), Reg.SP));
+            }
         }
     }
 
-    private void BinaryInsHelper(BinaryOp.Type type, int dst, int src1, int src2) {
-        if (type.equals(BinaryOp.Type.ADD)) {
-            mipsInsList.add(new Add(dst, src1, src2));
-        } else if (type.equals(BinaryOp.Type.SUB)) {
-            mipsInsList.add(new Sub(dst, src1, src2));
-        } else if (type.equals(BinaryOp.Type.MUL)) {
-            mipsInsList.add(new Mult(src1, src2));
-            mipsInsList.add(new Mflo(dst));
-        } else if (type.equals(BinaryOp.Type.DIV)) {
-            mipsInsList.add(new Div(src1, src2));
-            mipsInsList.add(new Mflo(dst));
-        } else if (type.equals(BinaryOp.Type.MOD)) {
-            mipsInsList.add(new Div(src1, src2));
-            mipsInsList.add(new Mfhi(dst));
-        } else if (type.equals(BinaryOp.Type.SGT)) {
-            mipsInsList.add(new Sgt(dst, src1, src2));
-        } else if (type.equals(BinaryOp.Type.SGE)) {
-            mipsInsList.add(new Sge(dst, src1, src2));
-        } else if (type.equals(BinaryOp.Type.SLT)) {
-            mipsInsList.add(new Slt(dst, src1, src2));
-        } else if (type.equals(BinaryOp.Type.SLE)) {
-            mipsInsList.add(new Sle(dst, src1, src2));
-        } else if (type.equals(BinaryOp.Type.SEQ)) {
-            mipsInsList.add(new Seq(dst, src1, src2));
-        } else if (type.equals(BinaryOp.Type.SNE)) {
-            mipsInsList.add(new Sne(dst, src1, src2));
+
+    private void unaryImmHelper(UnaryOp.Type op, MidVar dst, int imm) {
+        int regDst = dst.getReg() == null ? TMP_R1 : dst.getReg();
+        if (op.equals(UnaryOp.Type.MOV)) {
+            mipsInsList.add(new Addi(regDst, Reg.ZERO, imm));
+        } else if (op.equals(UnaryOp.Type.NEG)) {
+            mipsInsList.add(new Addi(regDst, Reg.ZERO, -imm));
+        } else if (op.equals(UnaryOp.Type.NOT)) {
+            mipsInsList.add(new Seqi(regDst, Reg.ZERO, imm));
         } else {
-            // TODO[11], other op
-            System.exit(11);
+            throw new AssertionError("wrong binaryOp Type");
+        }
+        // store stack
+        if (dst.getReg() == null) {
+            storeRegHelper(dst, regDst);
         }
     }
 
-    private void UnaryInsHelper(UnaryOp.Type type, int dst, int src) {
-        if (type.equals(UnaryOp.Type.MOV)) {
-            mipsInsList.add(new Add(dst, src, Reg.ZERO));
-        } else if (type.equals(UnaryOp.Type.NEG)) {
-            mipsInsList.add(new Sub(dst, Reg.ZERO, src));
-        } else if (type.equals(UnaryOp.Type.NOT)) {
-            mipsInsList.add(new Seq(dst, src, Reg.ZERO));
+    private void unaryVarHelper(UnaryOp.Type op, MidVar dst, MidVar src) {
+        int regDst = dst.getReg() == null ? TMP_R1 : dst.getReg();
+        int regSrc = src.getReg() == null ? TMP_R1 : src.getReg();
+        // load stack
+        if (src.getReg() == null) {
+            loadRegHelper(src, regSrc);
+        }
+        if (op.equals(UnaryOp.Type.MOV)) {
+            mipsInsList.add(new Add(regDst, Reg.ZERO, regSrc));
+        } else if (op.equals(UnaryOp.Type.NEG)) {
+            mipsInsList.add(new Sub(regDst, Reg.ZERO, regSrc));
+        } else if (op.equals(UnaryOp.Type.NOT)) {
+            mipsInsList.add(new Seq(regDst, Reg.ZERO, regSrc));
         } else {
-            // TODO[12], other op
-            System.exit(12);
+            throw new AssertionError("wrong binaryOp Type");
+        }
+        // store stack
+        if (dst.getReg() == null) {
+            storeRegHelper(dst, regDst);
         }
     }
+
+    private void binaryImmImmHelper(BinaryOp.Type op, MidVar dst, int imm1, int imm2) {
+        int regDst = dst.getReg() == null ? TMP_R1 : dst.getReg();
+        if (op.equals(BinaryOp.Type.ADD)) {
+            mipsInsList.add(new Addi(regDst, Reg.ZERO, imm1 + imm2));
+        } else if (op.equals(BinaryOp.Type.SUB)) {
+            mipsInsList.add(new Addi(regDst, Reg.ZERO, imm1 - imm2));
+        } else if (op.equals(BinaryOp.Type.MUL)) {
+            mipsInsList.add(new Addi(regDst, Reg.ZERO, imm1 * imm2));
+        } else if (op.equals(BinaryOp.Type.DIV)) {
+            mipsInsList.add(new Addi(regDst, Reg.ZERO, imm1 / imm2));
+        } else if (op.equals(BinaryOp.Type.MOD)) {
+            mipsInsList.add(new Addi(regDst, Reg.ZERO, imm1 % imm2));
+        } else if (op.equals(BinaryOp.Type.SGT)) {
+            mipsInsList.add(new Addi(regDst, Reg.ZERO, (imm1 > imm2) ? 1 : 0));
+        } else if (op.equals(BinaryOp.Type.SGE)) {
+            mipsInsList.add(new Addi(regDst, Reg.ZERO, (imm1 >= imm2) ? 1 : 0));
+        } else if (op.equals(BinaryOp.Type.SLT)) {
+            mipsInsList.add(new Addi(regDst, Reg.ZERO, (imm1 < imm2) ? 1 : 0));
+        } else if (op.equals(BinaryOp.Type.SLE)) {
+            mipsInsList.add(new Addi(regDst, Reg.ZERO, (imm1 <= imm2) ? 1 : 0));
+        } else if (op.equals(BinaryOp.Type.SEQ)) {
+            mipsInsList.add(new Addi(regDst, Reg.ZERO, (imm1 == imm2) ? 1 : 0));
+        } else if (op.equals(BinaryOp.Type.SNE)) {
+            mipsInsList.add(new Addi(regDst, Reg.ZERO, (imm1 != imm2) ? 1 : 0));
+        } else {
+            throw new AssertionError("wrong binaryOp Type");
+        }
+        // store stack
+        if (dst.getReg() == null) {
+            storeRegHelper(dst, regDst);
+        }
+    }
+
+    private void binaryVarImmHelper(BinaryOp.Type op, MidVar dst, MidVar src1, int imm2) {
+        int regDst = dst.getReg() == null ? TMP_R1 : dst.getReg();
+        int regSrc1 = src1.getReg() == null ? TMP_R1 : src1.getReg();
+        // load stack
+        if (src1.getReg() == null) {
+            loadRegHelper(src1, regSrc1);
+        }
+        if (op.equals(BinaryOp.Type.ADD)) {
+            mipsInsList.add(new Addi(regDst, regSrc1, imm2));
+        } else if (op.equals(BinaryOp.Type.SUB)) {
+            mipsInsList.add(new Addi(regDst, regSrc1, -imm2));
+        } else if (op.equals(BinaryOp.Type.MUL)) {
+            int regSrc2 = TMP_R2;
+            mipsInsList.add(new Addi(regSrc2, Reg.ZERO, imm2));
+            mipsInsList.add(new Mul(regDst, regSrc1, regSrc2));
+        } else if (op.equals(BinaryOp.Type.DIV)) {
+            int regSrc2 = TMP_R2;
+            mipsInsList.add(new Addi(regSrc2, Reg.ZERO, imm2));
+            mipsInsList.add(new Div(regSrc1, regSrc2));
+            mipsInsList.add(new Mflo(regDst));
+        } else if (op.equals(BinaryOp.Type.MOD)) {
+            int regSrc2 = TMP_R2;
+            mipsInsList.add(new Addi(regSrc2, Reg.ZERO, imm2));
+            mipsInsList.add(new Div(regSrc1, regSrc2));
+            mipsInsList.add(new Mfhi(regDst));
+        } else if (op.equals(BinaryOp.Type.SGT)) {
+            mipsInsList.add(new Sgti(regDst, regSrc1, imm2));
+        } else if (op.equals(BinaryOp.Type.SGE)) {
+            mipsInsList.add(new Sgei(regDst, regSrc1, imm2));
+        } else if (op.equals(BinaryOp.Type.SLT)) {
+            mipsInsList.add(new Slti(regDst, regSrc1, imm2));
+        } else if (op.equals(BinaryOp.Type.SLE)) {
+            mipsInsList.add(new Slei(regDst, regSrc1, imm2));
+        } else if (op.equals(BinaryOp.Type.SEQ)) {
+            mipsInsList.add(new Seqi(regDst, regSrc1, imm2));
+        } else if (op.equals(BinaryOp.Type.SNE)) {
+            mipsInsList.add(new Snei(regDst, regSrc1, imm2));
+        } else {
+            throw new AssertionError("wrong binaryOp Type");
+        }
+        if (dst.getReg() == null) {
+            storeRegHelper(dst, TMP_R1);
+        }
+    }
+
+    private void binaryImmVarHelper(BinaryOp.Type op, MidVar dst, int imm1, MidVar src2) {
+        int regDst = dst.getReg() == null ? TMP_R1 : dst.getReg();
+        int regSrc2 = src2.getReg() == null ? TMP_R1 : src2.getReg();
+        // load stack
+        if (src2.getReg() == null) {
+            loadRegHelper(src2, regSrc2);
+        }
+        if (op.equals(BinaryOp.Type.ADD)) {
+            mipsInsList.add(new Addi(regDst, regSrc2, imm1));
+        } else if (op.equals(BinaryOp.Type.SUB)) {
+            mipsInsList.add(new Sub(regDst, Reg.ZERO, regSrc2));
+            mipsInsList.add(new Addi(regDst, regDst, imm1));
+        } else if (op.equals(BinaryOp.Type.MUL)) {
+            int regSrc1 = TMP_R2;
+            mipsInsList.add(new Addi(regSrc1, Reg.ZERO, imm1));
+            mipsInsList.add(new Mul(regDst, regSrc1, regSrc2));
+        } else if (op.equals(BinaryOp.Type.DIV)) {
+            int regSrc1 = TMP_R2;
+            mipsInsList.add(new Addi(regSrc1, Reg.ZERO, imm1));
+            mipsInsList.add(new Div(regSrc1, regSrc2));
+            mipsInsList.add(new Mflo(regDst));
+        } else if (op.equals(BinaryOp.Type.MOD)) {
+            int regSrc1 = TMP_R2;
+            mipsInsList.add(new Addi(regSrc1, Reg.ZERO, imm1));
+            mipsInsList.add(new Div(regSrc1, regSrc2));
+            mipsInsList.add(new Mfhi(regDst));
+        } else if (op.equals(BinaryOp.Type.SGT)) {
+            mipsInsList.add(new Slti(regDst, regSrc2, imm1));
+        } else if (op.equals(BinaryOp.Type.SGE)) {
+            mipsInsList.add(new Slei(regDst, regSrc2, imm1));
+        } else if (op.equals(BinaryOp.Type.SLT)) {
+            mipsInsList.add(new Sgti(regDst, regSrc2, imm1));
+        } else if (op.equals(BinaryOp.Type.SLE)) {
+            mipsInsList.add(new Sgei(regDst, regSrc2, imm1));
+        } else if (op.equals(BinaryOp.Type.SEQ)) {
+            mipsInsList.add(new Seqi(regDst, regSrc2, imm1));
+        } else if (op.equals(BinaryOp.Type.SNE)) {
+            mipsInsList.add(new Snei(regDst, regSrc2, imm1));
+        } else {
+            throw new AssertionError("wrong binaryOp Type");
+        }
+        if (dst.getReg() == null) {
+            storeRegHelper(dst, TMP_R1);
+        }
+    }
+
+    private void binaryVarVarHelper(BinaryOp.Type op, MidVar dst, MidVar src1, MidVar src2) {
+        int regDst = dst.getReg() == null ? TMP_R1 : dst.getReg();
+        int regSrc1 = src1.getReg() == null ? TMP_R1 : src1.getReg();
+        int regSrc2 = src2.getReg() == null ? TMP_R2 : src2.getReg();
+        // load stack
+        if (src1.getReg() == null) {
+            loadRegHelper(src1, regSrc1);
+        }
+        if (src2.getReg() == null) {
+            loadRegHelper(src2, regSrc2);
+        }
+        if (op.equals(BinaryOp.Type.ADD)) {
+            mipsInsList.add(new Add(regDst, regSrc1, regSrc2));
+        } else if (op.equals(BinaryOp.Type.SUB)) {
+            mipsInsList.add(new Sub(regDst, regSrc1, regSrc2));
+        } else if (op.equals(BinaryOp.Type.MUL)) {
+            mipsInsList.add(new Mul(regDst, regSrc1, regSrc2));
+        } else if (op.equals(BinaryOp.Type.DIV)) {
+            mipsInsList.add(new Div(regSrc1, regSrc2));
+            mipsInsList.add(new Mflo(regDst));
+        } else if (op.equals(BinaryOp.Type.MOD)) {
+            mipsInsList.add(new Div(regSrc1, regSrc2));
+            mipsInsList.add(new Mfhi(regDst));
+        } else if (op.equals(BinaryOp.Type.SGT)) {
+            mipsInsList.add(new Sgt(regDst, regSrc1, regSrc2));
+        } else if (op.equals(BinaryOp.Type.SGE)) {
+            mipsInsList.add(new Sge(regDst, regSrc1, regSrc2));
+        } else if (op.equals(BinaryOp.Type.SLT)) {
+            mipsInsList.add(new Slt(regDst, regSrc1, regSrc2));
+        } else if (op.equals(BinaryOp.Type.SLE)) {
+            mipsInsList.add(new Sle(regDst, regSrc1, regSrc2));
+        } else if (op.equals(BinaryOp.Type.SEQ)) {
+            mipsInsList.add(new Seq(regDst, regSrc1, regSrc2));
+        } else if (op.equals(BinaryOp.Type.SNE)) {
+            mipsInsList.add(new Sne(regDst, regSrc1, regSrc2));
+        }
+        if (dst.getReg() == null) {
+            storeRegHelper(dst, TMP_R1);
+        }
+    }
+
 
     private void allocStack(MidVar midVar) {
         if (midVar.getOffset() == null) {
