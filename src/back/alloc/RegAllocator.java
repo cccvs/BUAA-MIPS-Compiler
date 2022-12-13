@@ -7,6 +7,7 @@ import mid.code.Return;
 import mid.frame.FuncFrame;
 import mid.frame.MidLabel;
 import mid.operand.MidVar;
+import mid.operand.Symbol;
 
 import java.io.PrintStream;
 import java.util.*;
@@ -133,6 +134,14 @@ public class RegAllocator {
     // 7
     private void walkIntervals() {
         for (LiveInterval newInterval : intervalList) {
+            // 全局变量不作分配
+            if (newInterval.getMidVar() instanceof Symbol) {
+                Symbol symbol = (Symbol) newInterval.getMidVar();
+                if (symbol.isGlobal()) {
+                    continue;
+                }
+            }
+            // 遍历
             int curPos = newInterval.lower();
             Set<LiveInterval> liveIntervalMeta = new HashSet<>(liveIntervalSet);
             for (LiveInterval live : liveIntervalMeta) {
