@@ -64,6 +64,7 @@ public class SysYRunner {
         // mips part
         MipsTranslator mipsTranslator = new MipsTranslator(midCode);
         mipsTranslator.outputMips(new PrintStream(MIPS), OUTPUT_MIPS);
+        mipsTranslator.outputRegInfo(new PrintStream("interval_info.txt"));
     }
 
     private String readAll(Scanner in) {

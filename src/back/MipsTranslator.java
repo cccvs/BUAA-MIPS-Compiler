@@ -1,5 +1,6 @@
 package back;
 
+import back.alloc.BasicBlock;
 import back.alloc.RegAllocator;
 import back.ins.*;
 import back.special.Comment;
@@ -26,6 +27,7 @@ public class MipsTranslator {
     // info
     private final MidCode midCode;
     private final List<MipsIns> mipsInsList = new ArrayList<>();
+    private final List<RegAllocator> allocatorList = new ArrayList<>();
 
     // current
     private boolean isMain = false;     // 标记当前函数是否为main函数，特殊处理return
@@ -48,12 +50,7 @@ public class MipsTranslator {
     }
 
     private void transFunc(FuncFrame func) {
-        RegAllocator allocator = new RegAllocator(func); // 分配寄存器
-        try {
-            allocator.output(new PrintStream("interval_info.txt"));
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
+        allocatorList.add(new RegAllocator(func));
         mipsInsList.add(new Label("\n" + func.getLabel()));
         stackSize = func.addStackSize(0);   // 相当于getStackSize
         // 加载形参到寄存器
@@ -64,9 +61,8 @@ public class MipsTranslator {
                 mipsInsList.add(new Lw(param.getReg(), -param.getOffset(), Reg.SP));
             }
         }
-        Iterator<BasicIns> insIter = func.iterIns();
-        while (insIter.hasNext()) {
-            BasicIns basicIns = insIter.next();
+        List<BasicIns> insList = func.insList();
+        for (BasicIns basicIns : insList) {
             transIns(basicIns);
         }
     }
@@ -151,8 +147,8 @@ public class MipsTranslator {
         while (realParams.hasNext()) {
             Operand realParam = realParams.next();
             Symbol formatParam = formatParams.next();
-            loadRegHelper(realParam, Reg.A1);
-            mipsInsList.add(new Sw(Reg.A1, -movSize - formatParam.getOffset(), Reg.SP));
+            loadRegHelper(realParam, TMP_R1);
+            mipsInsList.add(new Sw(TMP_R1, -movSize - formatParam.getOffset(), Reg.SP));
         }
         // save current reg
         int bias = 4;
@@ -168,7 +164,7 @@ public class MipsTranslator {
         mipsInsList.add(new Lw(Reg.RA, -movSize, Reg.SP));
         bias = 4;
         for (Integer liveReg : call.getLiveRegs()) {
-            mipsInsList.add(new Sw(liveReg, -movSize + bias, Reg.SP));
+            mipsInsList.add(new Lw(liveReg, -movSize + bias, Reg.SP));
             bias += 4;
         }
         // recv ret val, 必须在恢复现场之后, 否则store时sp不对
@@ -566,6 +562,12 @@ public class MipsTranslator {
         ps.println(".text");
         for (MipsIns mipsIns : mipsInsList) {
             ps.println("\t" + mipsIns.toString());
+        }
+    }
+
+    public void outputRegInfo(PrintStream ps) {
+        for (RegAllocator allocator : allocatorList) {
+            allocator.output(ps);
         }
     }
 }

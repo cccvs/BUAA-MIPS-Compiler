@@ -6,7 +6,7 @@ import mid.operand.MidVar;
 import java.util.HashSet;
 import java.util.Set;
 
-public class BinaryOp implements BasicIns {
+public class BinaryOp extends BasicIns {
     public enum Type {
         ADD, SUB, MUL, DIV, MOD, SGE, SGT, SLE, SLT, SEQ, SNE, AND, OR
     }

@@ -5,7 +5,7 @@ import mid.operand.MidVar;
 import java.util.HashSet;
 import java.util.Set;
 
-public class GetInt implements BasicIns {
+public class GetInt extends BasicIns {
     private final MidVar var;
 
     public GetInt(MidVar var) {

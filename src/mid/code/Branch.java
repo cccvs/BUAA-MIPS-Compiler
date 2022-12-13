@@ -7,7 +7,7 @@ import mid.operand.Operand;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Branch implements BasicIns{
+public class Branch extends BasicIns{
     // only list basic mips instruction
     public enum Type {
         BNEZ

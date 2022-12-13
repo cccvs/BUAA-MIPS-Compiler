@@ -1,16 +1,18 @@
 package back.alloc;
 
-import mid.code.BasicIns;
-import mid.code.Call;
-import mid.code.Return;
+import mid.code.*;
 import mid.operand.MidVar;
+import mid.operand.Symbol;
 
+import java.io.PrintStream;
 import java.util.*;
 
 public class BasicBlock {
+    private static int idCount = 0;
 
     // basic information
     private final List<SerialIns> insList = new ArrayList<>();
+    private final int blockId;
 
     // optimize
     private final List<BasicBlock> preBlocks = new ArrayList<>();
@@ -21,7 +23,7 @@ public class BasicBlock {
     private final Set<MidVar> liveOut = new HashSet<>();
 
     public BasicBlock() {
-
+        blockId = ++idCount;
     }
 
     public void append(SerialIns ins) {
@@ -86,8 +88,6 @@ public class BasicBlock {
     }
 
     public void buildIntervals(Map<MidVar, LiveInterval> varToInterval) {
-        int blockUpper = insList.get(insList.size() - 1).getPos() + 1;
-        int blockLower = insList.get(0).getPos();
         Set<MidVar> liveSet = new HashSet<>(liveOut);
         for (int i = insList.size() - 1; i >= 0; --i) {
             // update user var
@@ -107,8 +107,67 @@ public class BasicBlock {
                 LiveInterval interval = varToInterval.get(midVar);
                 interval.addPair(pos, pos + 1);
             }
+            // 标记死代码, 由于是基本指令, 只需查看左值是否活跃 TODO: 可能出bug
+            if (basicIns instanceof BinaryOp || basicIns instanceof UnaryOp
+                    || basicIns instanceof GetInt || basicIns instanceof Offset) {
+                MidVar midVar = basicIns.leftSet().iterator().next();
+                if (!liveSet.contains(midVar) && !(midVar instanceof Symbol && ((Symbol) midVar).isGlobal())) {
+                    basicIns.setDead();
+                }
+            }
             // remove def var
             liveSet.removeAll(serialIns.leftSet());
         }
+    }
+
+    public void output(PrintStream ps) {
+        ps.println("block: " + this);
+        StringBuilder sb = new StringBuilder();
+        sb.append("pre: ");
+        for (BasicBlock preBlock : preBlocks) {
+            sb.append(preBlock).append(" ");
+        }
+        ps.println(sb);
+
+        sb = new StringBuilder();
+        sb.append("suc: ");
+        for (BasicBlock sucBlock : sucBlocks) {
+            sb.append(sucBlock).append(" ");
+        }
+        ps.println(sb);
+
+        sb = new StringBuilder();
+        sb.append("Def: ");
+        for (MidVar var : liveDef) {
+            sb.append(var).append(" ");
+        }
+        ps.println(sb);
+
+        sb = new StringBuilder();
+        sb.append("Use: ");
+        for (MidVar var : liveUse) {
+            sb.append(var).append(" ");
+        }
+        ps.println(sb);
+
+        sb = new StringBuilder();
+        sb.append("In: ");
+        for (MidVar var : liveIn) {
+            sb.append(var).append(" ");
+        }
+        ps.println(sb);
+
+        sb = new StringBuilder();
+        sb.append("Out: ");
+        for (MidVar var : liveOut) {
+            sb.append(var).append(" ");
+        }
+        ps.println(sb);
+        ps.println();
+    }
+
+    @Override
+    public String toString() {
+        return "block" + blockId;
     }
 }

@@ -40,14 +40,14 @@ public class RegAllocator {
         livenessAnalysis();
         buildIntervals();
         walkIntervals();
+        removeDeadIns();
     }
 
     // 1
     private void readFuncInfo(FuncFrame funcFrame) {
         int cnt = 0;
-        Iterator<BasicIns> insIter = funcFrame.iterIns();
-        while (insIter.hasNext()) {
-            BasicIns basicIns = insIter.next();
+        List<BasicIns> insList = funcFrame.insList();
+        for (BasicIns basicIns : insList) {
             SerialIns serialIns = new SerialIns(cnt * 2, basicIns);
             // begin or label
             if (basicIns instanceof MidLabel || cnt == 0) {
@@ -121,7 +121,7 @@ public class RegAllocator {
         }
     }
 
-    // 6
+    // 6, 此处标记死代码
     private void buildIntervals() {
         HashMap<MidVar, LiveInterval> varToInterval = new HashMap<>();
         for (int i = blockList.size() - 1; i >= 0; --i) {
@@ -209,6 +209,19 @@ public class RegAllocator {
     }
 
     // 8
+    private void removeDeadIns() {
+        List<BasicIns> insList = funcFrame.insList();
+        List<BasicIns> newList = new ArrayList<>();
+        for (BasicIns basicIns : insList) {
+            if (!basicIns.isDead()) {
+                newList.add(basicIns);
+            }
+        }
+        insList.clear();
+        insList.addAll(newList);
+    }
+
+    // 9
     public void output(PrintStream ps) {
         ps.println(funcFrame.getLabel());
         for (LiveInterval interval : intervalList) {

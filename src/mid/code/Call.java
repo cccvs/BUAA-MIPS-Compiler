@@ -6,7 +6,7 @@ import mid.operand.MidVar;
 
 import java.util.*;
 
-public class Call implements BasicIns{
+public class Call extends BasicIns{
     // Originate from FuncCall
     private final FuncFrame func;
     private final List<Operand> params;

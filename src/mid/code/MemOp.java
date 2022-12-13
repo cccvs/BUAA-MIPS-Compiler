@@ -7,7 +7,7 @@ import mid.operand.Symbol;
 import java.util.HashSet;
 import java.util.Set;
 
-public class MemOp implements BasicIns {
+public class MemOp extends BasicIns {
     // Originate from Assign, Def/Decl, Exp(LVal)
     public enum Type {
         LOAD,

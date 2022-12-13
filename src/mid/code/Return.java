@@ -6,7 +6,7 @@ import mid.operand.Operand;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Return implements BasicIns{
+public class Return extends BasicIns{
     // Originate from Return
     private final Operand retVal;   // null if void
 

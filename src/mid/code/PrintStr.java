@@ -5,7 +5,7 @@ import mid.operand.MidVar;
 import java.util.HashSet;
 import java.util.Set;
 
-public class PrintStr implements BasicIns{
+public class PrintStr extends BasicIns{
     // Originate from printf
     private final String label;
 

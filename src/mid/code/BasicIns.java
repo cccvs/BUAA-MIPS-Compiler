@@ -2,11 +2,26 @@ package mid.code;
 
 import mid.operand.MidVar;
 
+import java.util.HashSet;
 import java.util.Set;
 
-public interface BasicIns {
+public abstract class BasicIns {
 
-    public Set<MidVar> leftSet();
+    private boolean dead = false;
 
-    public Set<MidVar> rightSet();
+    public boolean isDead() {
+        return dead;
+    }
+
+    public void setDead() {
+        this.dead = true;
+    }
+
+    public Set<MidVar> leftSet() {
+        return new HashSet<>();
+    }
+
+    public Set<MidVar> rightSet() {
+        return new HashSet<>();
+    }
 }

@@ -6,7 +6,7 @@ import mid.operand.Operand;
 import java.util.HashSet;
 import java.util.Set;
 
-public class PrintInt implements BasicIns{
+public class PrintInt extends BasicIns{
     // Originate from printf
     private Operand src;
 

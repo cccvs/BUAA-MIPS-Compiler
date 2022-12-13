@@ -6,7 +6,7 @@ import mid.operand.Operand;
 import java.util.HashSet;
 import java.util.Set;
 
-public class UnaryOp implements BasicIns{
+public class UnaryOp extends BasicIns{
     // Originate from UnaryExp
     public enum Type {
         MOV,

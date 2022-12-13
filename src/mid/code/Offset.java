@@ -6,7 +6,7 @@ import mid.operand.Operand;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Offset implements BasicIns {
+public class Offset extends BasicIns {
     private final MidVar dst;
     private final MidVar base;
     private final Operand offsetVal;

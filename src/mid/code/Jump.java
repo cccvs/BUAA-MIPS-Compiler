@@ -6,7 +6,7 @@ import mid.operand.MidVar;
 import java.util.HashSet;
 import java.util.Set;
 
-public class Jump implements BasicIns{
+public class Jump extends BasicIns{
     private final MidLabel midLabel;
 
     public Jump(MidLabel midLabel) {

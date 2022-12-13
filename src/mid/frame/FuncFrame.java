@@ -43,6 +43,10 @@ public class FuncFrame {
         return insList.iterator();
     }
 
+    public List<BasicIns> insList() {
+        return insList;
+    }
+
     public RetType getRetType() {
         return retType;
     }

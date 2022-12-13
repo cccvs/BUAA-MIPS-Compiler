@@ -7,7 +7,7 @@ import mid.operand.MidVar;
 import java.util.HashSet;
 import java.util.Set;
 
-public class MidLabel implements BasicIns {
+public class MidLabel extends BasicIns {
 
     public enum Type {
         branch_then, branch_else, branch_end,

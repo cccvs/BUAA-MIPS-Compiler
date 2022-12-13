@@ -58,9 +58,9 @@ public class LiveInterval implements Comparable<LiveInterval> {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        sb.append(midVar.toString());
+        sb.append(midVar.toString()).append(": ");
         for (IntPair pair : pairs) {
-            sb.append(": [").append(pair.getLower()).append(",").append(pair.getUpper()).append("] ");
+            sb.append("[").append(pair.getLower()).append(",").append(pair.getUpper()).append("] ");
         }
         return sb.toString();
     }
