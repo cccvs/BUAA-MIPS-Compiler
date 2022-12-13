@@ -1,5 +1,6 @@
 package mid.operand;
 
+import back.Reg;
 import front.ast.decl.DefNode;
 import front.ast.func.FuncFParamNode;
 import mid.MidCode;
@@ -75,6 +76,6 @@ public class MidVar implements Operand {
     @Override
     public String toString() {
         String typeStr = refType.name().substring(0, 1).toLowerCase();
-        return "t" + id + "[" + typeStr + "]";
+        return "t" + id + "[" + typeStr + "->" + ((reg == null) ? "null" : "$" + Reg.name(reg)) + "]";
     }
 }

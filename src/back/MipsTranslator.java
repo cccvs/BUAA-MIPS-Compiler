@@ -50,6 +50,14 @@ public class MipsTranslator {
         new RegAllocator(func); // 分配寄存器
         mipsInsList.add(new Label("\n" + func.getLabel()));
         stackSize = func.addStackSize(0);   // 相当于getStackSize
+        // 加载形参到寄存器
+        Iterator<Symbol> params = func.iterFormatParam();
+        while (params.hasNext()) {
+            Symbol param = params.next();
+            if (param.getReg() != null) {
+                mipsInsList.add(new Lw(param.getReg(), -param.getOffset(), Reg.SP));
+            }
+        }
         Iterator<BasicIns> insIter = func.iterIns();
         while (insIter.hasNext()) {
             BasicIns basicIns = insIter.next();
