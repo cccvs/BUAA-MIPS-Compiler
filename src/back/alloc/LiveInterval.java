@@ -52,7 +52,17 @@ public class LiveInterval implements Comparable<LiveInterval> {
 
     public int upper() {
         assert !pairs.isEmpty();
-        return pairs.get(pairs.size() - 1).getLower();
+        return pairs.get(pairs.size() - 1).getUpper();
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(midVar.toString());
+        for (IntPair pair : pairs) {
+            sb.append(": [").append(pair.getLower()).append(",").append(pair.getUpper()).append("] ");
+        }
+        return sb.toString();
     }
 
     @Override

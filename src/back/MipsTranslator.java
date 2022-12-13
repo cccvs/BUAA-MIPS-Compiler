@@ -15,6 +15,7 @@ import mid.operand.Operand;
 import mid.operand.Symbol;
 import mid.operand.MidVar;
 
+import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.*;
 
@@ -47,7 +48,12 @@ public class MipsTranslator {
     }
 
     private void transFunc(FuncFrame func) {
-        new RegAllocator(func); // 分配寄存器
+        RegAllocator allocator = new RegAllocator(func); // 分配寄存器
+        try {
+            allocator.output(new PrintStream("interval_info.txt"));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
         mipsInsList.add(new Label("\n" + func.getLabel()));
         stackSize = func.addStackSize(0);   // 相当于getStackSize
         // 加载形参到寄存器
@@ -187,7 +193,7 @@ public class MipsTranslator {
     private void transPrintInt(PrintInt printInt) {
         mipsInsList.add(new Comment(printInt.toString()));
         Operand src = printInt.getSrc();
-        loadRegHelper(src, Reg.V0);
+        loadRegHelper(src, Reg.A0);
         mipsInsList.add(new Addi(Reg.V0, Reg.ZERO, 1));
         mipsInsList.add(new Syscall());
     }

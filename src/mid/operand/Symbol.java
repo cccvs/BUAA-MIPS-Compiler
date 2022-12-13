@@ -1,5 +1,6 @@
 package mid.operand;
 
+import back.Reg;
 import front.ast.decl.DefNode;
 import front.ast.exp.ExpNode;
 import front.ast.func.FuncFParamNode;
@@ -112,10 +113,10 @@ public class Symbol extends MidVar {
     public String toString() {
         String typeStr = refType.name().substring(0, 1).toLowerCase();
         if (isGlobal) {
-            return "v" + id + "_" + ident + "[" + typeStr +
+            return "v" + id + "_" + ident + "[" + typeStr + "->" + ((reg == null) ? "null" : "$" + Reg.name(reg)) +
                     ", data+0x" + Integer.toHexString(stackOffset) + "]";
         } else {
-            return "v" + id + "_" + ident + "[" + typeStr +
+            return "v" + id + "_" + ident + "[" + typeStr + "->" + ((reg == null) ? "null" : "$" + Reg.name(reg)) +
                     ", sp-0x" + Integer.toHexString(stackOffset) + "]";
         }
     }

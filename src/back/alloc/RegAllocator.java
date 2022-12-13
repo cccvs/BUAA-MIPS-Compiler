@@ -8,6 +8,7 @@ import mid.frame.FuncFrame;
 import mid.frame.MidLabel;
 import mid.operand.MidVar;
 
+import java.io.PrintStream;
 import java.util.*;
 
 
@@ -16,6 +17,7 @@ public class RegAllocator {
             (Arrays.asList(8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25));
 
     // mid code
+    private final FuncFrame funcFrame;
     private final List<BasicBlock> blockList = new LinkedList<>();
     private final List<LiveInterval> intervalList = new ArrayList<>();
     private final Map<String, BasicBlock> labelToBlock = new HashMap<>();
@@ -29,6 +31,7 @@ public class RegAllocator {
     private BasicBlock curBlock;
 
     public RegAllocator(FuncFrame funcFrame) {
+        this.funcFrame = funcFrame;
         readFuncInfo(funcFrame);
         cleanBlocks();
         buildFlowGraph();
@@ -194,5 +197,14 @@ public class RegAllocator {
         }
         // interval
         liveIntervalSet.remove(removeInterval);
+    }
+
+    // 8
+    public void output(PrintStream ps) {
+        ps.println(funcFrame.getLabel());
+        for (LiveInterval interval : intervalList) {
+            ps.println(interval);
+        }
+        ps.println();
     }
 }
