@@ -16,6 +16,6 @@ public class Slti extends MipsIns {
 
     @Override
     public String toString() {
-        return String.format("slti $%s, $%s, $%s", Reg.name(dst), Reg.name(src1), Reg.name(imm));
+        return String.format("slti $%s, $%s, %d", Reg.name(dst), Reg.name(src1), imm);
     }
 }

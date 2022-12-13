@@ -16,6 +16,6 @@ public class Slei extends MipsIns {
 
     @Override
     public String toString() {
-        return String.format("sle $%s, $%s, $%s", Reg.name(dst), Reg.name(src1), Reg.name(imm));
+        return String.format("sle $%s, $%s, %d", Reg.name(dst), Reg.name(src1), imm);
     }
 }

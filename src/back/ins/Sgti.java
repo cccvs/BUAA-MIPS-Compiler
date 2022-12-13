@@ -16,6 +16,6 @@ public class Sgti extends MipsIns {
 
     @Override
     public String toString() {
-        return String.format("sgt $%s, $%s, $%s", Reg.name(dst), Reg.name(src1), Reg.name(imm));
+        return String.format("sgt $%s, $%s, %d", Reg.name(dst), Reg.name(src1), imm);
     }
 }
