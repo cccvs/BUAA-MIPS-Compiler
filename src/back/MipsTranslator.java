@@ -16,7 +16,6 @@ import mid.operand.Operand;
 import mid.operand.Symbol;
 import mid.operand.MidVar;
 
-import java.io.FileNotFoundException;
 import java.io.PrintStream;
 import java.util.*;
 
@@ -416,7 +415,12 @@ public class MipsTranslator {
         } else if (op.equals(BinaryOp.Type.SGE)) {
             mipsInsList.add(new Sgei(regDst, regSrc1, imm2));
         } else if (op.equals(BinaryOp.Type.SLT)) {
-            mipsInsList.add(new Slti(regDst, regSrc1, imm2));
+            if (imm2 > 32767) {
+                mipsInsList.add(new Addi(TMP_R1, Reg.ZERO, imm2));
+                mipsInsList.add(new Slt(regDst, regSrc1, TMP_R1));
+            } else {
+                mipsInsList.add(new Slti(regDst, regSrc1, imm2));
+            }
         } else if (op.equals(BinaryOp.Type.SLE)) {
             mipsInsList.add(new Slei(regDst, regSrc1, imm2));
         } else if (op.equals(BinaryOp.Type.SEQ)) {
@@ -458,6 +462,12 @@ public class MipsTranslator {
             mipsInsList.add(new Div(regSrc1, regSrc2));
             mipsInsList.add(new Mfhi(regDst));
         } else if (op.equals(BinaryOp.Type.SGT)) {
+            if (imm1 > 32767) {
+                mipsInsList.add(new Addi(TMP_R1, Reg.ZERO, imm1));
+                mipsInsList.add(new Slt(regDst, regSrc2, TMP_R1));
+            } else {
+                mipsInsList.add(new Slti(regDst, regSrc2, imm1));
+            }
             mipsInsList.add(new Slti(regDst, regSrc2, imm1));
         } else if (op.equals(BinaryOp.Type.SGE)) {
             mipsInsList.add(new Slei(regDst, regSrc2, imm1));

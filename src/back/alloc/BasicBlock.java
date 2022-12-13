@@ -111,6 +111,7 @@ public class BasicBlock {
             if (basicIns instanceof BinaryOp || basicIns instanceof UnaryOp
                     || basicIns instanceof GetInt || basicIns instanceof Offset) {
                 MidVar midVar = basicIns.leftSet().iterator().next();
+                // 不可以是全局变量!
                 if (!liveSet.contains(midVar) && !(midVar instanceof Symbol && ((Symbol) midVar).isGlobal())) {
                     basicIns.setDead();
                 }
