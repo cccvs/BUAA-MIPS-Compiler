@@ -53,11 +53,19 @@ public class MipsTranslator {
         mipsInsList.add(new Label("\n" + func.getLabel()));
         stackSize = func.addStackSize(0);   // 相当于getStackSize
         // 加载形参到寄存器
-        Iterator<Symbol> params = func.iterFormatParam();
-        while (params.hasNext()) {
-            Symbol param = params.next();
-            if (param.getReg() != null) {
-                mipsInsList.add(new Lw(param.getReg(), -param.getOffset(), Reg.SP));
+        List<Symbol> formatParams = func.getFormatParams();
+        for (int i = 0; i < formatParams.size(); i++) {
+            Symbol param = formatParams.get(i);
+            if (i > 3) {
+                if (param.getReg() != null) {
+                    mipsInsList.add(new Lw(param.getReg(), -param.getOffset(), Reg.SP));
+                }
+            } else {
+                if (param.getReg() != null) {
+                    mipsInsList.add(new Add(param.getReg(), Reg.ZERO, Reg.A0 + i));
+                } else {
+                    mipsInsList.add(new Sw(Reg.A0 + i, -param.getOffset(), Reg.SP));
+                }
             }
         }
         List<BasicIns> insList = func.insList();
@@ -141,13 +149,17 @@ public class MipsTranslator {
         mipsInsList.add(new Comment(call.toString()));
         // store param
         FuncFrame func = call.getFunc();
-        Iterator<Operand> realParams = call.iterRealParam();
-        Iterator<Symbol> formatParams = func.iterFormatParam();
-        while (realParams.hasNext()) {
-            Operand realParam = realParams.next();
-            Symbol formatParam = formatParams.next();
-            loadRegHelper(realParam, TMP_R1);
-            mipsInsList.add(new Sw(TMP_R1, -movSize - formatParam.getOffset(), Reg.SP));
+        List<Operand> realParams = call.getRealParams();
+        List<Symbol> formatParams = func.getFormatParams();
+        for (int i = 0; i < realParams.size(); i++) {
+            Operand realParam = realParams.get(i);
+            Symbol formatParam = formatParams.get(i);
+            if (i > 3) {
+                loadRegHelper(realParam, TMP_R1);
+                mipsInsList.add(new Sw(TMP_R1, -movSize - formatParam.getOffset(), Reg.SP));
+            } else {
+                loadRegHelper(realParam, Reg.A0 + i);
+            }
         }
         // save current reg
         int bias = 4;

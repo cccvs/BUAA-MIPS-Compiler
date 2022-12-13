@@ -28,8 +28,8 @@ public class Call extends BasicIns{
         return func;
     }
 
-    public Iterator<Operand> iterRealParam() {
-        return params.iterator();
+    public List<Operand> getRealParams() {
+        return params;
     }
 
     public MidVar getRet() {

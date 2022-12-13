@@ -55,6 +55,10 @@ public class FuncFrame {
         return params.iterator();
     }
 
+    public List<Symbol> getFormatParams() {
+        return params;
+    }
+
     public int formatParamNum() {
         return params.size();
     }
