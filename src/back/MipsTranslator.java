@@ -324,7 +324,6 @@ public class MipsTranslator {
         }
     }
 
-
     private void unaryImmHelper(UnaryOp.Type op, MidVar dst, int imm) {
         int regDst = dst.getReg() == null ? TMP_R1 : dst.getReg();
         if (op.equals(UnaryOp.Type.MOV)) {
@@ -409,14 +408,9 @@ public class MipsTranslator {
         } else if (op.equals(BinaryOp.Type.SUB)) {
             mipsInsList.add(new Addi(regDst, regSrc1, -imm2));
         } else if (op.equals(BinaryOp.Type.MUL)) {
-            int regSrc2 = TMP_R2;
-            mipsInsList.add(new Addi(regSrc2, Reg.ZERO, imm2));
-            mipsInsList.add(new Mul(regDst, regSrc1, regSrc2));
+            weakenMult(regDst, regSrc1, imm2);
         } else if (op.equals(BinaryOp.Type.DIV)) {
-            int regSrc2 = TMP_R2;
-            mipsInsList.add(new Addi(regSrc2, Reg.ZERO, imm2));
-            mipsInsList.add(new Div(regSrc1, regSrc2));
-            mipsInsList.add(new Mflo(regDst));
+            weakenDiv(regDst, regSrc1, imm2);
         } else if (op.equals(BinaryOp.Type.MOD)) {
             int regSrc2 = TMP_R2;
             mipsInsList.add(new Addi(regSrc2, Reg.ZERO, imm2));
@@ -590,6 +584,82 @@ public class MipsTranslator {
     public void outputRegInfo(PrintStream ps) {
         for (RegAllocator allocator : allocatorList) {
             allocator.output(ps);
+        }
+    }
+
+    // optimize
+    private void weakenMult(int regDst, int regSrc, int imm) {
+        Map<Integer, Integer> expMap = new HashMap<>();
+        for (int i = 0; i < 31; i++) {
+            expMap.put(1 << i, i);
+            expMap.put(-(1 << i), i);
+        }
+        if (imm == 0) {
+            mipsInsList.add(new Add(regDst, 0, 0));
+        } else if (imm == 1) {
+            mipsInsList.add(new Add(regDst, regSrc, 0));
+        } else if (imm == -1) {
+            mipsInsList.add(new Sub(regDst, regSrc, 0));
+        } else if (expMap.containsKey(imm)) {
+            if (imm > 0) {
+                mipsInsList.add(new Sll(regDst, regSrc, expMap.get(imm)));
+            } else {
+                mipsInsList.add(new Sll(regDst, regSrc, expMap.get(imm)));
+                mipsInsList.add(new Sub(regDst, Reg.ZERO, regSrc));
+            }
+        } else {
+            mipsInsList.add(new Addi(TMP_R2, Reg.ZERO, imm));
+            mipsInsList.add(new Mul(regDst, regSrc, TMP_R2));
+        }
+    }
+
+    private void weakenDiv(int regDst, int regSrc, int imm) {
+        Map<Integer, Integer> expMap = new HashMap<>();
+        for (int i = 0; i < 31; i++) {
+            expMap.put(1 << i, i);
+            expMap.put(-(1 << i), i);
+        }
+        if (imm == 0) {
+            throw new AssertionError("div by zero!");
+        } else if (imm == 1) {
+            mipsInsList.add(new Add(regDst, regSrc, 0));
+        } else if (imm == -1) {
+            mipsInsList.add(new Sub(regDst, regSrc, 0));
+        }  else if (expMap.containsKey(imm)) {
+            if (imm > 0) {
+                mipsInsList.add(new Srl(regDst, regSrc, expMap.get(imm)));
+            } else {
+                mipsInsList.add(new Srl(regDst, regSrc, expMap.get(imm)));
+                mipsInsList.add(new Sub(regDst, Reg.ZERO, regSrc));
+            }
+        } else {
+            mipsInsList.add(new Addi(TMP_R2, Reg.ZERO, imm));
+            mipsInsList.add(new Div(regSrc, TMP_R2));
+            mipsInsList.add(new Mflo(regDst));
+        }
+    }
+
+    private void weakenMod(int regDst, int regSrc, int imm) {
+        Map<Integer, Integer> expMap = new HashMap<>();
+        for (int i = 0; i < 31; i++) {
+            expMap.put(1 << i, i);
+            expMap.put(-(1 << i), i);
+        }
+        if (imm == 0) {
+            throw new AssertionError("mod by zero!");
+        } else if (imm == 1 || imm == -1) {
+            mipsInsList.add(new Add(regDst, 0, 0));
+        }  else if (expMap.containsKey(imm)) {
+            if (imm < 0) {
+                imm = -imm;
+            }
+            mipsInsList.add(new Srl(regDst, regSrc, expMap.get(imm)));
+            mipsInsList.add(new Sll(regDst, regDst, expMap.get(imm)));
+            mipsInsList.add(new Sub(regDst, regSrc, regDst));
+        } else {
+            mipsInsList.add(new Addi(TMP_R2, Reg.ZERO, imm));
+            mipsInsList.add(new Div(regSrc, TMP_R2));
+            mipsInsList.add(new Mfhi(regDst));
         }
     }
 }
