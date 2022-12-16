@@ -116,6 +116,7 @@ public class RegAllocator {
         buildDefMap();
         buildGenKill();
         arrivalAnalysis();
+        walkIntervals();
         broadcast();
     }
 
