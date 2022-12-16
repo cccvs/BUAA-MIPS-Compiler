@@ -1,7 +1,13 @@
 package back.alloc;
 
+import back.Reg;
+import back.ins.Addi;
+import back.ins.Seqi;
 import mid.code.*;
+import mid.frame.MidLabel;
+import mid.operand.Imm;
 import mid.operand.MidVar;
+import mid.operand.Operand;
 import mid.operand.Symbol;
 
 import java.io.PrintStream;
@@ -17,7 +23,7 @@ public class BasicBlock {
 
     // optimize
     private final List<BasicBlock> preBlocks = new ArrayList<>();
-    private final List<BasicBlock> sucBlocks = new ArrayList<>();
+    private final List<BasicBlock> subBlocks = new ArrayList<>();
     private final Set<MidVar> liveDef = new HashSet<>();
     private final Set<MidVar> liveUse = new HashSet<>();
     private final Set<MidVar> liveIn = new HashSet<>();
@@ -45,7 +51,178 @@ public class BasicBlock {
         return insList.isEmpty();
     }
 
-    // ops
+    // arr
+    public void buildGenKill() {
+        for (int i = insList.size() - 1; i >= 0; i--) {
+            BasicIns basicIns = insList.get(i);
+            if (!basicIns.leftSet().isEmpty()) {
+                Set<BasicIns> atomGenSet = new HashSet<>();
+                atomGenSet.add(basicIns);
+                atomGenSet.removeAll(arrKill); //gen[di] - kill[dn] - ... - kill[di+1]
+                arrGen.addAll(atomGenSet);
+                arrKill.addAll(parent.getAtomKillSet(basicIns));
+            }
+        }
+    }
+
+    public boolean broadcast() {
+        // 只保留定义1次的变量
+        Map<MidVar, BasicIns> varToDef = new HashMap<>();
+        Set<MidVar> varSet = new HashSet<>();
+        boolean changed = false;
+        for (BasicIns basicIns : arrIn) {
+            assert !basicIns.leftSet().isEmpty();
+            MidVar midVar = basicIns.leftSet().iterator().next();
+            if (varSet.contains(midVar)) {
+                varToDef.remove(midVar);
+            } else {
+                varToDef.put(midVar, basicIns);
+                varSet.add(midVar);
+            }
+        }
+        // for
+        for (BasicIns basicIns : insList) {
+            if (basicIns instanceof BinaryOp) {
+                // val
+                BinaryOp binaryOp = ((BinaryOp) basicIns);
+                if (binaryOp.getSrc1() instanceof MidVar) {
+                    MidVar midVar1 = (MidVar) binaryOp.getSrc1();
+                    if (varToDef.containsKey(midVar1)) {
+                        Integer defVal = parent.getDefVal(varToDef.get(midVar1));
+                        if (defVal != null) {
+                            binaryOp.setSrc1(new Imm(defVal));
+                            changed = true;
+                        }
+                    }
+                }
+                if (binaryOp.getSrc2() instanceof MidVar) {
+                    MidVar midVar2 = (MidVar) binaryOp.getSrc2();
+                    if (varToDef.containsKey(midVar2)) {
+                        Integer defVal = parent.getDefVal(varToDef.get(midVar2));
+                        if (defVal != null) {
+                            binaryOp.setSrc2(new Imm(defVal));
+                            changed = true;
+                        }
+                    }
+                }
+                // update
+                if (binaryOp.getSrc1() instanceof Imm && binaryOp.getSrc2() instanceof Imm) {
+                    if (binaryOp.getDst().getRefType().equals(Operand.RefType.ARRAY)) {
+                        continue;
+                    }
+                    BinaryOp.Type op = binaryOp.getOp();
+                    int imm1 = ((Imm) ((BinaryOp) basicIns).getSrc1()).getVal();
+                    int imm2 = ((Imm) ((BinaryOp) basicIns).getSrc2()).getVal();
+                    if (op.equals(BinaryOp.Type.ADD)) {
+                        parent.setDefVal(basicIns, imm1 + imm2);
+                    } else if (op.equals(BinaryOp.Type.SUB)) {
+                        parent.setDefVal(basicIns, imm1 - imm2);
+                    } else if (op.equals(BinaryOp.Type.MUL)) {
+                        parent.setDefVal(basicIns, imm1 * imm2);
+                    } else if (op.equals(BinaryOp.Type.DIV)) {
+                        parent.setDefVal(basicIns, imm1 / imm2);
+                    } else if (op.equals(BinaryOp.Type.MOD)) {
+                        parent.setDefVal(basicIns, imm1 % imm2);
+                    } else if (op.equals(BinaryOp.Type.SGT)) {
+                        parent.setDefVal(basicIns, (imm1 > imm2) ? 1 : 0);
+                    } else if (op.equals(BinaryOp.Type.SGE)) {
+                        parent.setDefVal(basicIns, (imm1 >= imm2) ? 1 : 0);
+                    } else if (op.equals(BinaryOp.Type.SLT)) {
+                        parent.setDefVal(basicIns, (imm1 < imm2) ? 1 : 0);
+                    } else if (op.equals(BinaryOp.Type.SLE)) {
+                        parent.setDefVal(basicIns, (imm1 <= imm2) ? 1 : 0);
+                    } else if (op.equals(BinaryOp.Type.SEQ)) {
+                        parent.setDefVal(basicIns, (imm1 == imm2) ? 1 : 0);
+                    } else if (op.equals(BinaryOp.Type.SNE)) {
+                        parent.setDefVal(basicIns, (imm1 != imm2) ? 1 : 0);
+                    } else {
+                        throw new AssertionError("wrong binaryOp Type");
+                    }
+                }
+            }
+            else if (basicIns instanceof UnaryOp) {
+                // val
+                UnaryOp unaryOp = (UnaryOp) basicIns;
+                if (unaryOp.getSrc() instanceof MidVar) {
+                    MidVar midVar1 = (MidVar) unaryOp.getSrc();
+                    if (varToDef.containsKey(midVar1)) {
+                        Integer defVal = parent.getDefVal(varToDef.get(midVar1));
+                        if (defVal != null) {
+                            unaryOp.setSrc(new Imm(defVal));
+                            changed = true;
+                        }
+                    }
+                }
+                // map
+                if (unaryOp.getSrc() instanceof Imm) {
+                    if (unaryOp.getDst().getRefType().equals(Operand.RefType.ARRAY)) {
+                        continue;
+                    }
+                    int imm = ((Imm) ((UnaryOp) basicIns).getSrc()).getVal();
+                    UnaryOp.Type op = unaryOp.getOp();
+                    if (op.equals(UnaryOp.Type.MOV)) {
+                        parent.setDefVal(basicIns, imm);
+                    } else if (op.equals(UnaryOp.Type.NEG)) {
+                        parent.setDefVal(basicIns, -imm);
+                    } else if (op.equals(UnaryOp.Type.NOT)) {
+                        parent.setDefVal(basicIns, (imm == 0) ? 1 : 0);
+                    } else {
+                        throw new AssertionError("wrong binaryOp Type");
+                    }
+                }
+            }
+            else if (basicIns instanceof Call) {
+                // val
+                Call call = (Call) basicIns;
+                for (int i = 0; i < call.getRealParams().size() - 1; i++) {
+                    if (call.getRealParams().get(i) instanceof MidVar) {
+                        MidVar midVar =  (MidVar) call.getRealParams().get(i);
+                        if (varToDef.containsKey(midVar)) {
+                            Integer defVal = parent.getDefVal(varToDef.get(midVar));
+                            if (defVal != null) {
+                                call.getRealParams().set(i, new Imm(i));
+                                changed = true;
+                            }
+                        }
+                    }
+                }
+            }
+            else if (basicIns instanceof PrintInt) {
+                PrintInt printInt = ((PrintInt) basicIns);
+                if (printInt.getSrc() instanceof MidVar) {
+                    MidVar midVar = (MidVar) printInt.getSrc();
+                    if (varToDef.containsKey(midVar)) {
+                        Integer defVal = parent.getDefVal(varToDef.get(midVar));
+                        if (defVal != null) {
+                            printInt.setSrc(new Imm(defVal));
+                        }
+                    }
+                }
+            }
+            else if (basicIns instanceof Return) {
+                Return ret = ((Return) basicIns);
+                if (ret.getRetVal() instanceof MidVar) {
+                    MidVar midVar = (MidVar) ret.getRetVal();
+                    if (varToDef.containsKey(midVar)) {
+                        Integer defVal = parent.getDefVal(varToDef.get(midVar));
+                        if (defVal != null) {
+                            ret.setRetVal(new Imm(defVal));
+                            changed = true;
+                        }
+                    }
+                }
+            }
+
+            if (!basicIns.leftSet().isEmpty()) {
+                MidVar midVar = basicIns.leftSet().iterator().next();
+                varToDef.put(midVar, basicIns);
+            }
+            // MemOp Offset 不管了
+        }
+        return changed;
+    }
+
+    // live
     public void clearReturnFollows() {
         for (int i = 0; i < insList.size(); i++) {
             if (insList.get(i) instanceof Return) {
@@ -58,7 +235,7 @@ public class BasicBlock {
     }
 
     public void linkNext(BasicBlock next) {
-        sucBlocks.add(next);
+        subBlocks.add(next);
         next.preBlocks.add(this);
     }
 
@@ -84,7 +261,7 @@ public class BasicBlock {
     public boolean updateLiveness() {
         int preInSize = liveIn.size();
         int preOutSize = liveOut.size();
-        for (BasicBlock subBlock : sucBlocks) {
+        for (BasicBlock subBlock : subBlocks) {
             liveOut.addAll(subBlock.liveIn);
         }
         liveIn.clear();
@@ -94,11 +271,24 @@ public class BasicBlock {
         return liveOut.size() > preOutSize || liveIn.size() > preInSize;
     }
 
+    public boolean updateArrival() {
+        int preInSize = arrIn.size();
+        int preOutSize = arrOut.size();
+        for (BasicBlock preBlock : preBlocks) {
+            arrIn.addAll(preBlock.arrOut);
+        }
+        arrOut.clear();
+        arrOut.addAll(arrIn);
+        arrOut.removeAll(arrKill);
+        arrOut.addAll(arrGen);
+        return arrOut.size() > preOutSize || arrIn.size() > preInSize;
+    }
+
     public void buildIntervals(Map<MidVar, LiveInterval> varToInterval) {
         Set<MidVar> liveSet = new HashSet<>(liveOut);
         for (int i = insList.size() - 1; i >= 0; --i) {
             // update user var
-            BasicIns basicIns =insList.get(i);
+            BasicIns basicIns = insList.get(i);
             int pos = parent.getInsPos(basicIns);
             liveSet.addAll(basicIns.rightSet());
             // 记录函数调用时当前的活跃变量，函数调用时用于保存寄存器
@@ -137,9 +327,9 @@ public class BasicBlock {
         ps.println(sb);
 
         sb = new StringBuilder();
-        sb.append("suc: ");
-        for (BasicBlock sucBlock : sucBlocks) {
-            sb.append(sucBlock).append(" ");
+        sb.append("sub: ");
+        for (BasicBlock subBlock : subBlocks) {
+            sb.append(subBlock).append(" ");
         }
         ps.println(sb);
 

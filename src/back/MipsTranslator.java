@@ -1,7 +1,5 @@
 package back;
 
-import back.alloc.BasicBlock;
-import back.alloc.RegAllocator;
 import back.ins.*;
 import back.special.Comment;
 import back.special.Label;
@@ -26,7 +24,6 @@ public class MipsTranslator {
     // info
     private final MidCode midCode;
     private final List<MipsIns> mipsInsList = new ArrayList<>();
-    private final List<RegAllocator> allocatorList = new ArrayList<>();
 
     // current
     private boolean isMain = false;     // 标记当前函数是否为main函数，特殊处理return
@@ -49,7 +46,6 @@ public class MipsTranslator {
     }
 
     private void transFunc(FuncFrame func) {
-        allocatorList.add(new RegAllocator(func));
         mipsInsList.add(new Label("\n" + func.getLabel()));
         stackSize = func.addStackSize(0);   // 相当于getStackSize
         // 加载形参到寄存器
@@ -578,11 +574,7 @@ public class MipsTranslator {
         }
     }
 
-    public void outputRegInfo(PrintStream ps) {
-        for (RegAllocator allocator : allocatorList) {
-            allocator.output(ps);
-        }
-    }
+
 
     // optimize
     private void weakenMult(int regDst, int regSrc, int imm) {
@@ -602,7 +594,7 @@ public class MipsTranslator {
                 mipsInsList.add(new Sll(regDst, regSrc, expMap.get(imm)));
             } else {
                 mipsInsList.add(new Sll(regDst, regSrc, expMap.get(imm)));
-                mipsInsList.add(new Sub(regDst, Reg.ZERO, regSrc));
+                mipsInsList.add(new Sub(regDst, Reg.ZERO, regDst));
             }
         } else {
             mipsInsList.add(new Addi(TMP_R2, Reg.ZERO, imm));
@@ -622,14 +614,14 @@ public class MipsTranslator {
             mipsInsList.add(new Add(regDst, regSrc, Reg.ZERO));
         } else if (imm == -1) {
             mipsInsList.add(new Sub(regDst, Reg.ZERO, regSrc));
-        } else if (expMap.containsKey(imm)) {
+        } /*else if (expMap.containsKey(imm)) {
             if (imm > 0) {
                 mipsInsList.add(new Srl(regDst, regSrc, expMap.get(imm)));
             } else {
                 mipsInsList.add(new Srl(regDst, regSrc, expMap.get(imm)));
-                mipsInsList.add(new Sub(regDst, Reg.ZERO, regSrc));
+                mipsInsList.add(new Sub(regDst, Reg.ZERO, regDst));
             }
-        } else {
+        } */else {
             mipsInsList.add(new Addi(TMP_R2, Reg.ZERO, imm));
             mipsInsList.add(new Div(regSrc, TMP_R2));
             mipsInsList.add(new Mflo(regDst));
@@ -646,14 +638,14 @@ public class MipsTranslator {
             throw new AssertionError("mod by zero!");
         } else if (imm == 1 || imm == -1) {
             mipsInsList.add(new Add(regDst, 0, 0));
-        }  else if (expMap.containsKey(imm)) {
+        } /* else if (expMap.containsKey(imm)) {
             if (imm < 0) {
                 imm = -imm;
             }
             mipsInsList.add(new Srl(regDst, regSrc, expMap.get(imm)));
             mipsInsList.add(new Sll(regDst, regDst, expMap.get(imm)));
             mipsInsList.add(new Sub(regDst, regSrc, regDst));
-        } else {
+        } */else {
             mipsInsList.add(new Addi(TMP_R2, Reg.ZERO, imm));
             mipsInsList.add(new Div(regSrc, TMP_R2));
             mipsInsList.add(new Mfhi(regDst));

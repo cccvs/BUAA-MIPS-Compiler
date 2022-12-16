@@ -8,7 +8,7 @@ import java.util.Set;
 
 public class Return extends BasicIns{
     // Originate from Return
-    private final Operand retVal;   // null if void
+    private Operand retVal;   // null if void
 
     public Return(Operand retVal) {
         super();
@@ -21,6 +21,10 @@ public class Return extends BasicIns{
 
     public Operand getRetVal() {
         return retVal;
+    }
+
+    public void setRetVal(Operand retVal) {
+        this.retVal = retVal;
     }
 
     @Override

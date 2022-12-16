@@ -15,7 +15,7 @@ public class UnaryOp extends BasicIns{
     }
 
     private final Type op;
-    private final Operand src;
+    private  Operand src;
     private final MidVar dst;
 
     public UnaryOp(Type op, Operand src, MidVar dst) {
@@ -35,6 +35,10 @@ public class UnaryOp extends BasicIns{
 
     public MidVar getDst() {
         return dst;
+    }
+
+    public void setSrc(Operand src) {
+        this.src = src;
     }
 
     @Override

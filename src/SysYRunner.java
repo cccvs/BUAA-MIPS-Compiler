@@ -58,13 +58,18 @@ public class SysYRunner {
         IrConverter irConverter = new IrConverter(compUnit);
         ErrorTable.outputError(new PrintStream(ERROR), OUTPUT_ERROR);
         ErrorTable.throwError();    // terminate if error
-        // middle code output
+        // middle code
         MidCode midCode = irConverter.getMidCode();
+        // --- optimize
+        Optimizer optimizer  = new Optimizer(midCode);
+        optimizer.run();
+        optimizer.outputRegInfo(new PrintStream("interval_info.txt"));
+        // ---
+        // mid code out
         midCode.outputMidCode(new PrintStream(MID_CODE), OUTPUT_MID_CODE);
         // mips part
         MipsTranslator mipsTranslator = new MipsTranslator(midCode);
         mipsTranslator.outputMips(new PrintStream(MIPS), OUTPUT_MIPS);
-        mipsTranslator.outputRegInfo(new PrintStream("interval_info.txt"));
     }
 
     private String readAll(Scanner in) {

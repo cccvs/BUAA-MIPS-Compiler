@@ -14,8 +14,8 @@ public class BinaryOp extends BasicIns {
 
     // Originate from BinaryExp
     private final Type op;
-    private final Operand src1;
-    private final Operand src2;
+    private  Operand src1;
+    private  Operand src2;
     private final MidVar dst;
 
     public BinaryOp(Type op, Operand src1, Operand src2, MidVar dst) {
@@ -36,6 +36,14 @@ public class BinaryOp extends BasicIns {
 
     public Operand getSrc2() {
         return src2;
+    }
+
+    public void setSrc1(Operand src1) {
+        this.src1 = src1;
+    }
+
+    public void setSrc2(Operand src2) {
+        this.src2 = src2;
     }
 
     public MidVar getDst() {
