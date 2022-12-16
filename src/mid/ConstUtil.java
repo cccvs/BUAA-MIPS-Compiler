@@ -21,9 +21,9 @@ public class ConstUtil {
 
     public int calExp(ExpNode exp) {
         if (exp instanceof BinaryExpNode) {
-            return calBinary((BinaryExpNode) exp);
+            return calBinaryExp((BinaryExpNode) exp);
         } else if (exp instanceof UnaryExpNode) {
-            return calUnary((UnaryExpNode) exp);
+            return calUnaryExp((UnaryExpNode) exp);
         } else if (exp instanceof NumNode) {
             return calNum((NumNode) exp);
         } else if (exp instanceof LValNode) {
@@ -33,14 +33,14 @@ public class ConstUtil {
         return 0;
     }
 
-    public int calBinary(BinaryExpNode binaryExp) {
+    public int calBinaryExp(BinaryExpNode binaryExp) {
         int left = calExp(binaryExp.getLeftExp());
         int right = calExp(binaryExp.getRightExp());
         BinaryCal binaryCal = binaryOpMap.get(binaryExp.getOp());
         return binaryCal.cal(left, right);
     }
 
-    public int calUnary(UnaryExpNode unaryExp) {
+    public int calUnaryExp(UnaryExpNode unaryExp) {
         int val = calExp(unaryExp.getExp());
         UnaryCal unaryCal = unaryOpMap.get(unaryExp.getOp());
         return unaryCal.cal(val);
@@ -66,6 +66,16 @@ public class ConstUtil {
             }
             return symbol.getConstVal(indexList);
         }
+    }
+
+    public static int calBinaryInteger(TkType type, int left, int right) {
+        BinaryCal binaryCal = binaryOpMap.get(type);
+        return binaryCal.cal(left, right);
+    }
+
+    public static int calUnaryInteger(TkType type, int val) {
+        UnaryCal unaryCal = unaryOpMap.get(type);
+        return unaryCal.cal(val);
     }
 
     @FunctionalInterface

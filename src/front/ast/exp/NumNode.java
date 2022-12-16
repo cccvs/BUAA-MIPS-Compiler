@@ -10,4 +10,5 @@ public class NumNode extends ExpNode {
     public Integer getVal() {
         return num;
     }
+
 }

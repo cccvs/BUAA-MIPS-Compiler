@@ -220,7 +220,7 @@ public class IrConverter {
                     curFunc.append(new UnaryOp(UnaryOp.Type.MOV, src, leftSym));
                 }
             } else {
-                MidVar leftPointer = convLVal(leftVal, true);
+                MidVar leftPointer = (MidVar) convLVal(leftVal, true);
                 if (assignNode.isGetInt()) {    // e.g. a[3] = getint()
                     MidVar recv = new MidVar(Operand.RefType.VALUE);
                     curFunc.append(new GetInt(recv));
@@ -414,13 +414,18 @@ public class IrConverter {
         }
     }
 
-    private MidVar convLVal(LValNode lValNode, boolean assign) {
+    private Operand convLVal(LValNode lValNode, boolean assign) {
         // error/declare part
         try {
             Symbol symbol = findLValIdent(lValNode, assign);
             // assign为真代表LVal当作左值赋值
             if (symbol.getRefType() == Symbol.RefType.VALUE) {
-                return symbol;
+                if (symbol.isConst()) {
+                    assert !assign;
+                    return new Imm(symbol.getConstVal(new ArrayList<>()));
+                } else {
+                    return symbol;
+                }
             } else {
                 int leftValDim = lValNode.getIndexNum();
                 int symbolDim = symbol.getDimension();
@@ -428,14 +433,22 @@ public class IrConverter {
                 // cal offset
                 Operand offsetVal = new Imm(0);
                 Iterator<ExpNode> indexExps = lValNode.iterIndexExp();
+                List<Operand> indexOperands = new ArrayList<>();
                 for (int i = 0; i < leftValDim; i++) {
                     Operand indexOperand = convExp(indexExps.next());
+                    indexOperands.add(indexOperand);
                     MidVar prod = new MidVar(Operand.RefType.VALUE);
                     MidVar newOffsetVal = new MidVar(Operand.RefType.VALUE);
                     Imm base = new Imm(symbol.getBase(i) * 4);
                     curFunc.append(new BinaryOp(BinaryOp.Type.MUL, indexOperand, base, prod));
                     curFunc.append(new BinaryOp(BinaryOp.Type.ADD, offsetVal, prod, newOffsetVal));
                     offsetVal = newOffsetVal;
+                }
+                // const spread
+                List<Integer> indexIntegers = getConstIndexes(indexOperands);
+                if (indexIntegers != null && symbol.isConst()) {
+                    assert !assign;
+                    return new Imm(symbol.getConstVal(indexIntegers));
                 }
                 // deal with pointer
                 MidVar pointer = new MidVar(Operand.RefType.POINTER);
@@ -482,28 +495,41 @@ public class IrConverter {
         }
     }
 
-    private MidVar convBinaryExp(BinaryExpNode binaryExpNode) {
+    private Operand convBinaryExp(BinaryExpNode binaryExpNode) {
         TkType op = binaryExpNode.getOp();
         ExpNode leftExp = binaryExpNode.getLeftExp();
         ExpNode rightExp = binaryExpNode.getRightExp();
         assert !op.equals(TkType.AND) && !op.equals(TkType.OR); // no && and ||
         Operand left = convExp(leftExp);
         Operand right = convExp(rightExp);
-        MidVar dst = new MidVar(left.getRefType());
-        curFunc.append(new BinaryOp(BinaryExpNode.typeMap(op), left, right, dst));
-        return dst;
+        if (left instanceof Imm && right instanceof Imm) {
+            int leftImm = ((Imm) left).getVal();
+            int rightImm = ((Imm) right).getVal();
+            int result = ConstUtil.calBinaryInteger(op, leftImm, rightImm);
+            return new Imm(result);
+        } else {
+            MidVar dst = new MidVar(left.getRefType());
+            curFunc.append(new BinaryOp(BinaryExpNode.typeMap(op), left, right, dst));
+            return dst;
+        }
     }
 
     private Operand convUnaryExp(UnaryExpNode unaryExpNode) {
         ExpNode expNode = unaryExpNode.getExp();
         TkType op = unaryExpNode.getOp();
-        Operand src = convExp(expNode);
-        if (op.equals(TkType.PLUS)) {
-            return src;
+        Operand val = convExp(expNode);
+        if (val instanceof Imm) {
+            int valImm = ((Imm) val).getVal();
+            int result = ConstUtil.calUnaryInteger(op, valImm);
+            return new Imm(result);
         } else {
-            MidVar dst = new MidVar(MidVar.RefType.VALUE);
-            curFunc.append(new UnaryOp(UnaryExpNode.typeMap(op), src, dst));
-            return dst;
+            if (op.equals(TkType.PLUS)) {
+                return val;
+            } else {
+                MidVar dst = new MidVar(MidVar.RefType.VALUE);
+                curFunc.append(new UnaryOp(UnaryExpNode.typeMap(op), val, dst));
+                return dst;
+            }
         }
     }
 
@@ -611,5 +637,17 @@ public class IrConverter {
                 throw new SysYError(SysYError.MISSING_RETURN, funcBlock.getEndLine());
             }
         }
+    }
+
+    private List<Integer> getConstIndexes(List<Operand> operandList) {
+        List<Integer> intIndexes = new ArrayList<>();
+        for (Operand operand : operandList) {
+            if (operand instanceof Imm) {
+                intIndexes.add(((Imm) operand).getVal());
+            } else {
+                return null;
+            }
+        }
+        return intIndexes;
     }
 }
