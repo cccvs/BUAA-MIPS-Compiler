@@ -174,13 +174,13 @@ public class BasicBlock {
             else if (basicIns instanceof Call) {
                 // val
                 Call call = (Call) basicIns;
-                for (int i = 0; i < call.getRealParams().size() - 1; i++) {
-                    if (call.getRealParams().get(i) instanceof MidVar) {
-                        MidVar midVar =  (MidVar) call.getRealParams().get(i);
+                for (int j = 0; j < call.getRealParams().size(); j++) {
+                    if (call.getRealParams().get(j) instanceof MidVar) {
+                        MidVar midVar =  (MidVar) call.getRealParams().get(j);
                         if (varToDef.containsKey(midVar)) {
                             Integer defVal = parent.getDefVal(varToDef.get(midVar));
                             if (defVal != null) {
-                                call.getRealParams().set(i, new Imm(i));
+                                call.getRealParams().set(j, new Imm(defVal));
                                 changed = true;
                             }
                         }
