@@ -1,5 +1,6 @@
 package mid.code;
 
+import mid.operand.Imm;
 import mid.operand.MidVar;
 import mid.operand.Operand;
 
@@ -9,7 +10,7 @@ import java.util.Set;
 public class Offset extends BasicIns {
     private final MidVar dst;
     private final MidVar base;
-    private final Operand offsetVal;
+    private Operand offsetVal;
 
     public Offset(MidVar base, Operand offsetVal, MidVar dst) {
         super();
@@ -32,6 +33,10 @@ public class Offset extends BasicIns {
 
     public Operand getOffsetVal() {
         return offsetVal;
+    }
+
+    public void setOffsetVal(Operand offsetVal) {
+        this.offsetVal = offsetVal;
     }
 
     @Override

@@ -244,15 +244,25 @@ public class MipsTranslator {
         MidVar pointer = memOp.getPointer();
         Operand value = memOp.getValue();
         MemOp.Type type = memOp.getOp();
-        loadRegHelper(pointer, TMP_R1);
+        int offset = memOp.getOffset();
+        if (pointer.getRefType().equals(Operand.RefType.ARRAY)) {
+            Symbol array = (Symbol) pointer;
+            if (array.isGlobal()) {
+                mipsInsList.add(new La(TMP_R1, array.getLabel(), Reg.ZERO));
+            } else {
+                mipsInsList.add(new Addi(TMP_R1, Reg.SP, -array.getOffset()));
+            }
+        } else {
+            loadRegHelper(pointer, TMP_R1);
+        }
         if (type.equals(MemOp.Type.LOAD)) {
             assert value instanceof MidVar;
             allocStack((MidVar) value); // load 可能初次赋值
-            mipsInsList.add(new Lw(TMP_R2, 0, TMP_R1));
+            mipsInsList.add(new Lw(TMP_R2, offset, TMP_R1));
             storeRegHelper((MidVar) value, TMP_R2);
         } else {
             loadRegHelper(value, TMP_R2);
-            mipsInsList.add(new Sw(TMP_R2, 0, TMP_R1));
+            mipsInsList.add(new Sw(TMP_R2, offset, TMP_R1));
         }
     }
 

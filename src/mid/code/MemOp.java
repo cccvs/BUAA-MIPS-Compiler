@@ -1,5 +1,6 @@
 package mid.code;
 
+import mid.operand.Imm;
 import mid.operand.MidVar;
 import mid.operand.Operand;
 import mid.operand.Symbol;
@@ -16,7 +17,9 @@ public class MemOp extends BasicIns {
 
     private final Type op;
     private final Operand value;
-    private final MidVar pointer;
+    private MidVar pointer;
+    private Imm offset = new Imm(0);
+
 
     public MemOp(Type op, Operand value, MidVar pointer) {
         super();
@@ -38,9 +41,21 @@ public class MemOp extends BasicIns {
         return value;
     }
 
+    public int getOffset() {
+        return offset.getVal();
+    }
+
+    public void setOffset(int offset) {
+        this.offset = new Imm(offset);
+    }
+
+    public void setPointer(MidVar pointer) {
+        this.pointer = pointer;
+    }
+
     @Override
     public String toString() {
-        return "\t" + op.name() + " " + value + ", " + pointer;
+        return "\t" + op.name() + " " + value + ", " + pointer + ", " + offset;
     }
 
     @Override

@@ -211,6 +211,34 @@ public class BasicBlock {
                         }
                     }
                 }
+            }else if (basicIns instanceof Offset) {
+                // val
+                Offset offset = (Offset) basicIns;
+                if (offset.getOffsetVal() instanceof MidVar) {
+                    MidVar midVar1 = (MidVar) offset.getOffsetVal();
+                    if (varToDef.containsKey(midVar1)) {
+                        Integer defVal = parent.getDefVal(varToDef.get(midVar1));
+                        if (defVal != null) {
+                            offset.setOffsetVal(new Imm(defVal));
+                            changed = true;
+                        }
+                    }
+                }
+            } else if (basicIns instanceof MemOp) {
+                // val
+                MemOp memOp = (MemOp) basicIns;
+                MidVar midVar = memOp.getPointer();
+                if (varToDef.containsKey(midVar)) {
+                    BasicIns defIns = varToDef.get(midVar);
+                    if (defIns instanceof Offset) {
+                        Offset offset = (Offset) defIns;
+                        if (offset.getOffsetVal() instanceof Imm && offset.getBase() instanceof Symbol
+                                && (offset.getBase()).getRefType().equals(Operand.RefType.ARRAY)) {
+                            memOp.setOffset(((Imm) offset.getOffsetVal()).getVal());
+                            memOp.setPointer(offset.getBase());
+                        }
+                    }
+                }
             }
 
             if (!basicIns.leftSet().isEmpty()) {
