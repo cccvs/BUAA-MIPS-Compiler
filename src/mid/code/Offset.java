@@ -12,6 +12,7 @@ public class Offset extends BasicIns {
     private final Operand offsetVal;
 
     public Offset(MidVar base, Operand offsetVal, MidVar dst) {
+        super();
         assert dst.getRefType().equals(Operand.RefType.POINTER);
         assert offsetVal.getRefType().equals(Operand.RefType.VALUE);
         assert base.getRefType().equals(Operand.RefType.ARRAY)

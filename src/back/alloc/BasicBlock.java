@@ -11,7 +11,8 @@ public class BasicBlock {
     private static int idCount = 0;
 
     // basic information
-    private final List<SerialIns> insList = new ArrayList<>();
+    private final RegAllocator parent;
+    private final List<BasicIns> insList = new ArrayList<>();
     private final int blockId;
 
     // optimize
@@ -21,17 +22,23 @@ public class BasicBlock {
     private final Set<MidVar> liveUse = new HashSet<>();
     private final Set<MidVar> liveIn = new HashSet<>();
     private final Set<MidVar> liveOut = new HashSet<>();
+    private final Set<BasicIns> arrGen = new HashSet<>();
+    private final Set<BasicIns> arrKill = new HashSet<>();
+    private final Set<BasicIns> arrIn = new HashSet<>();
+    private final Set<BasicIns> arrOut = new HashSet<>();
 
-    public BasicBlock() {
+
+    public BasicBlock(RegAllocator regAllocator) {
+        parent = regAllocator;
         blockId = ++idCount;
     }
 
-    public void append(SerialIns ins) {
+    public void append(BasicIns ins) {
         insList.add(ins);
     }
 
     public BasicIns getLastIns() {
-        return insList.isEmpty() ? null : insList.get(insList.size() - 1).getIns();
+        return insList.isEmpty() ? null : insList.get(insList.size() - 1);
     }
 
     public boolean isEmpty() {
@@ -41,7 +48,7 @@ public class BasicBlock {
     // ops
     public void clearReturnFollows() {
         for (int i = 0; i < insList.size(); i++) {
-            if (insList.get(i).getIns() instanceof Return) {
+            if (insList.get(i) instanceof Return) {
                 if (insList.size() > i + 1) {
                     insList.subList(i + 1, insList.size()).clear();
                     return;
@@ -58,9 +65,9 @@ public class BasicBlock {
     public void buildDefUse() {
         liveDef.clear();
         liveUse.clear();
-        for (SerialIns serialIns : insList) {
-            Set<MidVar> leftSet = serialIns.leftSet();
-            Set<MidVar> rightSet = serialIns.rightSet();
+        for (BasicIns basicIns : insList) {
+            Set<MidVar> leftSet = basicIns.leftSet();
+            Set<MidVar> rightSet = basicIns.rightSet();
             for (MidVar midVar : rightSet) {
                 if (!liveDef.contains(midVar)) {
                     liveUse.add(midVar);
@@ -91,11 +98,10 @@ public class BasicBlock {
         Set<MidVar> liveSet = new HashSet<>(liveOut);
         for (int i = insList.size() - 1; i >= 0; --i) {
             // update user var
-            SerialIns serialIns = insList.get(i);
-            int pos = serialIns.getPos();
-            liveSet.addAll(serialIns.rightSet());
+            BasicIns basicIns =insList.get(i);
+            int pos = parent.getInsPos(basicIns);
+            liveSet.addAll(basicIns.rightSet());
             // 记录函数调用时当前的活跃变量，函数调用时用于保存寄存器
-            BasicIns basicIns = serialIns.getIns();
             if (basicIns instanceof Call) {
                 ((Call) basicIns).addLiveVars(liveSet);
             }
@@ -117,7 +123,7 @@ public class BasicBlock {
                 }
             }
             // remove def var
-            liveSet.removeAll(serialIns.leftSet());
+            liveSet.removeAll(basicIns.leftSet());
         }
     }
 

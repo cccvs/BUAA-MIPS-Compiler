@@ -8,9 +8,10 @@ import java.util.Set;
 
 public class PrintInt extends BasicIns{
     // Originate from printf
-    private Operand src;
+    private final Operand src;
 
     public PrintInt(Operand src) {
+        super();
         this.src = src;
     }
 

@@ -21,6 +21,7 @@ public class Branch extends BasicIns{
     private final MidLabel labelFalse;
 
     public Branch(Type type, Operand cond, MidLabel labelTrue, MidLabel labelFalse) {
+        super();
         this.type = type;
         this.cond = cond;
         this.labelTrue = labelTrue;

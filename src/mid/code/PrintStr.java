@@ -10,6 +10,7 @@ public class PrintStr extends BasicIns{
     private final String label;
 
     public PrintStr(String label) {
+        super();
         this.label = label;
     }
 

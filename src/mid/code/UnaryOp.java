@@ -19,6 +19,7 @@ public class UnaryOp extends BasicIns{
     private final MidVar dst;
 
     public UnaryOp(Type op, Operand src, MidVar dst) {
+        super();
         this.op = op;
         this.src = src;
         this.dst = dst;

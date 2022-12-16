@@ -11,6 +11,7 @@ public class Return extends BasicIns{
     private final Operand retVal;   // null if void
 
     public Return(Operand retVal) {
+        super();
         this.retVal = retVal;
     }
 

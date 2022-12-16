@@ -15,6 +15,7 @@ public class Call extends BasicIns{
     private final Set<MidVar> liveSet = new HashSet<>();
 
     public Call(FuncFrame func, MidVar ret) {
+        super();
         this.func = func;
         this.params = new ArrayList<>();
         this.ret = ret;

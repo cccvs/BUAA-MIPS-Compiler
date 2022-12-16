@@ -10,6 +10,7 @@ public class Jump extends BasicIns{
     private final MidLabel midLabel;
 
     public Jump(MidLabel midLabel) {
+        super();
         this.midLabel = midLabel;
     }
 

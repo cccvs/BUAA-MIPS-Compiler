@@ -19,6 +19,7 @@ public class BinaryOp extends BasicIns {
     private final MidVar dst;
 
     public BinaryOp(Type op, Operand src1, Operand src2, MidVar dst) {
+        super();
         this.op = op;
         this.src1 = src1;
         this.src2 = src2;

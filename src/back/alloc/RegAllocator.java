@@ -22,12 +22,15 @@ public class RegAllocator {
     private final List<BasicBlock> blockList = new LinkedList<>();
     private final List<LiveInterval> intervalList = new ArrayList<>();
     private final Map<String, BasicBlock> labelToBlock = new HashMap<>();
+    private final Map<BasicIns, Integer> posMap = new HashMap<>();
 
     // regs
     private final Set<LiveInterval> liveIntervalSet = new HashSet<>();
     private final Map<Integer, Integer> liveRegs = new HashMap<>();     // key: 寄存器编号, value: 现存次数
     private final Set<Integer> freeRegs = new LinkedHashSet<>(allocatableRegs);
-    private final Set<MidVar> spilledVarSet = new HashSet<>();
+
+    // const spread
+    private final Map<MidVar, Set<BasicIns>> varToDef = new HashMap<>();
 
     private BasicBlock curBlock;
 
@@ -48,7 +51,7 @@ public class RegAllocator {
         int cnt = 0;
         List<BasicIns> insList = funcFrame.insList();
         for (BasicIns basicIns : insList) {
-            SerialIns serialIns = new SerialIns(cnt * 2, basicIns);
+            posMap.put(basicIns, cnt * 2);
             // begin or label
             if (basicIns instanceof MidLabel || cnt == 0) {
                 updateBlock();
@@ -57,7 +60,7 @@ public class RegAllocator {
                 }
             }
             // append
-            curBlock.append(serialIns);
+            curBlock.append(basicIns);
             // jump follow or branch follow
             if (basicIns instanceof Jump || basicIns instanceof Branch) {
                 updateBlock();
@@ -68,7 +71,7 @@ public class RegAllocator {
 
     private void updateBlock() {
         if (curBlock == null || !curBlock.isEmpty()) {
-            curBlock = new BasicBlock();
+            curBlock = new BasicBlock(this);
             blockList.add(curBlock);
         }
     }
@@ -119,6 +122,11 @@ public class RegAllocator {
                 change = change || blockList.get(i).updateLiveness();
             }
         }
+    }
+
+    //
+    private void buildGenKill() {
+
     }
 
     // 6, 此处标记死代码
@@ -178,7 +186,6 @@ public class RegAllocator {
         Integer allocReg = allocRegForInterval(newInterval);
         if (allocReg == null) {
             // alloc failed
-            spilledVarSet.add(newInterval.getMidVar());
             return;
         }
         // free/live regs
@@ -228,5 +235,10 @@ public class RegAllocator {
             ps.println(interval);
         }
         ps.println();
+    }
+
+    // util
+    public int getInsPos(BasicIns basicIns) {
+        return posMap.get(basicIns);
     }
 }

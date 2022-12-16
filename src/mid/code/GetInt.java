@@ -9,6 +9,7 @@ public class GetInt extends BasicIns {
     private final MidVar var;
 
     public GetInt(MidVar var) {
+        super();
         this.var = var;
     }
 

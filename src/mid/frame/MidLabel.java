@@ -22,6 +22,7 @@ public class MidLabel extends BasicIns {
     private final MidLabel.Type type;
 
     public MidLabel(Type type) {
+        super();
         this.id = MidCode.genId();
         this.type = type;
     }

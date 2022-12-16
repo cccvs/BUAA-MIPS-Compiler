@@ -19,6 +19,7 @@ public class MemOp extends BasicIns {
     private final MidVar pointer;
 
     public MemOp(Type op, Operand value, MidVar pointer) {
+        super();
         assert pointer.getRefType().equals(Operand.RefType.POINTER);
         this.op = op;
         this.value = value;
