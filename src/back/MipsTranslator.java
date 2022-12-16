@@ -412,10 +412,7 @@ public class MipsTranslator {
         } else if (op.equals(BinaryOp.Type.DIV)) {
             weakenDiv(regDst, regSrc1, imm2);
         } else if (op.equals(BinaryOp.Type.MOD)) {
-            int regSrc2 = TMP_R2;
-            mipsInsList.add(new Addi(regSrc2, Reg.ZERO, imm2));
-            mipsInsList.add(new Div(regSrc1, regSrc2));
-            mipsInsList.add(new Mfhi(regDst));
+            weakenMod(regDst, regSrc1, imm2);
         } else if (op.equals(BinaryOp.Type.SGT)) {
             mipsInsList.add(new Sgti(regDst, regSrc1, imm2));
         } else if (op.equals(BinaryOp.Type.SGE)) {
@@ -595,11 +592,11 @@ public class MipsTranslator {
             expMap.put(-(1 << i), i);
         }
         if (imm == 0) {
-            mipsInsList.add(new Add(regDst, 0, 0));
+            mipsInsList.add(new Add(regDst, Reg.ZERO, Reg.ZERO));
         } else if (imm == 1) {
-            mipsInsList.add(new Add(regDst, regSrc, 0));
+            mipsInsList.add(new Add(regDst, regSrc, Reg.ZERO));
         } else if (imm == -1) {
-            mipsInsList.add(new Sub(regDst, regSrc, 0));
+            mipsInsList.add(new Sub(regDst, Reg.ZERO, regSrc));
         } else if (expMap.containsKey(imm)) {
             if (imm > 0) {
                 mipsInsList.add(new Sll(regDst, regSrc, expMap.get(imm)));
@@ -622,10 +619,10 @@ public class MipsTranslator {
         if (imm == 0) {
             throw new AssertionError("div by zero!");
         } else if (imm == 1) {
-            mipsInsList.add(new Add(regDst, regSrc, 0));
+            mipsInsList.add(new Add(regDst, regSrc, Reg.ZERO));
         } else if (imm == -1) {
-            mipsInsList.add(new Sub(regDst, regSrc, 0));
-        }  else if (expMap.containsKey(imm)) {
+            mipsInsList.add(new Sub(regDst, Reg.ZERO, regSrc));
+        } else if (expMap.containsKey(imm)) {
             if (imm > 0) {
                 mipsInsList.add(new Srl(regDst, regSrc, expMap.get(imm)));
             } else {
