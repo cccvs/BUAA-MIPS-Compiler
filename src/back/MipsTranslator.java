@@ -20,6 +20,7 @@ import java.util.*;
 public class MipsTranslator {
     public static final int TMP_R1 = Reg.V1;
     public static final int TMP_R2 = Reg.FP;
+    public static final boolean HACK = false;
 
     // info
     private final MidCode midCode;
@@ -624,14 +625,14 @@ public class MipsTranslator {
             mipsInsList.add(new Add(regDst, regSrc, Reg.ZERO));
         } else if (imm == -1) {
             mipsInsList.add(new Sub(regDst, Reg.ZERO, regSrc));
-        } /*else if (expMap.containsKey(imm)) {
+        } else if (HACK && expMap.containsKey(imm)) {
             if (imm > 0) {
                 mipsInsList.add(new Srl(regDst, regSrc, expMap.get(imm)));
             } else {
                 mipsInsList.add(new Srl(regDst, regSrc, expMap.get(imm)));
                 mipsInsList.add(new Sub(regDst, Reg.ZERO, regDst));
             }
-        } */else {
+        } else {
             mipsInsList.add(new Addi(TMP_R2, Reg.ZERO, imm));
             mipsInsList.add(new Div(regSrc, TMP_R2));
             mipsInsList.add(new Mflo(regDst));
@@ -648,14 +649,14 @@ public class MipsTranslator {
             throw new AssertionError("mod by zero!");
         } else if (imm == 1 || imm == -1) {
             mipsInsList.add(new Add(regDst, 0, 0));
-        } /* else if (expMap.containsKey(imm)) {
+        } else if (HACK && expMap.containsKey(imm)) {
             if (imm < 0) {
                 imm = -imm;
             }
             mipsInsList.add(new Srl(regDst, regSrc, expMap.get(imm)));
             mipsInsList.add(new Sll(regDst, regDst, expMap.get(imm)));
             mipsInsList.add(new Sub(regDst, regSrc, regDst));
-        } */else {
+        } else {
             mipsInsList.add(new Addi(TMP_R2, Reg.ZERO, imm));
             mipsInsList.add(new Div(regSrc, TMP_R2));
             mipsInsList.add(new Mfhi(regDst));
