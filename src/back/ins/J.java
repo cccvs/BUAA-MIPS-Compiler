@@ -9,6 +9,10 @@ public class J extends MipsIns {
         this.label = label;
     }
 
+    public String getLabel() {
+        return label;
+    }
+
     @Override
     public String toString() {
         return String.format("j %s", label);

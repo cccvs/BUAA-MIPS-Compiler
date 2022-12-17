@@ -13,7 +13,7 @@ import mid.operand.Imm;
 import mid.operand.Operand;
 import mid.operand.Symbol;
 import mid.operand.MidVar;
-import optimizer.Optimizer;
+import optimizer.MidOptimizer;
 
 import java.io.PrintStream;
 import java.util.*;
@@ -33,6 +33,10 @@ public class MipsTranslator {
     public MipsTranslator(MidCode midCode) {
         this.midCode = midCode;
         transIr();
+    }
+
+    public List<MipsIns> getMipsInsList() {
+        return mipsInsList;
     }
 
     private void transIr() {
@@ -232,7 +236,7 @@ public class MipsTranslator {
         String labelFalse = branch.getLabelFalse().getLabel();
         //if (branch.getType().equals(Branch.Type.BNEZ))
         loadRegHelper(cond, TMP_R1);
-        mipsInsList.add(new Bnez(TMP_R1, labelTrue));
+        mipsInsList.add(new Beq(TMP_R1, Reg.ZERO, labelTrue));
         mipsInsList.add(new J(labelFalse));
     }
 
@@ -586,7 +590,6 @@ public class MipsTranslator {
     }
 
 
-
     // optimize
     private void weakenMult(int regDst, int regSrc, int imm) {
         Map<Integer, Integer> expMap = new HashMap<>();
@@ -622,10 +625,10 @@ public class MipsTranslator {
         if (imm == 0) {
             throw new AssertionError("div by zero!");
         } else if (imm == 1) {
-            mipsInsList.add(new Add(regDst, regSrc, Reg.ZERO));
+            mipsInsList.add(new Add(regDst, Reg.ZERO, regSrc));
         } else if (imm == -1) {
             mipsInsList.add(new Sub(regDst, Reg.ZERO, regSrc));
-        } else if (Optimizer.HACK_DIV && expMap.containsKey(imm)) {
+        } else if (MidOptimizer.HACK_DIV && expMap.containsKey(imm)) {
             if (imm > 0) {
                 mipsInsList.add(new Srl(regDst, regSrc, expMap.get(imm)));
             } else {
@@ -649,7 +652,7 @@ public class MipsTranslator {
             throw new AssertionError("mod by zero!");
         } else if (imm == 1 || imm == -1) {
             mipsInsList.add(new Add(regDst, 0, 0));
-        } else if (Optimizer.HACK_DIV && expMap.containsKey(imm)) {
+        } else if (MidOptimizer.HACK_DIV && expMap.containsKey(imm)) {
             if (imm < 0) {
                 imm = -imm;
             }

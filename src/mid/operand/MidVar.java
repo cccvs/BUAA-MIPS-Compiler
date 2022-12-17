@@ -4,7 +4,7 @@ import back.Reg;
 import front.ast.decl.DefNode;
 import front.ast.func.FuncFParamNode;
 import mid.MidCode;
-import optimizer.Optimizer;
+import optimizer.MidOptimizer;
 
 import java.util.Objects;
 
@@ -45,7 +45,7 @@ public class MidVar implements Operand {
     }
 
     public void allocReg(Integer reg) {
-        assert Optimizer.HACK_ALLOC || this.reg == null;
+        assert MidOptimizer.HACK_ALLOC || this.reg == null;
         this.reg = reg;
     }
 

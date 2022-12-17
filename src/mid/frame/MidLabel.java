@@ -33,7 +33,7 @@ public class MidLabel extends BasicIns {
 
     @Override
     public String toString() {
-        return getLabel() + ":\n";
+        return getLabel() + ":";
     }
 
     @Override

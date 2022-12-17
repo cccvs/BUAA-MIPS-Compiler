@@ -10,7 +10,7 @@ import java.util.Set;
 public class Branch extends BasicIns{
     // only list basic mips instruction
     public enum Type {
-        BNEZ
+        BEZ
         //, BEZ,
         //BEQ, BNE
     }

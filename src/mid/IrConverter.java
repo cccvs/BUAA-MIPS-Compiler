@@ -393,7 +393,7 @@ public class IrConverter {
     private void convEqExp(ExpNode exp, MidLabel labelTrue, MidLabel labelFalse) {
         // TODO[14]: 后续窥孔优化[slt, bez]指令序列，以及[j label, label:]指令序列
         Operand value = convExp(exp);
-        curFunc.append(new Branch(Branch.Type.BNEZ, value, labelTrue, labelFalse));
+        curFunc.append(new Branch(Branch.Type.BEZ, value, labelFalse, labelTrue));
     }
 
     // exp part

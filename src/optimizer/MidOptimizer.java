@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class Optimizer {
+public class MidOptimizer {
     private final MidCode midCode;
     private final List<FuncFrame> funcList = new ArrayList<>();
     private final List<RegAllocator> allocatorList = new ArrayList<>();
@@ -18,7 +18,7 @@ public class Optimizer {
     public static final boolean HACK_ALLOC = false;
 
 
-    public Optimizer(MidCode midCode) {
+    public MidOptimizer(MidCode midCode) {
         this.midCode = midCode;
         Iterator<FuncFrame> funcIterator = midCode.funcIter();
         while (funcIterator.hasNext()) {

@@ -7,9 +7,8 @@ import mid.code.Return;
 import mid.frame.FuncFrame;
 import mid.frame.MidLabel;
 import mid.operand.MidVar;
-import mid.operand.Operand;
 import mid.operand.Symbol;
-import optimizer.Optimizer;
+import optimizer.MidOptimizer;
 
 import java.io.PrintStream;
 import java.util.*;
@@ -171,7 +170,7 @@ public class RegAllocator {
         buildDefUse();
         livenessAnalysis();
         buildIntervals();
-        if (Optimizer.HACK_ALLOC) {
+        if (MidOptimizer.HACK_ALLOC) {
             walkIntervals();
         }
     }

@@ -8,7 +8,8 @@ import front.ast.CompUnitNode;
 import front.lexical.Lexer;
 import mid.IrConverter;
 import mid.MidCode;
-import optimizer.Optimizer;
+import optimizer.MidOptimizer;
+import optimizer.PeekHole;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -62,14 +63,16 @@ public class SysYRunner {
         // middle code
         MidCode midCode = irConverter.getMidCode();
         // --- optimize
-        Optimizer optimizer  = new Optimizer(midCode);
-        optimizer.run();
-        optimizer.outputRegInfo(new PrintStream("interval_info.txt"));
+        MidOptimizer midOptimizer = new MidOptimizer(midCode);
+        midOptimizer.run();
+        midOptimizer.outputRegInfo(new PrintStream("interval_info.txt"));
         // ---
         // mid code out
         midCode.outputMidCode(new PrintStream(MID_CODE), OUTPUT_MID_CODE);
         // mips part
         MipsTranslator mipsTranslator = new MipsTranslator(midCode);
+        PeekHole peekHole = new PeekHole(mipsTranslator);
+        peekHole.run();
         mipsTranslator.outputMips(new PrintStream(MIPS), OUTPUT_MIPS);
     }
 
