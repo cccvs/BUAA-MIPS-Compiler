@@ -37,10 +37,10 @@ public class RegAllocator {
 
     private BasicBlock curBlock;
 
-    public RegAllocator(FuncFrame funcFrame, boolean alloc) {
+    public RegAllocator(FuncFrame funcFrame) {
         this.funcFrame = funcFrame;
         buildBasicFrame(funcFrame);
-        allocRegs(alloc);
+        allocRegs();
         constBroadcast();
         removeDeadIns();
     }
@@ -166,12 +166,12 @@ public class RegAllocator {
     }
 
     // 3
-    private void allocRegs(boolean alloc) {
+    private void allocRegs() {
         serializeIns();
         buildDefUse();
         livenessAnalysis();
         buildIntervals();
-        if (alloc || Optimizer.HACK_ALLOC) {
+        if (Optimizer.HACK_ALLOC) {
             walkIntervals();
         }
     }
@@ -303,13 +303,19 @@ public class RegAllocator {
         insList.addAll(newList);
     }
 
-    // 9
+    // 5.1
     public void outputInterval(PrintStream ps) {
         ps.println(funcFrame.getLabel());
         for (LiveInterval interval : intervalList) {
             ps.println(interval);
         }
         ps.println();
+    }
+
+    public void outputBlocks(PrintStream ps) {
+        for (BasicBlock basicBlock : blockList) {
+            basicBlock.output(ps);
+        }
     }
 
     // util

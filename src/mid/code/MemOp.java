@@ -60,13 +60,17 @@ public class MemOp extends BasicIns {
 
     @Override
     public Set<MidVar> leftSet() {
-        return new HashSet<>();
+        Set<MidVar> leftSet = new HashSet<>();
+        if (op.equals(Type.LOAD) && value instanceof MidVar) {
+            leftSet.add((MidVar) value);
+        }
+        return leftSet;
     }
 
     @Override
     public Set<MidVar> rightSet() {
         Set<MidVar> rightSet = new HashSet<>();
-        if (value instanceof MidVar) {
+        if (op.equals(Type.STORE) && value instanceof MidVar) {
             rightSet.add((MidVar) value);
         }
         if (pointer != null) {

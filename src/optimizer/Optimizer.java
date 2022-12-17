@@ -15,7 +15,7 @@ public class Optimizer {
     private final List<RegAllocator> allocatorList = new ArrayList<>();
     private static final int turn = 10;
     public static final boolean HACK_DIV = true;
-    public static final boolean HACK_ALLOC = true;
+    public static final boolean HACK_ALLOC = false;
 
 
     public Optimizer(MidCode midCode) {
@@ -30,9 +30,10 @@ public class Optimizer {
     public void run() {
         for (FuncFrame funcFrame : funcList) {
             for (int i = 0; i < turn; i++) {
-                new RegAllocator(funcFrame, true);
+                new RegAllocator(funcFrame);
             }
-            RegAllocator regAllocator = new RegAllocator(funcFrame, true);
+            RegAllocator regAllocator = new RegAllocator(funcFrame);
+            regAllocator.walkIntervals();
             allocatorList.add(regAllocator);
         }
     }
