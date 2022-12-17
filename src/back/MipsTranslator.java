@@ -13,6 +13,7 @@ import mid.operand.Imm;
 import mid.operand.Operand;
 import mid.operand.Symbol;
 import mid.operand.MidVar;
+import optimizer.Optimizer;
 
 import java.io.PrintStream;
 import java.util.*;
@@ -20,7 +21,6 @@ import java.util.*;
 public class MipsTranslator {
     public static final int TMP_R1 = Reg.V1;
     public static final int TMP_R2 = Reg.FP;
-    public static final boolean HACK = false;
 
     // info
     private final MidCode midCode;
@@ -625,7 +625,7 @@ public class MipsTranslator {
             mipsInsList.add(new Add(regDst, regSrc, Reg.ZERO));
         } else if (imm == -1) {
             mipsInsList.add(new Sub(regDst, Reg.ZERO, regSrc));
-        } else if (HACK && expMap.containsKey(imm)) {
+        } else if (Optimizer.HACK_DIV && expMap.containsKey(imm)) {
             if (imm > 0) {
                 mipsInsList.add(new Srl(regDst, regSrc, expMap.get(imm)));
             } else {
@@ -649,7 +649,7 @@ public class MipsTranslator {
             throw new AssertionError("mod by zero!");
         } else if (imm == 1 || imm == -1) {
             mipsInsList.add(new Add(regDst, 0, 0));
-        } else if (HACK && expMap.containsKey(imm)) {
+        } else if (Optimizer.HACK_DIV && expMap.containsKey(imm)) {
             if (imm < 0) {
                 imm = -imm;
             }

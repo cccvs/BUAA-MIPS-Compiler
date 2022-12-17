@@ -332,6 +332,7 @@ public class BasicBlock {
                 interval.addPair(pos, pos + 1);
             }
             // 标记死代码, 由于是基本指令, 只需查看左值是否活跃 TODO: 可能出bug
+            // 这里不可以是全局变量, 右侧也不可以有call
             if (basicIns instanceof BinaryOp || basicIns instanceof UnaryOp
                     || basicIns instanceof GetInt || basicIns instanceof Offset) {
                 MidVar midVar = basicIns.leftSet().iterator().next();

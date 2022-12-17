@@ -8,6 +8,7 @@ import front.ast.CompUnitNode;
 import front.lexical.Lexer;
 import mid.IrConverter;
 import mid.MidCode;
+import optimizer.Optimizer;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;

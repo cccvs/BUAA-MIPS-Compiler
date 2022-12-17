@@ -9,6 +9,7 @@ import mid.frame.MidLabel;
 import mid.operand.MidVar;
 import mid.operand.Operand;
 import mid.operand.Symbol;
+import optimizer.Optimizer;
 
 import java.io.PrintStream;
 import java.util.*;
@@ -36,10 +37,10 @@ public class RegAllocator {
 
     private BasicBlock curBlock;
 
-    public RegAllocator(FuncFrame funcFrame) {
+    public RegAllocator(FuncFrame funcFrame, boolean alloc) {
         this.funcFrame = funcFrame;
         buildBasicFrame(funcFrame);
-        allocRegs();
+        allocRegs(alloc);
         constBroadcast();
         removeDeadIns();
     }
@@ -116,7 +117,6 @@ public class RegAllocator {
         buildDefMap();
         buildGenKill();
         arrivalAnalysis();
-        walkIntervals();
         broadcast();
     }
 
@@ -166,11 +166,14 @@ public class RegAllocator {
     }
 
     // 3
-    private void allocRegs() {
+    private void allocRegs(boolean alloc) {
         serializeIns();
         buildDefUse();
         livenessAnalysis();
         buildIntervals();
+        if (alloc || Optimizer.HACK_ALLOC) {
+            walkIntervals();
+        }
     }
 
     // 3.1
@@ -269,7 +272,6 @@ public class RegAllocator {
             freeRegs.remove(allocReg);
         }
         // interval and mid var
-//        System.out.println(newInterval.getMidVar());
         newInterval.getMidVar().allocReg(allocReg);
         liveIntervalSet.add(newInterval);
     }

@@ -1,3 +1,5 @@
+package optimizer;
+
 import back.alloc.RegAllocator;
 import mid.MidCode;
 import mid.frame.FuncFrame;
@@ -12,6 +14,9 @@ public class Optimizer {
     private final List<FuncFrame> funcList = new ArrayList<>();
     private final List<RegAllocator> allocatorList = new ArrayList<>();
     private static final int turn = 10;
+    public static final boolean HACK_DIV = true;
+    public static final boolean HACK_ALLOC = true;
+
 
     public Optimizer(MidCode midCode) {
         this.midCode = midCode;
@@ -25,10 +30,9 @@ public class Optimizer {
     public void run() {
         for (FuncFrame funcFrame : funcList) {
             for (int i = 0; i < turn; i++) {
-                new RegAllocator(funcFrame);
+                new RegAllocator(funcFrame, true);
             }
-            RegAllocator regAllocator = new RegAllocator(funcFrame);
-            regAllocator.walkIntervals();
+            RegAllocator regAllocator = new RegAllocator(funcFrame, true);
             allocatorList.add(regAllocator);
         }
     }
