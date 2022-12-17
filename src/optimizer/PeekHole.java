@@ -2,10 +2,7 @@ package optimizer;
 
 import back.MipsTranslator;
 import back.Reg;
-import back.ins.Add;
-import back.ins.J;
-import back.ins.Lw;
-import back.ins.Sw;
+import back.ins.*;
 import back.special.Comment;
 import back.special.Label;
 import back.special.MipsIns;
@@ -34,15 +31,14 @@ public class PeekHole {
                 ++next;
             }
             MipsIns nextIns = mipsIns.get(next);
-            // cond 1
+            // j-label
             if (curIns instanceof J && nextIns instanceof Label) {
                 if (Objects.equals(((J) curIns).getLabel(), ((Label) nextIns).getLabel())) {
                     mipsIns.remove(cur);
                     continue;
                 }
             }
-            // cond 2
-
+            // lw-add
             else if (curIns instanceof Lw && nextIns instanceof Add) {
                 // lw $fp, 4($v1)
                 // add $t0, $zero, $fp
@@ -60,7 +56,7 @@ public class PeekHole {
                     continue;
                 }
             }
-            // cond
+            // add-sw
             else if (curIns instanceof Add && nextIns instanceof Sw) {
                 // add $fp, $zero, $t1
                 // sw $fp, 4($v1)
@@ -74,6 +70,23 @@ public class PeekHole {
                     mipsIns.remove(next);
                     mipsIns.remove(cur);
                     mipsIns.add(cur, new Sw(addSrc2, sw.getOffset(), sw.getBase()));
+                    continue;
+                }
+            }
+            // add-beq
+            else if (curIns instanceof Add && nextIns instanceof Beq) {
+                // add $fp, $zero, $t1
+                // sw $fp, 4($v1)
+                Add add= (Add) curIns;
+                Beq beq = (Beq) nextIns;
+                int beqSrc1 = beq.getSrc1();
+                int beqSrc2 = beq.getSrc2();
+                int addDst = add.getDst();
+                int addSrc1 = add.getSrc1();
+                int addSrc2 = add.getSrc2();
+                if (tmpRegs.contains(beqSrc1) && beqSrc1 == addDst && addSrc1 == Reg.ZERO) {
+                    beq.setSrc1(addSrc2);
+                    mipsIns.remove(cur);
                     continue;
                 }
             }
