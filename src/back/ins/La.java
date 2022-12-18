@@ -7,18 +7,18 @@ import back.special.MipsIns;
 public class La extends MipsIns {
     private final int dst;
     private final String label;
-    private final Integer offsetReg;
+    private final Integer base;
 
     public La(int dst, String label) {
         this.dst = dst;
         this.label = label;
-        this.offsetReg = null;
+        this.base = null;
     }
 
-    public La(int dst, String label, Integer offsetReg) {
+    public La(int dst, String label, Integer base) {
         this.dst = dst;
         this.label = label;
-        this.offsetReg = offsetReg;
+        this.base = base;
     }
 
     public int getDst() {
@@ -29,12 +29,16 @@ public class La extends MipsIns {
         return label;
     }
 
+    public Integer getBase() {
+        return base;
+    }
+
     @Override
     public String toString() {
-        if (offsetReg == null) {
+        if (base == null) {
             return String.format("la $%s, %s", Reg.name(dst), label);
         } else {
-            return String.format("la $%s, %s($%s)", Reg.name(dst), label, Reg.name(offsetReg));
+            return String.format("la $%s, %s($%s)", Reg.name(dst), label, Reg.name(base));
         }
     }
 }

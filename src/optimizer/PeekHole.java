@@ -94,6 +94,21 @@ public class PeekHole {
                     continue;
                 }
             }
+            // add-la
+            else if (curIns instanceof Add && nextIns instanceof La) {
+                // add $fp, $zero, $t4
+                //	la $v1, g_record($fp)
+                Add add = (Add) curIns;
+                La la = (La) nextIns;
+                int addDst = add.getDst();
+                int addSrc1 = add.getSrc1();
+                int addSrc2 = add.getSrc2();
+                if (tmpRegs.contains(la.getBase()) && la.getBase() == addDst && addSrc1 == Reg.ZERO) {
+                    mipsIns.remove(next);
+                    mipsIns.remove(cur);
+                    mipsIns.add(cur, new La(la.getDst(), la.getLabel(), addSrc2));
+                }
+            }
             // 否则++i
             ++cur;
         }

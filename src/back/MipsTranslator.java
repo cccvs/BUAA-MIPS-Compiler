@@ -279,12 +279,21 @@ public class MipsTranslator {
         if (base.getRefType().equals(Operand.RefType.ARRAY)) {
             assert base instanceof Symbol;
             Symbol symBase = (Symbol) base;
-            loadRegHelper(offsetVal, TMP_R2);
             if (symBase.isGlobal()) {
-                mipsInsList.add(new La(TMP_R1, symBase.getLabel(), TMP_R2));
+                if (offsetVal instanceof Imm && ((Imm)offsetVal).getVal() == 0) {
+                    mipsInsList.add(new La(TMP_R1, symBase.getLabel(), Reg.ZERO));
+                } else {
+                    loadRegHelper(offsetVal, TMP_R2);
+                    mipsInsList.add(new La(TMP_R1, symBase.getLabel(), TMP_R2));
+                }
             } else {
-                mipsInsList.add(new Addi(TMP_R1, Reg.SP, -symBase.getOffset()));
-                mipsInsList.add(new Add(TMP_R1, TMP_R1, TMP_R2));
+                if (offsetVal instanceof Imm) {
+                    mipsInsList.add(new Addi(TMP_R1, Reg.SP, -symBase.getOffset() + ((Imm) offsetVal).getVal()));
+                } else {
+                    mipsInsList.add(new Addi(TMP_R1, Reg.SP, -symBase.getOffset()));
+                    loadRegHelper(offsetVal, TMP_R2);
+                    mipsInsList.add(new Add(TMP_R1, TMP_R1, TMP_R2));
+                }
             }
         } else {
             loadRegHelper(base, TMP_R2);
