@@ -276,37 +276,77 @@ public class MipsTranslator {
         MidVar dst = offset.getDst();
         MidVar base = offset.getBase();
         Operand offsetVal = offset.getOffsetVal();
+        // 1
         if (base.getRefType().equals(Operand.RefType.ARRAY)) {
             assert base instanceof Symbol;
             Symbol symBase = (Symbol) base;
+            // 1.1
             if (symBase.isGlobal()) {
+                // 1.1.1
                 if (offsetVal instanceof Imm && ((Imm)offsetVal).getVal() == 0) {
-                    mipsInsList.add(new La(TMP_R1, symBase.getLabel(), Reg.ZERO));
-                } else {
-                    loadRegHelper(offsetVal, TMP_R2);
-                    mipsInsList.add(new La(TMP_R1, symBase.getLabel(), TMP_R2));
+                    // 1.1.1.1
+                    if (dst.getReg() != null) {
+                        mipsInsList.add(new La(dst.getReg(), symBase.getLabel(), Reg.ZERO));
+                    }
+                    // 1.1.1.2
+                    else {
+                        mipsInsList.add(new La(TMP_R1, symBase.getLabel(), Reg.ZERO));
+                        storeRegHelper(dst, TMP_R1);
+                    }
                 }
-            } else {
+                // 1.1.2
+                else {
+                    loadRegHelper(offsetVal, TMP_R2);
+                    // 1.1.2.1
+                    if (dst.getReg() != null) {
+                        mipsInsList.add(new La(dst.getReg(), symBase.getLabel(), TMP_R2));
+                    }
+                    // 1.1.2.2
+                    else {
+                        mipsInsList.add(new La(TMP_R1, symBase.getLabel(), TMP_R2));
+                        storeRegHelper(dst, TMP_R1);
+                    }
+                }
+            }
+            // 1.2
+            else {
+                // 1.2.1
                 if (offsetVal instanceof Imm) {
                     mipsInsList.add(new Addi(TMP_R1, Reg.SP, -symBase.getOffset() + ((Imm) offsetVal).getVal()));
-                } else {
+                    storeRegHelper(dst, TMP_R1);
+                }
+                // 1.2.2
+                else {
                     MidVar offsetMidVar = (MidVar) offsetVal;
+                    // 1.2.2.1
                     if (offsetMidVar.getReg() != null) {
                         mipsInsList.add(new Addi(TMP_R1, Reg.SP, -symBase.getOffset()));
                         mipsInsList.add(new Add(TMP_R1, TMP_R1, offsetMidVar.getReg()));
-                    } else {
+                    }
+                    // 1.2.2.2
+                    else {
                         mipsInsList.add(new Addi(TMP_R1, Reg.SP, -symBase.getOffset()));
                         loadRegHelper(offsetVal, TMP_R2);
                         mipsInsList.add(new Add(TMP_R1, TMP_R1, TMP_R2));
                     }
+                    storeRegHelper(dst, TMP_R1);
                 }
             }
-        } else {
+        }
+        // 2
+        else {
             loadRegHelper(base, TMP_R2);
             loadRegHelper(offsetVal, TMP_R1);
-            mipsInsList.add(new Add(TMP_R1, TMP_R2, TMP_R1));
+            // 2.1
+            if (dst.getReg() != null) {
+                mipsInsList.add(new Add(dst.getReg(), TMP_R2, TMP_R1));
+            }
+            // 2.2
+            else {
+                mipsInsList.add(new Add(TMP_R1, TMP_R2, TMP_R1));
+                storeRegHelper(dst, TMP_R1);
+            }
         }
-        storeRegHelper(dst, TMP_R1);
     }
 
     // util
