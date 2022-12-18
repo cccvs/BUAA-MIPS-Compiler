@@ -9,7 +9,7 @@ import front.lexical.Lexer;
 import mid.IrConverter;
 import mid.MidCode;
 import optimizer.MidOptimizer;
-import optimizer.PeekHole;
+import optimizer.MipsPeekHole;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -71,8 +71,8 @@ public class SysYRunner {
         midCode.outputMidCode(new PrintStream(MID_CODE), OUTPUT_MID_CODE);
         // mips part
         MipsTranslator mipsTranslator = new MipsTranslator(midCode);
-        PeekHole peekHole = new PeekHole(mipsTranslator);
-        peekHole.run();
+        MipsPeekHole mipsPeekHole = new MipsPeekHole(mipsTranslator);
+        mipsPeekHole.run();
         mipsTranslator.outputMips(new PrintStream(MIPS), OUTPUT_MIPS);
     }
 

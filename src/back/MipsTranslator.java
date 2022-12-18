@@ -290,9 +290,15 @@ public class MipsTranslator {
                 if (offsetVal instanceof Imm) {
                     mipsInsList.add(new Addi(TMP_R1, Reg.SP, -symBase.getOffset() + ((Imm) offsetVal).getVal()));
                 } else {
-                    mipsInsList.add(new Addi(TMP_R1, Reg.SP, -symBase.getOffset()));
-                    loadRegHelper(offsetVal, TMP_R2);
-                    mipsInsList.add(new Add(TMP_R1, TMP_R1, TMP_R2));
+                    MidVar offsetMidVar = (MidVar) offsetVal;
+                    if (offsetMidVar.getReg() != null) {
+                        mipsInsList.add(new Addi(TMP_R1, Reg.SP, -symBase.getOffset()));
+                        mipsInsList.add(new Add(TMP_R1, TMP_R1, offsetMidVar.getReg()));
+                    } else {
+                        mipsInsList.add(new Addi(TMP_R1, Reg.SP, -symBase.getOffset()));
+                        loadRegHelper(offsetVal, TMP_R2);
+                        mipsInsList.add(new Add(TMP_R1, TMP_R1, TMP_R2));
+                    }
                 }
             }
         } else {
