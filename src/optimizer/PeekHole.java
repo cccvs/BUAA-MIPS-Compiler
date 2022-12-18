@@ -49,35 +49,39 @@ public class PeekHole {
                 int addSrc1 = add.getSrc1();
                 int addSrc2 = add.getSrc2();
                 if (tmpRegs.contains(lwVal) && lwVal == addSrc2 && addSrc1 == Reg.ZERO) {
-                    // 必须从大到小！
-                    mipsIns.remove(next);
-                    mipsIns.remove(cur);
-                    mipsIns.add(cur, new Lw(addDst, lw.getOffset(), lw.getBase()));
-                    continue;
+                    if (lw.getBase() != null && lw.getOffset() != null && lw.getReg() != null) {
+                        // 必须从大到小！
+                        mipsIns.remove(next);
+                        mipsIns.remove(cur);
+                        mipsIns.add(cur, new Lw(addDst, lw.getOffset(), lw.getBase()));
+                        continue;
+                    }
                 }
             }
             // add-sw
             else if (curIns instanceof Add && nextIns instanceof Sw) {
                 // add $fp, $zero, $t1
                 // sw $fp, 4($v1)
-                Add add= (Add) curIns;
+                Add add = (Add) curIns;
                 Sw sw = (Sw) nextIns;
                 int swVal = sw.getReg();
                 int addDst = add.getDst();
                 int addSrc1 = add.getSrc1();
                 int addSrc2 = add.getSrc2();
                 if (tmpRegs.contains(swVal) && swVal == addDst && addSrc1 == Reg.ZERO) {
-                    mipsIns.remove(next);
-                    mipsIns.remove(cur);
-                    mipsIns.add(cur, new Sw(addSrc2, sw.getOffset(), sw.getBase()));
-                    continue;
+                    if (sw.getBase() != null && sw.getOffset() != null && sw.getReg() != null) {
+                        mipsIns.remove(next);
+                        mipsIns.remove(cur);
+                        mipsIns.add(cur, new Sw(addSrc2, sw.getOffset(), sw.getBase()));
+                        continue;
+                    }
                 }
             }
             // add-beq
             else if (curIns instanceof Add && nextIns instanceof Beq) {
                 // add $fp, $zero, $t1
                 // sw $fp, 4($v1)
-                Add add= (Add) curIns;
+                Add add = (Add) curIns;
                 Beq beq = (Beq) nextIns;
                 int beqSrc1 = beq.getSrc1();
                 int beqSrc2 = beq.getSrc2();

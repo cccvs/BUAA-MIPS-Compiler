@@ -37,7 +37,9 @@ public class Sw extends MipsIns {
     @Override
     public String toString() {
         if (label == null) {
-            assert reg != null && offset != null && base != null;
+            assert reg != null;
+            assert  offset != null ;
+            assert base != null;
             return String.format("sw $%s, %d($%s)", Reg.name(reg), offset, Reg.name(base));
         } else {
             return String.format("sw $%s, %s", Reg.name(reg), label);
