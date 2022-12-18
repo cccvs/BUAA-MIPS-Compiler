@@ -15,7 +15,7 @@ public class MidOptimizer {
     private final List<RegAllocator> allocatorList = new ArrayList<>();
     private static final int turn = 10;
     public static final boolean HACK_DIV = true;
-    public static final boolean HACK_ALLOC = true;
+    public static final boolean HACK_ALLOC = false;
 
 
     public MidOptimizer(MidCode midCode) {

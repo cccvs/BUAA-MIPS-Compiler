@@ -67,7 +67,11 @@ public class Call extends BasicIns{
 
     @Override
     public Set<MidVar> leftSet() {
-        return new HashSet<>();
+        HashSet<MidVar> leftSet = new HashSet<>();
+        if (ret != null) {
+            leftSet.add(ret);
+        }
+        return leftSet;
     }
 
     @Override
