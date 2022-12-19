@@ -318,11 +318,12 @@ public class BasicBlock {
             // update user var
             BasicIns basicIns = insList.get(i);
             int pos = parent.getInsPos(basicIns);
-            liveSet.addAll(basicIns.rightSet());
             // 记录函数调用时当前的活跃变量，函数调用时用于保存寄存器
             if (basicIns instanceof Call) {
                 ((Call) basicIns).addLiveVars(liveSet);
             }
+            // 函数实参是调用前使用，因此如果call f(t)是t最后一次使用，t不应活跃
+            liveSet.addAll(basicIns.rightSet());
             // append intervals
             for (MidVar midVar : liveSet) {
                 if (!varToInterval.containsKey(midVar)) {

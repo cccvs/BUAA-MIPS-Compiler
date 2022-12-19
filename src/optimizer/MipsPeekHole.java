@@ -44,8 +44,8 @@ public class MipsPeekHole {
                 ++next;
             }
             MipsIns nextIns = mipsIns.get(next);
-            System.out.println(cur + " "  + next);
-            System.out.println(curIns + " " + nextIns);
+            // System.out.println(cur + " "  + next);
+            // System.out.println(curIns + " " + nextIns);
             // j-label
             if (curIns instanceof J && nextIns instanceof Label) {
                 if (Objects.equals(((J) curIns).getLabel(), ((Label) nextIns).getLabel())) {
@@ -101,6 +101,21 @@ public class MipsPeekHole {
                     }
                 }
             }
+            // addi-sw
+            else if (curIns instanceof Addi && nextIns instanceof Sw) {
+                // addi $v1, $gp, 32772
+                // sw $t1, 4($v1)
+                Addi addi = (Addi) curIns;
+                Sw sw = (Sw) nextIns;
+                if (tmpRegs.contains(addi.getDst()) && addi.getDst() == sw.getBase()) {
+                    if (sw.getBase() != null && sw.getReg() != null && sw.getOffset() != null) {
+                        mipsIns.remove(next);
+                        mipsIns.remove(cur);
+                        mipsIns.add(cur, new Sw(sw.getReg(), sw.getOffset() + addi.getImm(), addi.getSrc1()));
+                        continue;
+                    }
+                }
+            }
             // add-lw
             else if (curIns instanceof Add && nextIns instanceof Lw) {
                 Add add = (Add) curIns;
@@ -112,6 +127,21 @@ public class MipsPeekHole {
                         mipsIns.remove(next);
                         mipsIns.remove(cur);
                         mipsIns.add(cur, new Lw(lw.getReg(), lw.getOffset(), add.getSrc2()));
+                        continue;
+                    }
+                }
+            }
+            // addi-lw
+            else if (curIns instanceof Addi && nextIns instanceof Lw) {
+                // addi $v1, $gp, 32772
+                // lw $t1, 4($v1)
+                Addi addi = (Addi) curIns;
+                Lw lw = (Lw) nextIns;
+                if (tmpRegs.contains(addi.getDst()) && addi.getDst() == lw.getBase()) {
+                    if (lw.getBase() != null && lw.getReg() != null && lw.getOffset() != null) {
+                        mipsIns.remove(next);
+                        mipsIns.remove(cur);
+                        mipsIns.add(cur, new Lw(lw.getReg(), lw.getOffset() + addi.getImm(), addi.getSrc1()));
                         continue;
                     }
                 }

@@ -21,6 +21,7 @@ import java.util.*;
 public class MipsTranslator {
     public static final int TMP_R1 = Reg.V1;
     public static final int TMP_R2 = Reg.FP;
+    public static final int DATA_GP_OFFSET = 0x00008000;
 
     // info
     private final MidCode midCode;
@@ -182,7 +183,11 @@ public class MipsTranslator {
         // recv ret val, 必须在恢复现场之后, 否则store时sp不对
         MidVar retVal = call.getRet();
         if (retVal != null) {
-            storeRegHelper(retVal, Reg.V0);
+            if (retVal.getReg() != null) {
+                mipsInsList.add(new Add(retVal.getReg(), Reg.ZERO, Reg.V0));
+            } else {
+                storeRegHelper(retVal, Reg.V0);
+            }
         }
     }
 
@@ -253,7 +258,7 @@ public class MipsTranslator {
         if (pointer.getRefType().equals(Operand.RefType.ARRAY)) {
             Symbol array = (Symbol) pointer;
             if (array.isGlobal()) {
-                mipsInsList.add(new La(TMP_R1, array.getLabel(), Reg.ZERO));
+                mipsInsList.add(new Addi(TMP_R1, Reg.GP, DATA_GP_OFFSET + array.getOffset()));
             } else {
                 mipsInsList.add(new Addi(TMP_R1, Reg.SP, -array.getOffset()));
             }
@@ -283,14 +288,14 @@ public class MipsTranslator {
             // 1.1
             if (symBase.isGlobal()) {
                 // 1.1.1
-                if (offsetVal instanceof Imm && ((Imm)offsetVal).getVal() == 0) {
+                if (offsetVal instanceof Imm && ((Imm) offsetVal).getVal() == 0) {
                     // 1.1.1.1
                     if (dst.getReg() != null) {
-                        mipsInsList.add(new La(dst.getReg(), symBase.getLabel(), Reg.ZERO));
+                        mipsInsList.add(new Addi(dst.getReg(), Reg.GP, DATA_GP_OFFSET + symBase.getOffset()));
                     }
                     // 1.1.1.2
                     else {
-                        mipsInsList.add(new La(TMP_R1, symBase.getLabel(), Reg.ZERO));
+                        mipsInsList.add(new Addi(TMP_R1, Reg.GP, DATA_GP_OFFSET + symBase.getOffset()));
                         storeRegHelper(dst, TMP_R1);
                     }
                 }
