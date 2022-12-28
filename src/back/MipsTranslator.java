@@ -125,7 +125,7 @@ public class MipsTranslator {
             Operand realParam = realParams.next();
             Symbol formatParam = formatParams.next();
             loadRegHelper(realParam, Reg.A1);
-            mipsInsList.add(new Sw(Reg.A1, -movSize-formatParam.getOffset(), Reg.SP));
+            mipsInsList.add(new Sw(Reg.A1, -movSize - formatParam.getOffset(), Reg.SP));
         }
         // save current reg
         mipsInsList.add(new Sw(Reg.RA, -movSize, Reg.SP));
@@ -238,7 +238,7 @@ public class MipsTranslator {
     // util
     private void loadRegHelper(Operand operand, int reg) {
         if (operand instanceof Imm) {
-            mipsInsList.add(new Addi(reg, Reg.ZERO,((Imm) operand).getVal()));
+            mipsInsList.add(new Addi(reg, Reg.ZERO, ((Imm) operand).getVal()));
         } else {
             MidVar midVar = (MidVar) operand;
             assert midVar.getOffset() != null;

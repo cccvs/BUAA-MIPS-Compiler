@@ -134,7 +134,7 @@ public class Parser {
     private DefNode parseConstDef() throws ParserError {
         // ConstDef -> Ident { '[' ConstExp ']' } '=' ConstInitVal
         next(TkType.IDENFR);
-        DefNode constDefNode = new DefNode(true, tokens.get(pos - 1));
+        DefNode constDefNode = new DefNode(true, tokens.get(pos - 1), false);
         while (tokens.get(pos).eqType(TkType.LBRACK)) {
             next(TkType.LBRACK);
             constDefNode.addDimension(parseConstExp());
@@ -187,19 +187,30 @@ public class Parser {
 
     private DefNode parseVarDef() throws ParserError {
         // VarDef -> Ident { '[' ConstExp ']' } ['=' InitVal]
-        next(TkType.IDENFR);
-        DefNode varDefNode = new DefNode(false, tokens.get(pos - 1));
-        while (tokens.get(pos).eqType(TkType.LBRACK)) {
-            next(TkType.LBRACK);
-            varDefNode.addDimension(parseConstExp());
-            nextWithHandler(TkType.RBRACK);
-        }
-        if (tokens.get(pos).eqType(TkType.ASSIGN)) {
+        // TODO
+        if (isVarDefGetInt()) {
+            next(TkType.IDENFR);
+            DefNode varDefNode = new DefNode(false, tokens.get(pos - 1), true);
             next(TkType.ASSIGN);
-            parseInitVal(varDefNode);
+            next(TkType.GETINTTK);
+            next(TkType.LPARENT);
+            next(TkType.RPARENT);
+            return varDefNode;
+        } else {
+            next(TkType.IDENFR);
+            DefNode varDefNode = new DefNode(false, tokens.get(pos - 1), false);
+            while (tokens.get(pos).eqType(TkType.LBRACK)) {
+                next(TkType.LBRACK);
+                varDefNode.addDimension(parseConstExp());
+                nextWithHandler(TkType.RBRACK);
+            }
+            if (tokens.get(pos).eqType(TkType.ASSIGN)) {
+                next(TkType.ASSIGN);
+                parseInitVal(varDefNode);
+            }
+            output.add("<VarDef>");
+            return varDefNode;
         }
-        output.add("<VarDef>");
-        return varDefNode;
     }
 
     private void parseInitVal(DefNode varDefNode) throws ParserError {
@@ -662,5 +673,21 @@ public class Parser {
         }
         retrieve();
         return isExp;
+    }
+
+    private boolean isVarDefGetInt() {
+        boolean isGetInt = true;
+        checkpoint();
+        try {
+            next(TkType.IDENFR);
+            next(TkType.ASSIGN);
+            next(TkType.GETINTTK);
+            next(TkType.LPARENT);
+            next(TkType.RPARENT);
+        } catch (ParserError e) {
+            isGetInt = false;
+        }
+        retrieve();
+        return isGetInt;
     }
 }

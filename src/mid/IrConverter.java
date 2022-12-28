@@ -92,28 +92,37 @@ public class IrConverter {
             boolean isGlobal = curTab.isGlobal();
             Symbol symbol = new Symbol(defNode, isGlobal, defNode.isConst());  // create new symbol
             fillSymbolTabAndUpdateStack(symbol);
-            if (isGlobal) {
-                midCode.putGlobalSym(symbol);
-            } else if (!defNode.getInitValues().isEmpty()) {
-                // 如果声明语句包含初始赋值
-                if (symbol.getRefType() == Operand.RefType.VALUE) {
-                    // value part
-                    ExpNode initExp = defNode.getInitValues().get(0);
-                    Operand initOperand = convExp(initExp);     // 非全局常量初值可能不是常量表达式
-                    curFunc.append(new UnaryOp(UnaryOp.Type.MOV, initOperand, symbol));
+            if (defNode.isGetInt()) {
+                if (isGlobal) {
+                    throw new AssertionError("global?");
                 } else {
-                    // array part
-                    assert symbol.getRefType() == Operand.RefType.ARRAY;
-                    int size = symbol.getSize();    // has multiplied 4
-                    for (int index = 0; index * 4 < size; ++index) {
-                        // offset
-                        MidVar pointer = new MidVar(Operand.RefType.POINTER);
-                        curFunc.append(new Offset(symbol, new Imm(index * 4), pointer));
-                        // get exp
-                        ExpNode initExp = defNode.getInitValues().get(index);
-                        Operand initOperand = convExp(initExp);
-                        // store
-                        curFunc.append(new MemOp(MemOp.Type.STORE, initOperand, pointer));
+                    assert symbol.getRefType().equals(Symbol.RefType.VALUE);
+                    curFunc.append(new GetInt(symbol));
+                }
+            } else {
+                if (isGlobal) {
+                    midCode.putGlobalSym(symbol);
+                } else if (!defNode.getInitValues().isEmpty()) {
+                    // 如果声明语句包含初始赋值
+                    if (symbol.getRefType() == Operand.RefType.VALUE) {
+                        // value part
+                        ExpNode initExp = defNode.getInitValues().get(0);
+                        Operand initOperand = convExp(initExp);     // 非全局常量初值可能不是常量表达式
+                        curFunc.append(new UnaryOp(UnaryOp.Type.MOV, initOperand, symbol));
+                    } else {
+                        // array part
+                        assert symbol.getRefType() == Operand.RefType.ARRAY;
+                        int size = symbol.getSize();    // has multiplied 4
+                        for (int index = 0; index * 4 < size; ++index) {
+                            // offset
+                            MidVar pointer = new MidVar(Operand.RefType.POINTER);
+                            curFunc.append(new Offset(symbol, new Imm(index * 4), pointer));
+                            // get exp
+                            ExpNode initExp = defNode.getInitValues().get(index);
+                            Operand initOperand = convExp(initExp);
+                            // store
+                            curFunc.append(new MemOp(MemOp.Type.STORE, initOperand, pointer));
+                        }
                     }
                 }
             }
