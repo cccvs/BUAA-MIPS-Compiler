@@ -29,11 +29,16 @@ public class SysYRunner {
     public static final boolean OUTPUT_MID_CODE = true;
     public static final boolean OUTPUT_ERROR = true;
     public static final boolean OUTPUT_MIPS = true;
-    public static final boolean OPTIMIZE = true;
+
+    public static final boolean BATCH = false;
 
     public SysYRunner() throws FileNotFoundException {
         try {
-            run();
+            if (!BATCH) {
+                run();
+            } else {
+                runBatch();
+            }
         } catch (LexerError | ParserError error) {
             error.printStackTrace();
         } catch (SysYError ignored) {
@@ -75,6 +80,53 @@ public class SysYRunner {
             mipsTranslator.outputMips(new PrintStream(MIPS));
         }
     }
+
+    private void runBatch() throws FileNotFoundException, LexerError, ParserError, SysYError {
+        for (int i = 1; i <= 3; i++) {
+            // read part
+            InputStream inputStream = new FileInputStream(String.format("testfile%d.txt", i));
+            Scanner in = new Scanner(inputStream);
+            String inputStr = readAll(in);
+            // front.lexical part
+            Lexer lexer = new Lexer(inputStr);
+            lexer.lex();
+            if (OUTPUT_LEXER) {
+                lexer.outputTokens(new PrintStream(String.format("tokens%d.txt", i)));
+            }
+            // parse part
+            Parser parser = new Parser(lexer);
+            CompUnitNode compUnit = parser.parseCompUnit();
+            if (OUTPUT_SYNTAX) {
+                parser.outputSyntax(new PrintStream(SYNTAX));
+            }
+            // ir/error part
+            IrConverter irConverter = new IrConverter(compUnit);
+            if (OUTPUT_ERROR) {
+                ErrorTable.outputError(new PrintStream(ERROR));
+            }
+            ErrorTable.throwError();    // terminate if error
+            // middle code
+            MidCode midCode = irConverter.getMidCode();
+            // --- optimize
+            // MidOptimizer midOptimizer = new MidOptimizer(midCode);
+            // midOptimizer.run();
+            // midOptimizer.outputRegInfo(new PrintStream("interval_info.txt"));
+            // ---
+            // mid code out
+            if (OUTPUT_MID_CODE) {
+                midCode.outputMidCode(new PrintStream(String.format("testfile%d_20373743_陈楚岩_优化前中间代码.txt", i)));
+            }
+            // mips part
+            MipsTranslator mipsTranslator = new MipsTranslator(midCode);
+            // MipsPeekHole mipsPeekHole = new MipsPeekHole(mipsTranslator);
+            // mipsPeekHole.run();
+            if (OUTPUT_MIPS) {
+                mipsTranslator.outputMips(new PrintStream(String.format("testfile%d_20373743_陈楚岩_优化前目标代码.txt", i)));
+            }
+
+        }
+    }
+
 
     private String readAll(Scanner in) {
         StringBuilder sb = new StringBuilder();

@@ -28,13 +28,15 @@ public class IrConverter {
     private final MidCode midCode = new MidCode();
 
     // current info
-    private static SymTab curTab = new SymTab();    // 初始化为全局符号表
-    private static FuncFrame curFunc = null;
+    private static SymTab curTab;    // 初始化为全局符号表
+    private static FuncFrame curFunc;
 
     private final Stack<MidLabel> loopBeginStack = new Stack<>();
     private final Stack<MidLabel> loopEndStack = new Stack<>();
 
     public IrConverter(CompUnitNode compUnitNode) {
+        curTab = new SymTab();
+        curFunc = null;
         convCompUnit(compUnitNode);
     }
 
